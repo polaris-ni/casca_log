@@ -3,6 +3,10 @@
 
 int main(void)
 {
-    printf("Hello, World!\n");
-    return RES_SUCCESS;
+    const clog_context_t* ctx = clog_create();
+    if (ctx == NULL) {
+        return CLOG_FAIL;
+    }
+    printf("level = %u!\n", ctx->level);
+    return CLOG_SUCCESS;
 }
