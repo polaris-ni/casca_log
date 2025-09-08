@@ -4,7 +4,7 @@
  */
 
 #include "casca_log.h"
-#include "casca_log_hooks.h"
+#include "utils/clog_secure_func.h"
 
 clog_context_t* clog_create(void)
 {
@@ -14,4 +14,10 @@ clog_context_t* clog_create(void)
     }
     ctx->level = CLOG_LEVEL_DEBUG;
     return ctx;
+}
+
+void clog_destroy(clog_context_t* context)
+{
+    (void)clog_memset(context, sizeof(clog_context_t), 0, sizeof(clog_context_t));
+    clog_free(context);
 }

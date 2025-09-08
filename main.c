@@ -3,10 +3,9 @@
 
 int main(void)
 {
-    const clog_context_t* ctx = clog_create();
-    if (ctx == NULL) {
-        return CLOG_FAIL;
-    }
+    clog_context_t* ctx = clog_create();
+    CLOG_RET_IF_NULL(ctx, CLOG_FAIL);
     printf("level = %u!\n", ctx->level);
+    clog_destroy(ctx);
     return CLOG_SUCCESS;
 }

@@ -21,7 +21,7 @@ BraceWrapping:
   BeforeCatch: true
   BeforeElse: true
   BeforeLambdaBody: true
-  BeforeWhile: true
+  BeforeWhile: false
   SplitEmptyFunction: true
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
@@ -52,4 +52,5 @@ SpacesInConditionalStatement: false
 SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
 TabWidth: 4
+AlignEscapedNewlines: Left
 ...
