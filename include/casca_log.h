@@ -15,17 +15,6 @@
 extern "C" {
 #endif
 
-#define CLOG_RET_IF(cond, ret) \
-    do {                       \
-        if (cond) {            \
-            return ret;        \
-        }                      \
-    } while (0)
-
-#define CLOG_RET_IF_NULL(ptr, ret) CLOG_RET_IF((ptr) == NULL, ret)
-
-#define CLOG_RET_VOID_IF_NULL(ptr) CLOG_RET_IF_NULL(ptr,)
-
 typedef enum clog_res {
     CLOG_SUCCESS = 0, /* exec success */
     CLOG_FAIL = 1, /* exec failed */

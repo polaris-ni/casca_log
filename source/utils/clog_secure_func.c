@@ -3,8 +3,8 @@
  * @date  2025/9/8
  */
 #include "clog_secure_func.h"
-
 #include <string.h>
+#include "casca_log_defines.h"
 
 clog_res_e clog_memset(void* dest, size_t size, char padding, size_t count)
 {

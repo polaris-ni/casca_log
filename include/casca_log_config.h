@@ -10,6 +10,7 @@ extern "C" {
 #endif
 
 #define CASCA_LOG_HOOKS 1 /* enable hook in casca log */
+#define CASCA_LOG_MEM_POOL 1 /* enable mem pool to improve memory allocator performance */
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

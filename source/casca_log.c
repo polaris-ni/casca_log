@@ -4,6 +4,7 @@
  */
 
 #include "casca_log.h"
+#include "clog_mem_pool.h"
 #include "utils/clog_secure_func.h"
 
 clog_context_t* clog_create(void)
@@ -13,6 +14,9 @@ clog_context_t* clog_create(void)
         return NULL;
     }
     ctx->level = CLOG_LEVEL_DEBUG;
+#ifdef CASCA_LOG_MEM_POOL
+    clog_mp_init();
+#endif
     return ctx;
 }
 

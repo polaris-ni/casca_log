@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(casca_log C)
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 11)
 
 include_directories(include)
 include_directories(source/hooks)
