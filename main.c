@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "casca_log.h"
+#include "casca_log_defines.h"
 
 int main(void)
 {
