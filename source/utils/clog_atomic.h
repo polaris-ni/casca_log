@@ -11,42 +11,27 @@
 extern "C" {
 #endif
 
+#ifdef __has_include
+#if __has_include(<stdatomic.h>) && !defined(_MSC_VER)
+#include <stdatomic.h>
+#define CLOG_USE_NATIVE_STD_ATOMIC
+#endif
+#else
 #ifdef CLOG_PLATFORM_WINDOWS
 #if defined(_MSC_VER) && (_MSC_VER >= 1900)
-#include <stdatomic.h> /* supported std atomic */
-#else
-/* std atomic compat start */
+#include <stdatomic.h>
+#define CLOG_USE_NATIVE_STD_ATOMIC
+#endif
+#endif
+#endif
+
+#ifndef CLOG_USE_NATIVE_STD_ATOMIC
+
+#include <intrin.h>
 #include <stdint.h>
 #include <windows.h>
 
-/* 确保包含Intrinsics函数 */
-#if defined(_MSC_VER)
-#include <intrin.h>
-#pragma intrinsic(_InterlockedExchange16)
-#pragma intrinsic(_InterlockedCompareExchange16)
-#endif
-
-/* atomic types */
-typedef volatile int atomic_int;
-typedef volatile unsigned int atomic_uint;
-typedef volatile long atomic_long;
-typedef volatile unsigned long atomic_ulong;
-typedef volatile long long atomic_llong;
-typedef volatile unsigned long long atomic_ullong;
-typedef volatile ptrdiff_t atomic_ptrdiff_t;
-typedef volatile size_t atomic_size_t;
-typedef volatile void* atomic_void_ptr;
-typedef volatile intptr_t atomic_intptr_t;
-typedef volatile uintptr_t atomic_uintptr_t;
-typedef volatile int16_t atomic_int16_t;
-typedef volatile uint16_t atomic_uint16_t;
-typedef volatile int32_t atomic_int32_t;
-typedef volatile uint32_t atomic_uint32_t;
-typedef volatile int64_t atomic_int64_t;
-typedef volatile uint64_t atomic_uint64_t;
-
-/* memory order */
-typedef enum {
+typedef enum memory_order {
     memory_order_relaxed,
     memory_order_consume,
     memory_order_acquire,
@@ -55,43 +40,81 @@ typedef enum {
     memory_order_seq_cst
 } memory_order;
 
-/* memory operation */
-#define atomic_init(obj, value) (*(obj) = (value))
-#define atomic_store(obj, desired) InterlockedExchange((LONG volatile*)(obj), (LONG)(desired))
-#define atomic_load(obj) InterlockedCompareExchange((LONG volatile*)(obj), 0, 0)
-#define atomic_exchange(obj, desired) InterlockedExchange((LONG volatile*)(obj), (LONG)(desired))
-#define atomic_fetch_add(obj, arg) InterlockedExchangeAdd((LONG volatile*)(obj), (LONG)(arg))
-#define atomic_fetch_sub(obj, arg) InterlockedExchangeAdd((LONG volatile*)(obj), -(LONG)(arg))
-#define atomic_fetch_or(obj, arg) InterlockedOr((LONG volatile*)(obj), (LONG)(arg))
-#define atomic_fetch_and(obj, arg) InterlockedAnd((LONG volatile*)(obj), (LONG)(arg))
-#define atomic_fetch_xor(obj, arg) InterlockedXor((LONG volatile*)(obj), (LONG)(arg))
+#define ATOMIC_VAR_INIT(value) (value)
 
-static inline int atomic_compare_exchange_strong(volatile void* obj, void* expected, long int desired)
+typedef volatile LONG atomic_flag;
+typedef volatile LONG atomic_bool;
+typedef volatile LONG atomic_char;
+typedef volatile LONG atomic_schar;
+typedef volatile ULONG atomic_uchar;
+typedef volatile SHORT atomic_short;
+typedef volatile USHORT atomic_ushort;
+typedef volatile LONG atomic_int;
+typedef volatile ULONG atomic_uint;
+typedef volatile LONG atomic_long;
+typedef volatile ULONG atomic_ulong;
+typedef volatile LONGLONG atomic_llong;
+typedef volatile ULONGLONG atomic_ullong;
+
+#ifdef _WIN64
+typedef volatile LONGLONG atomic_intptr_t;
+typedef volatile LONGLONG atomic_uintptr_t;
+typedef volatile LONGLONG atomic_size_t;
+typedef volatile LONGLONG atomic_ptrdiff_t;
+#else
+typedef volatile LONG atomic_intptr_t;
+typedef volatile LONG atomic_uintptr_t;
+typedef volatile LONG atomic_size_t;
+typedef volatile LONG atomic_ptrdiff_t;
+#endif
+
+#define atomic_load(object) (*(object))
+#define atomic_load_explicit(object, order) atomic_load(object)
+#define atomic_store(object, desired) InterlockedExchange((LONG volatile*)(object), (LONG)(desired))
+#define atomic_store_explicit(object, desired, order) atomic_store(object, desired)
+#define atomic_exchange(object, desired) InterlockedExchange((LONG volatile*)(object), (LONG)(desired))
+#define atomic_exchange_explicit(object, desired, order) atomic_exchange(object, desired)
+#define atomic_compare_exchange_weak(object, expected, desired) \
+    atomic_compare_exchange_strong(object, expected, desired)
+
+#define atomic_compare_exchange_weak_explicit(object, expected, desired, succ, fail) \
+    atomic_compare_exchange_strong_explicit(object, expected, desired, succ, fail)
+
+static inline int atomic_compare_exchange_strong(volatile LONG* object, LONG* expected, LONG desired)
 {
-    long int expected_val = *(long int*)expected;
-    long int old_val = InterlockedCompareExchange((LONG volatile*)obj, desired, expected_val);
-    if (old_val == expected_val) {
+    LONG old = InterlockedCompareExchange((LONG volatile*)object, desired, *expected);
+    if (old == *expected) {
         return 1;
     }
     else {
-        *(long int*)expected = old_val;
+        *expected = old;
         return 0;
     }
 }
 
-static inline int atomic_compare_exchange_weak(volatile void* obj, void* expected, long int desired)
-{
-    return atomic_compare_exchange_strong(obj, expected, desired);
-}
-
-/* memory barrier */
+#define atomic_compare_exchange_strong_explicit(object, expected, desired, succ, fail) \
+    atomic_compare_exchange_strong(object, expected, desired)
+#define atomic_fetch_add(object, operand) InterlockedExchangeAdd((LONG volatile*)(object), (LONG)(operand))
+#define atomic_fetch_add_explicit(object, operand, order) atomic_fetch_add(object, operand)
+#define atomic_fetch_sub(object, operand) InterlockedExchangeAdd((LONG volatile*)(object), -(LONG)(operand))
+#define atomic_fetch_sub_explicit(object, operand, order) atomic_fetch_sub(object, operand)
+#define atomic_fetch_and(object, operand) InterlockedAnd((LONG volatile*)(object), (LONG)(operand))
+#define atomic_fetch_and_explicit(object, operand, order) atomic_fetch_and(object, operand)
+#define atomic_fetch_or(object, operand) InterlockedOr((LONG volatile*)(object), (LONG)(operand))
+#define atomic_fetch_or_explicit(object, operand, order) atomic_fetch_or(object, operand)
+#define atomic_fetch_xor(object, operand) InterlockedXor((LONG volatile*)(object), (LONG)(operand))
+#define atomic_fetch_xor_explicit(object, operand, order) atomic_fetch_xor(object, operand)
+#define atomic_flag_test_and_set(object) (InterlockedExchange((LONG volatile*)(object), 1) != 0)
+#define atomic_flag_test_and_set_explicit(object, order) atomic_flag_test_and_set(object)
+#define atomic_flag_clear(object) InterlockedExchange((LONG volatile*)(object), 0)
+#define atomic_flag_clear_explicit(object, order) atomic_flag_clear(object)
 #define atomic_thread_fence(order) MemoryBarrier()
-#define atomic_signal_fence(order) _ReadWriteBarrier()
+#define atomic_signal_fence(order) ((void)0)
+#define atomic_init(object, value) \
+    do {                           \
+        *(object) = (value);       \
+    } while (0)
 
-/* std atomic compat end */
-#endif
-#elif
-#include <stdatomic.h>
 #endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
