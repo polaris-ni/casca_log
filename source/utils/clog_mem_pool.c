@@ -3,10 +3,10 @@
  * @date  2025/9/9
  */
 #include "clog_mem_pool.h"
-#include <stdatomic.h>
 #include <stdint.h>
 #include "casca_log.h"
 #include "casca_log_defines.h"
+#include "clog_atomic.h"
 
 #define CLOG_MP_HEAP_SIZE_8 8
 #define CLOG_MP_HEAP_SIZE_16 16
@@ -46,8 +46,8 @@ struct mem_block {
 
 typedef struct mem_heap {
     clog_heap_type_e type;
-    atomic_ushort allocated;
-    atomic_ushort total;
+    atomic_uint allocated;
+    atomic_uint total;
     atomic_uintptr_t head;
     atomic_uintptr_t tail;
 } mem_heap_t;
