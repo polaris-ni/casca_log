@@ -27,10 +27,12 @@ typedef enum clog_heap_type {
     CLOG_MP_HEAP_TYPE_MAX
 } clog_heap_type_e;
 
-#define CLOG_GET_HEAP_SIZE(type) (2 ^ ((type) + 3))
+#define CLOG_GET_HEAP_SIZE(type) (1 << ((type) + 3))
 
 #define CLOG_MEM_BLOCK_HEAP 1 /* heap block, will put back to heap when clog_mp_release  */
 #define CLOG_MEM_BLOCK_TEMP 2 /* temp block, will be free when clog_mp_release  */
+
+#define CLOG_U_PTR_NULL ((uintptr_t)0)
 
 typedef struct mem_block mem_block_t;
 
@@ -59,10 +61,11 @@ void clog_mp_init(void)
     const size_t cnt = CLOG_ARRAY_SIZE(g_mem_heap);
     for (size_t i = 0; i < cnt; i++) {
         mem_heap_t* heap = &g_mem_heap[i];
+        heap->type = i;
         atomic_init(&heap->allocated, 0);
         atomic_init(&heap->total, 0);
-        atomic_init(&heap->head, (uintptr_t)0);
-        atomic_init(&heap->tail, (uintptr_t)0);
+        atomic_init(&heap->head, CLOG_U_PTR_NULL);
+        atomic_init(&heap->tail, CLOG_U_PTR_NULL);
     }
 }
 
@@ -94,15 +97,40 @@ static void* clog_malloc_temp_block(const size_t size)
     return block->data;
 }
 
-void* clog_mp_allocate(size_t size)
+static mem_block_t* clog_malloc_heap_block(const clog_heap_type_e type)
+{
+    mem_block_t* block = clog_mp_malloc_block(CLOG_GET_HEAP_SIZE(type));
+    CLOG_RET_IF_NULL(block, NULL);
+    block->type = CLOG_MEM_BLOCK_HEAP;
+    block->size = type;
+    return block;
+}
+
+void* clog_mp_allocate(const size_t size)
 {
     CLOG_RET_IF(size == 0, NULL);
     mem_heap_t* heap = clog_get_mem_heap(size);
     if (heap == NULL) {
         return clog_malloc_temp_block(size);
     }
-    /* TODO: obtain from heap */
-    return NULL;
+
+    mem_block_t* block = NULL;
+
+    // First try to get block from heap
+    do {
+        block = (mem_block_t*)atomic_load(&heap->head);
+        if (block == NULL) {
+            // No available block, allocate new one
+            atomic_fetch_add(&heap->allocated, 1);
+            atomic_fetch_add(&heap->total, 1);
+            return clog_malloc_heap_block(heap->type)->data;
+        }
+    } while (!atomic_compare_exchange_weak(&heap->head, (uintptr_t*)&block, atomic_load(&block->next)));
+
+    // Successfully obtained a block from heap
+    CLOG_RET_IF_NULL(block, NULL);
+    atomic_store(&block->next, CLOG_U_PTR_NULL);
+    return block->data;
 }
 
 void clog_mp_release(void* ptr)
