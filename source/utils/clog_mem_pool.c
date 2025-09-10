@@ -108,7 +108,7 @@ void* clog_mp_allocate(size_t size)
 void clog_mp_release(void* ptr)
 {
     CLOG_RET_VOID_IF_NULL(ptr);
-    mem_block_t* block = (mem_block_t*)(ptr - offsetof(mem_block_t, data));
+    mem_block_t* block = (mem_block_t*)((uintptr_t)ptr - offsetof(mem_block_t, data));
     if (block->type == CLOG_MEM_BLOCK_TEMP) {
         clog_free(block);
         return;
