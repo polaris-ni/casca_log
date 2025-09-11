@@ -15,7 +15,7 @@ clog_context_t* clog_create(void)
     }
     ctx->level = CLOG_LEVEL_DEBUG;
 #ifdef CASCA_LOG_MEM_POOL
-    clog_mp_init();
+    clog_mp_init(CLOG_MP_PRE_ALLOCATED_NORMAL);
 #endif
     return ctx;
 }
