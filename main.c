@@ -6,10 +6,10 @@
 
 int main(void)
 {
-    clog_context_t* ctx = clog_create();
+    clog_context_t* ctx = clog_create("casca_log_test");
     CLOG_RET_IF_NULL(ctx, CLOG_FAIL);
-    printf("level = %u!\n", ctx->level);
-    char *str = clog_mp_allocate(10);
+    printf("process = %s, level = %u!\n", ctx->process, ctx->config.level);
+    char* str = clog_mp_allocate(10);
     clog_memset(str, 11, 'a', 11);
     if (str != NULL) {
         str[11] = '\0';

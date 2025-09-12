@@ -13,6 +13,10 @@ extern "C" {
 
 clog_res_e clog_memset(void* dest, size_t size, char padding, size_t count);
 
+clog_res_e clog_memcpy(void* dest, size_t size, const void* src, size_t count);
+
+char* clog_str_dup(const char* str);
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

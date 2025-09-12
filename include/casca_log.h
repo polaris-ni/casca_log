@@ -6,7 +6,7 @@
 #define CASCA_LOG_CASCA_LOG_H
 
 #include "casca_log_config.h"
-#include "casca_log_level.h"
+#include "casca_log_defines.h"
 #ifdef CASCA_LOG_HOOKS
 #include "clog_hooks.h"
 #endif
@@ -15,18 +15,7 @@
 extern "C" {
 #endif
 
-typedef enum clog_res {
-    CLOG_SUCCESS = 0, /* exec success */
-    CLOG_FAIL = 1, /* exec failed */
-    CLOG_NOT_SUPPORTED = 2, /* operation not supported */
-    CLOG_INVALID_PARAM = 3, /* invalid param */
-} clog_res_e;
-
-typedef struct clog_context {
-    clog_level_e level;
-} clog_context_t;
-
-clog_context_t* clog_create(void);
+clog_context_t* clog_create(const char *process);
 
 void clog_destroy(clog_context_t* context);
 
