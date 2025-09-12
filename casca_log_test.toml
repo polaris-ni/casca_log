@@ -1,0 +1,75 @@
+# casca log config file uses restricted TOML format
+
+# single line comment
+
+# attr of Global Group
+version = 1 # inline comment
+
+[Performance] # attr group
+mem_pool = true # attr of Performance
+
+[Process]
+level = 1 # attr of Process
+[Process.main] # "main" is subgroup of Process
+name = "casca" # attr of Process.main
+[Process.main.test]
+level = 2 # attr of Process.main.test
+name = "\"test \""
+
+# group name and attr name must be consisted of 'a-z', 'A-Z', '0-9', '_'
+# ERROR1: "[Process*]"
+# ERROR2: ""attr" = 1" double quotes are not supported
+# ERROR3: "[Process."main".test ]"
+# ERROR4: "[Process.main.test.]" empty group name is not allowed
+# ERROR5: "attr\d = true" escape character is not supported
+
+# ↓ space is not allowed in group definition
+# ERROR1: " [Process.main.test]"
+# ERROR2: "[ Process.main.test]"
+# ERROR3: "[ Process.main.test] "
+# ERROR4: "[ Process.main. test]"
+
+# ↓ space is restrictedly supported in attr definition
+
+# VALID1: "level = 2"
+# VALID2: "level=2"
+# VALID3: "level  =  2"
+# VALID4: "level  =  2 "
+# VALID5: "level  =  2 # comment"
+# ERROR1: "level = 2 3"
+# ERROR2: " level = 2"
+
+# ↓ escape character is restrictedly supported in attr definition
+# VALID1: "name = \"test\""
+# VALID2: "name = \"test\" # comment"
+# VALID3: "split = "\\""
+# VALID4: "split = '\''"
+# VALID5: "split = '\'"
+
+# ↓ single character is enclosed by single quote
+test = ' '
+# ↓ multi character is not allowed to be enclosed by double quote, it must be enclosed by double quote
+# ERROR: "test = '12'"
+# VALID: "test = "12""
+
+# ↓ integer, double, string, boolean, char is supported
+int1 = 1
+int2 = -1
+int3 = 0x1
+int5 = 0b01
+int6 = 0o01
+double1 = 1.0
+double2 = -1.0
+double3 = 0.0
+bool1 = true
+bool2 = false
+string1 = "hello world"
+string2 = "hello world # comment"
+string3 = "hello world \"\"\""
+string4 = "hello world '"
+string5 = "hello world \\"
+char1 = 'a'
+char2 = '\''
+char3 = 'a'
+char4 = '"'
+char5 = '\'
