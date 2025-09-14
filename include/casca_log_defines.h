@@ -77,9 +77,6 @@ struct clog_config_group {
 
 typedef struct clog_config {
     clog_config_group_t* raw;
-    struct {
-
-    } global;
     clog_level_e level;
 } clog_config_t;
 

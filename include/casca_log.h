@@ -20,6 +20,27 @@ clog_context_t* clog_create(const char* process);
 
 void clog_destroy(clog_context_t* context);
 
+/**
+ * clear error message
+ * @param context context
+ */
+void clog_err_clear(clog_context_t* context);
+
+/**
+ * set err msg, will clear previous error message even if set failed
+ * @param context context to be set msg
+ * @param fmt message format
+ * @param ... var
+ */
+void clog_err_set(clog_context_t* context, const char* fmt, ...);
+
+/**
+ * get error message, never return NULL, safe to print
+ * @param context context
+ * @return error message, return string "NULL" if context is NULL
+ */
+const char* clog_err_get(const clog_context_t* context);
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

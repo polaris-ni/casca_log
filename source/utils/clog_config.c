@@ -5,6 +5,7 @@
 #include "clog_config.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "clog_hooks.h"
@@ -14,11 +15,24 @@ static clog_config_group_t* clog_config_create_empty_group(void)
 {
     clog_config_group_t* group = clog_malloc(sizeof(clog_config_group_t));
     CLOG_RET_IF_NULL(group, NULL);
+    group->name = NULL;
     group->child = NULL;
     group->sibling = NULL;
     group->content = NULL;
     return group;
 }
+
+static clog_config_item_t* clog_config_create_empty_item(void)
+{
+    clog_config_item_t* item = clog_malloc(sizeof(clog_config_item_t));
+    CLOG_RET_IF_NULL(item, NULL);
+    item->key = NULL;
+    item->type = CLOG_CONFIG_ITEM_TYPE_INVALID;
+    item->value.str = NULL;
+    item->next = NULL;
+    return item;
+}
+
 
 static void clog_config_free_item(clog_config_item_t* item)
 {
@@ -53,12 +67,19 @@ static void clog_config_destroy_group(clog_config_group_t* group)
     clog_free(group);
 }
 
+/**
+ * compare two group name
+ * @param name target name
+ * @param start start char of valid name, e.g. abc -> a
+ * @param end end char of valid name, e.g. abc -> c
+ * @return is same
+ */
 static bool clog_config_is_same_group_name(const char* name, const char* start, const char* end)
 {
     if (strlen(name) != end - start + 1) {
         return false;
     }
-    return strcmp(name, start);
+    return strcmp(name, start) == 0;
 }
 
 static bool clog_config_is_valid_name_char(const char ch)
@@ -128,7 +149,7 @@ static clog_config_group_t* clog_config_find_or_create_group(clog_config_group_t
     }
     last->sibling = new_group;
     CLOG_RET_IF(name_end == end, new_group);
-    return clog_config_find_or_create_group(current, name_end + 1, end);
+    return clog_config_find_or_create_group(new_group, name_end + 2, end); /* skip . */
 }
 
 /* [ abc.def ] -> abc.def */
@@ -150,10 +171,10 @@ static bool clog_config_get_valid_group_name(const char* start, const char* end,
     }
     *format_start = tmp;
     *format_end = tmp;
-    bool isSplitExist = false;
-    bool isParsedEnd = false;
+    bool is_split_exist = false;
+    bool is_parsed_end = false;
     while (tmp < end) {
-        if (isParsedEnd) {
+        if (is_parsed_end) {
             if (*tmp == '#') {
                 break;
             }
@@ -164,16 +185,16 @@ static bool clog_config_get_valid_group_name(const char* start, const char* end,
             continue;
         }
         if (*tmp == '.') {
-            if (isSplitExist) {
+            if (is_split_exist) {
                 return false; /* two consecutive '.' */
             }
-            isSplitExist = true;
+            is_split_exist = true;
         } else if (*tmp == ']') {
-            isSplitExist = false;
-            isParsedEnd = true;
+            is_split_exist = false;
+            is_parsed_end = true;
             *format_end = tmp - 1;
         } else if (clog_config_is_valid_name_char(*tmp)) {
-            isSplitExist = false;
+            is_split_exist = false;
         } else {
             return false; /* invalid char */
         }
@@ -253,8 +274,7 @@ static bool clog_config_parse_value_uint_radix(const uint8_t radix, const char* 
                 valid = *tmp >= '0' && *tmp <= '9';
                 break;
             case 16:
-                valid = (*tmp >= '0' && *tmp <= '9') || (*tmp >= 'a' && *tmp <= 'f') ||
-                    (*tmp >= 'A' && *tmp <= 'F');
+                valid = (*tmp >= '0' && *tmp <= '9') || (*tmp >= 'a' && *tmp <= 'f') || (*tmp >= 'A' && *tmp <= 'F');
                 break;
             default:
                 return false; /* never go here */
@@ -263,6 +283,7 @@ static bool clog_config_parse_value_uint_radix(const uint8_t radix, const char* 
             return false;
         }
         number_end = tmp;
+        tmp++;
     }
     CLOG_RET_IF(!clog_config_check_inline_comment(tmp, end), false);
     tmp = number_end;
@@ -270,11 +291,12 @@ static bool clog_config_parse_value_uint_radix(const uint8_t radix, const char* 
     uint32_t res = 0;
     while (true) {
         const uint32_t remain = UINT32_MAX / base;
-        if (remain < *tmp) {
+        const uint8_t digit = *tmp - '0';
+        if (remain < digit) {
             return false; /* overflow */
         }
-        const uint32_t current = (*tmp - '0') * base;
-        if (UINT32_MAX - current > res) {
+        const uint32_t current = digit * base;
+        if (UINT32_MAX - current < res) {
             return false; /* overflow */
         }
         res += current;
@@ -303,10 +325,10 @@ static bool clog_config_parse_value_double(const char* start, const char* end, c
         if (*tmp == '.') {
             CLOG_RET_IF(is_dot, false); /* only one '.' allowed */
             is_dot = true;
-        } else if (*tmp < '0' || *tmp > '9') {
-            return false; /* invalid char */
         } else if (*tmp == ' ' || *tmp == '#') {
             break;
+        } else if (*tmp < '0' || *tmp > '9') {
+            return false; /* invalid char */
         } else {
             number_end = tmp;
         }
@@ -342,20 +364,19 @@ static bool clog_config_parse_value_number(const char* start, const char* end, c
 {
     bool is_negative = false;
     bool is_flag_exist = false;
-    clog_config_item_type_t type = CLOG_CONFIG_ITEM_TYPE_UINT;
+    item->type = CLOG_CONFIG_ITEM_TYPE_UINT;
     const char* tmp = start;
     const char* number_start = start;
     if (*tmp == '-' || *tmp == '+') {
         is_negative = *tmp == '-';
         is_flag_exist = true;
         tmp++;
-        type = CLOG_CONFIG_ITEM_TYPE_INT;
+        item->type = CLOG_CONFIG_ITEM_TYPE_INT;
         number_start = tmp;
     }
     if (*tmp == '0') {
         if (tmp + 1 == end) { /* "+0", "0", "-0" */
-            item->type = type;
-            if (type == CLOG_CONFIG_ITEM_TYPE_INT) {
+            if (item->type == CLOG_CONFIG_ITEM_TYPE_INT) {
                 item->value.sint = 0;
             } else {
                 item->value.uint = 0;
@@ -389,9 +410,8 @@ static bool clog_config_parse_value_number(const char* start, const char* end, c
         tmp++;
     }
     CLOG_RET_IF(!clog_config_parse_value_uint_radix(10, number_start, end, item), false); /* parse without '+'/'-' */
-    if (!is_negative) { /* negative */
+    if (is_negative) { /* negative */
         CLOG_RET_IF(item->value.uint > INT32_MAX, false); /* overflow */
-        item->type = CLOG_CONFIG_ITEM_TYPE_INT;
         item->value.sint = (int32_t)(item->value.uint * -1);
     }
     return true;
@@ -511,12 +531,11 @@ static bool clog_config_add_item(clog_config_group_t* group, clog_config_item_t*
     return true;
 }
 
-static clog_config_item_t* clog_config_parse_content(const char* start, const char* end, clog_config_group_t* current)
+static clog_config_item_t* clog_config_parse_content(const char* start, const char* end)
 {
     enum { PARSE_KEY, PARSE_EQUAL, PARSE_VALUE };
-    clog_config_item_t* item = clog_malloc(sizeof(clog_config_item_t));
+    clog_config_item_t* item = clog_config_create_empty_item();
     CLOG_RET_IF_NULL(item, NULL);
-    item->next = NULL;
     const char* name_start = start;
     const char* name_end = start;
     const char* tmp = start + 1;
@@ -524,15 +543,13 @@ static clog_config_item_t* clog_config_parse_content(const char* start, const ch
     while (tmp < end) {
         switch (phase) {
             case PARSE_KEY:
-                if (*tmp == ' ') {
+                if (*tmp == ' ' || *tmp == '=') {
                     item->key = clog_config_str_n_dup(name_start, name_end - name_start + 1);
                     if (item->key == NULL) {
                         clog_free(item);
                         return NULL;
                     }
-                    phase = PARSE_EQUAL;
-                } else if (*tmp == '=') {
-                    phase = PARSE_VALUE;
+                    phase = *tmp == ' ' ? PARSE_EQUAL : PARSE_VALUE;
                 } else if (!clog_config_is_valid_name_char(*tmp)) {
                     return false;
                 } else {
@@ -550,11 +567,7 @@ static clog_config_item_t* clog_config_parse_content(const char* start, const ch
                 }
                 break;
             case PARSE_VALUE:
-                if (clog_config_parse_value(tmp, end, item)) {
-                    if (clog_config_add_item(current, item)) {
-                        return item;
-                    }
-                }
+                CLOG_RET_IF(clog_config_parse_value(tmp, end, item), item);
                 /* fall-through */
             default:
                 clog_config_free_item(item);
@@ -588,7 +601,7 @@ static clog_config_group_t* clog_config_format_line(const char* start, const cha
         return current;
     }
     if (clog_config_is_valid_name_char(*tmp)) {
-        clog_config_item_t* item = clog_config_parse_content(tmp, end, current);
+        clog_config_item_t* item = clog_config_parse_content(tmp, end);
         CLOG_RET_IF_NULL(item, NULL);
         CLOG_RET_IF(clog_config_add_item(current, item), current);
         clog_config_free_item(item);
@@ -597,7 +610,7 @@ static clog_config_group_t* clog_config_format_line(const char* start, const cha
     return NULL;
 }
 
-static clog_config_group_t* clog_config_parse_raw_data(const char* data)
+static clog_config_group_t* clog_config_parse_raw_data(clog_context_t* ctx, const char* data)
 {
     clog_config_group_t* root = clog_config_create_empty_group();
     clog_config_group_t* current = root; /* current parsing group */
@@ -613,6 +626,9 @@ static clog_config_group_t* clog_config_parse_raw_data(const char* data)
             /* start to end indicate a line, end char is not included */
             current = clog_config_format_line(start, end, root, current);
             if (current == NULL) {
+                char* line = clog_config_str_n_dup(start, end - start + 1);
+                clog_err_set(ctx, "[%s] format error", line);
+                clog_free(line);
                 clog_config_destroy_group(root);
                 return NULL;
             }
@@ -625,13 +641,91 @@ static clog_config_group_t* clog_config_parse_raw_data(const char* data)
     return root;
 }
 
-clog_res_e clog_load_config(clog_context_t* ctx, const char* data)
+clog_res_e clog_config_load(clog_context_t* ctx, const char* data)
 {
     CLOG_RET_IF_NULL(ctx, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(data, CLOG_INVALID_PARAM);
 
-    ctx->config.raw = clog_config_parse_raw_data(data);
+    ctx->config.raw = clog_config_parse_raw_data(ctx, data);
 
     CLOG_RET_IF_NULL(ctx->config.raw, CLOG_FAIL);
     return CLOG_SUCCESS;
+}
+
+static size_t clog_config_dump_set_indent(char* buf, const size_t size, const size_t level)
+{
+    const size_t num = level * 2;
+    CLOG_RET_IF(num >= size, 0);
+    for (size_t i = 0; i < num; i++) {
+        buf[i] = ' ';
+    }
+    return num;
+}
+
+static size_t clog_config_dump_item(const clog_config_item_t* item, char* buf, const size_t size, const size_t level)
+{
+    const size_t offset = clog_config_dump_set_indent(buf, size, level);
+    CLOG_RET_IF(offset == 0, 0);
+
+    int len = 0;
+    switch (item->type) {
+        case CLOG_CONFIG_ITEM_TYPE_INT:
+            len = snprintf(buf + offset, size - offset, "%s=%d\n", item->key, item->value.sint);
+            break;
+        case CLOG_CONFIG_ITEM_TYPE_UINT:
+            len = snprintf(buf + offset, size - offset, "%s=%u\n", item->key, item->value.uint);
+            break;
+        case CLOG_CONFIG_ITEM_TYPE_FLOAT:
+            len = snprintf(buf + offset, size - offset, "%s=%lf\n", item->key, item->value.f);
+            break;
+        case CLOG_CONFIG_ITEM_TYPE_CHAR:
+            len = snprintf(buf + offset, size - offset, "%s=%c\n", item->key, item->value.ch);
+            break;
+        case CLOG_CONFIG_ITEM_TYPE_STRING:
+            len = snprintf(buf + offset, size - offset, "%s=%s\n", item->key, item->value.str);
+            break;
+        case CLOG_CONFIG_ITEM_TYPE_BOOL:
+            len = snprintf(buf + offset, size - offset, "%s=%s\n", item->key, item->value.flag ? "true" : "false");
+            break;
+        default:
+            return 0;
+    }
+    CLOG_RET_IF(len <= 0 || (size_t)len >= size - offset, 0);
+    return offset + len;
+}
+
+static size_t clog_config_dump_group(const clog_config_group_t* group, char* buf, const size_t size, const size_t level)
+{
+    size_t offset = clog_config_dump_set_indent(buf, size, level);
+    CLOG_RET_IF(offset == 0 && level > 0, 0);
+    if (group->name != NULL) {
+        const size_t len = snprintf(buf + offset, size - offset, "[%s]\n", group->name);
+        CLOG_RET_IF(len <= 0 || len >= size - offset, 0);
+        offset += len;
+    }
+
+    const clog_config_item_t* item = group->content;
+    while (item != NULL) {
+        const size_t len = clog_config_dump_item(item, buf + offset, size - offset, level + 1);
+        CLOG_RET_IF(len == 0, 0);
+        offset += len;
+        item = item->next;
+    }
+    const clog_config_group_t* child = group->child;
+    while (child != NULL) {
+        const size_t len = clog_config_dump_group(child, buf + offset, size - offset, level + 1);
+        CLOG_RET_IF(len == 0, 0);
+        offset += len;
+        child = child->sibling;
+    }
+    CLOG_RET_IF(offset >= size, 0);
+    buf[offset] = '\0';
+    return offset;
+}
+
+bool clog_config_dump(const clog_context_t* ctx, char* buf, const size_t size)
+{
+    CLOG_RET_IF_NULL(ctx, false);
+    CLOG_RET_IF_NULL(buf, false);
+    return clog_config_dump_group(ctx->config.raw, buf, size, 0) != 0;
 }

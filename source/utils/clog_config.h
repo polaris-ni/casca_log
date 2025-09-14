@@ -11,7 +11,15 @@
 extern "C" {
 #endif
 
-clog_res_e clog_load_config(clog_context_t* ctx, const char* data);
+/**
+ *
+ * @param ctx context
+ * @param data config string, should contain an end char '\0'
+ * @return #clog_res_e
+ */
+clog_res_e clog_config_load(clog_context_t* ctx, const char* data);
+
+bool clog_config_dump(const clog_context_t* ctx, char* buf, size_t size);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
