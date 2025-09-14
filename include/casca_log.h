@@ -7,15 +7,16 @@
 
 #include "casca_log_config.h"
 #include "casca_log_defines.h"
-#ifdef CASCA_LOG_HOOKS
-#include "clog_hooks.h"
-#endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
 
-clog_context_t* clog_create(const char *process);
+#ifdef CASCA_LOG_DEBUG
+/* suppress warning: Possibly unused #include directive */
+#endif
+
+clog_context_t* clog_create(const char* process);
 
 void clog_destroy(clog_context_t* context);
 

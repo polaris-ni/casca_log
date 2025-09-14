@@ -6,18 +6,18 @@
 #include <string.h>
 #include "casca_log_defines.h"
 
-clog_res_e clog_memset(void* dest, size_t size, char padding, size_t count)
+clog_res_e clog_memset(void* dest, const size_t size, const char padding, const size_t count)
 {
     CLOG_RET_IF_NULL(dest, CLOG_INVALID_PARAM);
-    CLOG_RET_IF((count == 0) || (count > size), CLOG_INVALID_PARAM);
+    CLOG_RET_IF(count == 0 || count > size, CLOG_INVALID_PARAM);
     (void)memset(dest, padding, count);
     return CLOG_SUCCESS;
 }
 
-clog_res_e clog_memcpy(void* dest, size_t size, const void* src, size_t count)
+clog_res_e clog_memcpy(void* dest, const size_t size, const void* src, const size_t count)
 {
     CLOG_RET_IF((dest == NULL) || (src == NULL), CLOG_INVALID_PARAM);
-    CLOG_RET_IF((count == 0) || (count > size), CLOG_INVALID_PARAM);
+    CLOG_RET_IF(count == 0 || count > size, CLOG_INVALID_PARAM);
     (void)memcpy(dest, src, count);
     return CLOG_SUCCESS;
 }

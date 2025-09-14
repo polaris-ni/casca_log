@@ -24,10 +24,12 @@ name = "\"test \""
 # ERROR5: "attr\d = true" escape character is not supported
 
 # ↓ space is not allowed in group definition
-# ERROR1: " [Process.main.test]"
+# ERROR1: "[Process .main.test]"
 # ERROR2: "[ Process.main.test]"
 # ERROR3: "[ Process.main.test] "
 # ERROR4: "[ Process.main. test]"
+# VALID1: " [Process.main.test]"
+# VALID2: "[Process.main.test] "
 
 # ↓ space is restrictedly supported in attr definition
 
@@ -55,19 +57,20 @@ test = ' '
 # ↓ integer, double, string, boolean, char is supported
 int1 = 1
 int2 = -1
-int3 = 0x1
-int5 = 0b01
-int6 = 0o01
+int3 = 0x1 # 'X' is not allowed
+int5 = 0b01 # 'b' is not allowed
+int6 = 0o01 # 'o' is not allowed
 double1 = 1.0
 double2 = -1.0
-double3 = 0.0
+double3 = 0.0 # scientific notation is not allowed temporarily, e.g. 1.01e5
 bool1 = true
 bool2 = false
 string1 = "hello world"
 string2 = "hello world # comment"
-string3 = "hello world \"\"\""
+string3 = "hello world \"!\"" # -> hello world"!", "hello world \" is not allowed
 string4 = "hello world '"
-string5 = "hello world \\"
+string5 = "hello world \\1" # -> hello world \1, "hello world \1" is not allowed, there must be '"' or '\' after '\'
+string6 = "hello world \\n" # -> hello world \n
 char1 = 'a'
 char2 = '\''
 char3 = 'a'

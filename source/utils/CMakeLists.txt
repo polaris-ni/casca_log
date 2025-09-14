@@ -1,11 +1,13 @@
 set(CASCA_LOG_SECURE_FUNC_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/clog_secure_func.c
         ${CMAKE_CURRENT_SOURCE_DIR}/clog_mem_pool.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/clog_config.c
 )
 
 set(CASCA_LOG_SECURE_FUNC_HEADERS
         ${CMAKE_CURRENT_SOURCE_DIR}/clog_secure_func.h
         ${CMAKE_CURRENT_SOURCE_DIR}/clog_mem_pool.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/clog_config.h
 )
 
 set(CASCA_LOG_SECURE_FUNC_SOURCES ${CASCA_LOG_SECURE_FUNC_SOURCES} PARENT_SCOPE)

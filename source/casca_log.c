@@ -4,6 +4,7 @@
  */
 
 #include "casca_log.h"
+#include "clog_hooks.h"
 #include "clog_mem_pool.h"
 #include "utils/clog_secure_func.h"
 

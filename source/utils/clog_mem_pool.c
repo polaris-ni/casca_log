@@ -4,7 +4,7 @@
  */
 #include "clog_mem_pool.h"
 #include <stdint.h>
-#include "casca_log.h"
+#include "clog_hooks.h"
 #include "casca_log_defines.h"
 
 #define CLOG_MP_HEAP_SIZE_8 8
@@ -86,7 +86,7 @@ static mem_block_t* clog_malloc_heap_block(const clog_heap_type_e type)
     return block;
 }
 
-static void clog_mp_pre_allocated(mem_heap_t* heap, size_t num)
+static void clog_mp_pre_allocated(mem_heap_t* heap, const size_t num)
 {
     for (size_t i = 0; i < num; i++) {
         mem_block_t* block = clog_malloc_heap_block(heap->type);
