@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include "clog_hooks.h"
 #include "clog_secure_func.h"
 
