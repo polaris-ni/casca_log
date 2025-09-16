@@ -23,15 +23,23 @@ extern "C" {
 #define CLOG_RET_IF_NULL(ptr, ret) CLOG_RET_IF((ptr) == NULL, (ret))
 
 #define CLOG_RET_VOID_IF(cond) \
-    do {                           \
-        if (cond) {                \
-            return;                \
-        }                          \
+    do {                       \
+        if (cond) {            \
+            return;            \
+        }                      \
     } while (0)
 
 #define CLOG_RET_VOID_IF_NULL(ptr) CLOG_RET_VOID_IF((ptr) == NULL)
 
 #define CLOG_ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+#define CLOG_FREE_IF_NOT_NULL(mem)   \
+    do {                             \
+        if (mem != NULL) {           \
+            clog_free((void*)(mem)); \
+            (mem) = NULL;            \
+        }                            \
+    } while (0)
 
 typedef enum clog_res {
     CLOG_SUCCESS = 0, /* exec success */

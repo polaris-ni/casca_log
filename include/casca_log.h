@@ -16,7 +16,15 @@ extern "C" {
 /* suppress warning: Possibly unused #include directive */
 #endif
 
-clog_context_t* clog_create(const char* process);
+/**
+ * create context with config
+ * @param process process name, will be copied to context
+ * @param config config string
+ * @param err buffer to save error message
+ * @param size size of err buffer
+ * @return #clog_context_t, NULL if failed
+ */
+clog_context_t* clog_create(const char* process, const char* config, char* err, size_t size);
 
 void clog_destroy(clog_context_t* context);
 

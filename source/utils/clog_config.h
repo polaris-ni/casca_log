@@ -12,14 +12,28 @@ extern "C" {
 #endif
 
 /**
- *
- * @param ctx context
- * @param data config string, should contain an end char '\0'
- * @return #clog_res_e
+ * parse config file to #clog_config_group_t
+ * @param data config file, there must be an end char '\0'
+ * @param err buffer to save error message
+ * @param size buffer size
+ * @return #clog_config_group_t if success, NULL otherwise
  */
-clog_res_e clog_config_load(clog_context_t* ctx, const char* data);
+clog_config_group_t* clog_config_parse(const char* data, char* err, size_t size);
 
-bool clog_config_dump(const clog_context_t* ctx, char* buf, size_t size);
+/**
+ * destroy group
+ * @param group group to be destroyed, nullable
+ */
+void clog_config_destroy_group(clog_config_group_t* group);
+
+/**
+ * dump group that parsed from config file
+ * @param ctx context
+ * @param buf buffer to save dumped string
+ * @param size buffer size
+ * @return true if success, false otherwise
+ */
+bool clog_config_dump_group(const clog_config_group_t* group, char* buf, size_t size);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

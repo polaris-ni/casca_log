@@ -8,20 +8,28 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "clog_config.h"
 #include "clog_hooks.h"
 #include "clog_mem_pool.h"
 #include "utils/clog_secure_func.h"
 
-clog_context_t* clog_create(const char* process)
+clog_context_t* clog_create(const char* process, const char* config, char* err, const size_t size)
 {
+    CLOG_RET_IF_NULL(process, NULL);
+    CLOG_RET_IF_NULL(config, NULL);
     clog_context_t* ctx = clog_malloc(sizeof(clog_context_t));
     if (ctx == NULL) {
         return NULL;
     }
     (void)clog_memset(ctx, sizeof(clog_context_t), 0, sizeof(clog_context_t));
     ctx->process = clog_str_dup(process);
-    if (process == NULL) {
+    if (ctx->process == NULL) {
         clog_free(ctx);
+        return NULL;
+    }
+    ctx->config.raw = clog_config_parse(config, err, size);
+    if (ctx->config.raw == NULL) {
+        clog_destroy(ctx);
         return NULL;
     }
 #ifdef CASCA_LOG_MEM_POOL
@@ -32,8 +40,11 @@ clog_context_t* clog_create(const char* process)
 
 void clog_destroy(clog_context_t* context)
 {
-    (void)clog_memset(context, sizeof(clog_context_t), 0, sizeof(clog_context_t));
-    clog_free(context);
+    CLOG_RET_VOID_IF_NULL(context);
+    CLOG_FREE_IF_NOT_NULL(context->process);
+    clog_config_destroy_group(context->config.raw);
+    context->config.level = CLOG_LEVEL_OFF;
+    CLOG_FREE_IF_NOT_NULL(context);
 }
 
 void clog_err_clear(clog_context_t* context)

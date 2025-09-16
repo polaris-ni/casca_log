@@ -3,12 +3,12 @@
  * @date  2025/9/12
  */
 #include "clog_config.h"
+#include <errno.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include "clog_hooks.h"
 #include "clog_secure_func.h"
 
@@ -45,7 +45,7 @@ static void clog_config_free_item(clog_config_item_t* item)
     clog_free(item);
 }
 
-static void clog_config_destroy_group(clog_config_group_t* group)
+void clog_config_destroy_group(clog_config_group_t* group)
 {
     CLOG_RET_VOID_IF_NULL(group);
     clog_config_group_t* child = group->child;
@@ -596,7 +596,7 @@ static clog_config_group_t* clog_config_format_line(const char* start, const cha
     return NULL;
 }
 
-static clog_config_group_t* clog_config_parse_raw_data(clog_context_t* ctx, const char* data)
+static clog_config_group_t* clog_config_parse_raw_data(const char* data, char* err, size_t size)
 {
     clog_config_group_t* root = clog_config_create_empty_group();
     clog_config_group_t* current = root; /* current parsing group */
@@ -613,7 +613,7 @@ static clog_config_group_t* clog_config_parse_raw_data(clog_context_t* ctx, cons
             current = clog_config_format_line(start, end, root, current);
             if (current == NULL) {
                 char* line = clog_strndup(start, end - start + 1);
-                clog_err_append(ctx, "[%s] format error", line == NULL ? "DUPLICATE FAILED" : line);
+                (void)vsprintf_s(err, size, "[%s] format error", line == NULL ? "DUPLICATE FAILED" : line);
                 clog_free(line);
                 clog_config_destroy_group(root);
                 return NULL;
@@ -627,15 +627,37 @@ static clog_config_group_t* clog_config_parse_raw_data(clog_context_t* ctx, cons
     return root;
 }
 
-clog_res_e clog_config_load(clog_context_t* ctx, const char* data)
+clog_config_group_t* clog_config_parse(const char* data, char* err, const size_t size)
 {
-    CLOG_RET_IF_NULL(ctx, CLOG_INVALID_PARAM);
-    CLOG_RET_IF_NULL(data, CLOG_INVALID_PARAM);
+    CLOG_RET_IF_NULL(data, NULL);
+    clog_config_group_t* root = clog_config_create_empty_group();
+    clog_config_group_t* current = root; /* current parsing group */
+    CLOG_RET_IF_NULL(root, NULL);
+    const char* tmp = data;
+    while (*tmp != '\0') {
+        const char* start = tmp; /* start of a line */
+        while (*tmp != '\n' && *tmp != '\r' && *tmp != '\0') {
+            tmp++;
+        }
+        const char* end = tmp; /* end of a line, \n \r or \0 */
+        if (start != end) {
+            /* start to end indicate a line, end char is not included */
+            current = clog_config_format_line(start, end, root, current);
+            if (current == NULL) {
+                CLOG_RET_IF_NULL(err, NULL);
+                char* line = clog_strndup(start, end - start + 1);
+                (void)sprintf_s(err, size, "[%s] format error", line == NULL ? "DUPLICATE FAILED" : line);
+                clog_free(line);
+                clog_config_destroy_group(root);
+                return NULL;
+            }
+        }
 
-    ctx->config.raw = clog_config_parse_raw_data(ctx, data);
-
-    CLOG_RET_IF_NULL(ctx->config.raw, CLOG_ERROR_FORMAT);
-    return CLOG_SUCCESS;
+        while (*tmp == '\n' || *tmp == '\r') {
+            tmp++; /* move to start of next line */
+        }
+    }
+    return root;
 }
 
 static size_t clog_config_dump_set_indent(char* buf, const size_t size, const size_t level)
@@ -680,7 +702,8 @@ static size_t clog_config_dump_item(const clog_config_item_t* item, char* buf, c
     return offset + len;
 }
 
-static size_t clog_config_dump_group(const clog_config_group_t* group, char* buf, const size_t size, const size_t level)
+static size_t clog_config_dump_group_internal(const clog_config_group_t* group, char* buf, const size_t size,
+                                              const size_t level)
 {
     size_t offset = clog_config_dump_set_indent(buf, size, level);
     CLOG_RET_IF(offset == 0 && level > 0, 0);
@@ -699,7 +722,7 @@ static size_t clog_config_dump_group(const clog_config_group_t* group, char* buf
     }
     const clog_config_group_t* child = group->child;
     while (child != NULL) {
-        const size_t len = clog_config_dump_group(child, buf + offset, size - offset, level + 1);
+        const size_t len = clog_config_dump_group_internal(child, buf + offset, size - offset, level + 1);
         CLOG_RET_IF(len == 0, 0);
         offset += len;
         child = child->sibling;
@@ -709,9 +732,9 @@ static size_t clog_config_dump_group(const clog_config_group_t* group, char* buf
     return offset;
 }
 
-bool clog_config_dump(const clog_context_t* ctx, char* buf, const size_t size)
+bool clog_config_dump_group(const clog_config_group_t* group, char* buf, const size_t size)
 {
-    CLOG_RET_IF_NULL(ctx, false);
+    CLOG_RET_IF_NULL(group, false);
     CLOG_RET_IF_NULL(buf, false);
-    return clog_config_dump_group(ctx->config.raw, buf, size, 0) != 0;
+    return clog_config_dump_group_internal(group, buf, size, 0) != 0;
 }
