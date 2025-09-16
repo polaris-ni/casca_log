@@ -613,7 +613,7 @@ static clog_config_group_t* clog_config_parse_raw_data(const char* data, char* e
             current = clog_config_format_line(start, end, root, current);
             if (current == NULL) {
                 char* line = clog_strndup(start, end - start + 1);
-                (void)vsprintf_s(err, size, "[%s] format error", line == NULL ? "DUPLICATE FAILED" : line);
+                (void)vsnprintf(err, size, "[%s] format error", line == NULL ? "DUPLICATE FAILED" : line);
                 clog_free(line);
                 clog_config_destroy_group(root);
                 return NULL;
@@ -646,7 +646,7 @@ clog_config_group_t* clog_config_parse(const char* data, char* err, const size_t
             if (current == NULL) {
                 CLOG_RET_IF_NULL(err, NULL);
                 char* line = clog_strndup(start, end - start + 1);
-                (void)sprintf_s(err, size, "[%s] format error", line == NULL ? "DUPLICATE FAILED" : line);
+                (void)snprintf(err, size, "[%s] format error", line == NULL ? "DUPLICATE FAILED" : line);
                 clog_free(line);
                 clog_config_destroy_group(root);
                 return NULL;
