@@ -5,6 +5,9 @@
 #ifndef CASCA_LOG_CLOG_SECURE_FUNC_H
 #define CASCA_LOG_CLOG_SECURE_FUNC_H
 
+#include <stdint.h>
+#include <string.h>
+
 #include "casca_log.h"
 #include "clog_hooks.h"
 
@@ -27,7 +30,7 @@ char* clog_str_dup(const char* str);
  * @param num the num to be duplicated
  * @return result
  */
-static char* clog_config_str_n_dup(const char* start, const size_t num)
+static char* clog_strndup(const char* start, const size_t num)
 {
     CLOG_RET_IF(num == 0, NULL);
     CLOG_RET_IF_NULL(start, NULL);
@@ -36,6 +39,26 @@ static char* clog_config_str_n_dup(const char* start, const size_t num)
     (void)clog_memcpy(tmp, num + 1, start, num);
     tmp[num] = '\0';
     return tmp;
+}
+
+/**
+ * compare strings
+ * if str1 and str2 are all NULL, 0 will be returned
+ * if one of str1 and str2 is NULL, NULL string is considered as smaller
+ * @param str1 string, nullable
+ * @param str2 another string, nullable
+ * @param num the num to be compared
+ * @return 0 if equal, -1 if str1 < str2, 1 if str1 > str2
+ */
+static int32_t clog_strncmp(const char* str1, const char* str2, const size_t num)
+{
+    if (str1 == NULL && str2 == NULL) {
+        return 0;
+    }
+    if (str1 == NULL || str2 == NULL) {
+        return str1 == NULL ? -1 : 1;
+    }
+    return strncmp(str1, str2, num);
 }
 
 #if defined(__cplusplus) || defined(c_plusplus)

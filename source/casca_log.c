@@ -12,7 +12,7 @@
 #include "clog_mem_pool.h"
 #include "utils/clog_secure_func.h"
 
-clog_context_t* clog_create(const char *process)
+clog_context_t* clog_create(const char* process)
 {
     clog_context_t* ctx = clog_malloc(sizeof(clog_context_t));
     if (ctx == NULL) {
@@ -52,6 +52,40 @@ void clog_err_set(clog_context_t* context, const char* fmt, ...)
     va_end(args);
     if (ret <= 0) {
         context->err[0] = '\0';
+    }
+}
+
+void clog_err_append(clog_context_t* context, const char* fmt, ...)
+{
+    CLOG_RET_VOID_IF_NULL(context);
+    CLOG_RET_VOID_IF(fmt == NULL);
+    const size_t len = strlen(context->err);
+    CLOG_RET_VOID_IF(len >= sizeof(context->err) - 1);
+    va_list args;
+    va_start(args, fmt);
+    const int ret = vsnprintf(context->err + len, sizeof(context->err) - len, fmt, args);
+    va_end(args);
+    if (ret <= 0) {
+        context->err[0] = '\0';
+    }
+}
+
+void clog_err_append_line(clog_context_t* context, const char* fmt, ...)
+{
+    CLOG_RET_VOID_IF_NULL(context);
+    CLOG_RET_VOID_IF(fmt == NULL);
+    const size_t len = strlen(context->err);
+    CLOG_RET_VOID_IF(len >= sizeof(context->err) - 1);
+    va_list args;
+    va_start(args, fmt);
+    const int ret = vsnprintf(context->err + len, sizeof(context->err) - len, fmt, args);
+    va_end(args);
+    if (ret <= 0) {
+        context->err[0] = '\0';
+    } else {
+        CLOG_RET_VOID_IF(len + ret >= sizeof(context->err));
+        context->err[len + ret] = '\n';
+        context->err[len + ret + 1] = '\0';
     }
 }
 

@@ -67,21 +67,6 @@ static void clog_config_destroy_group(clog_config_group_t* group)
     clog_free(group);
 }
 
-/**
- * compare two group name
- * @param name target name
- * @param start start char of valid name, e.g. abc -> a
- * @param end end char of valid name, e.g. abc -> c
- * @return is same
- */
-static bool clog_config_is_same_group_name(const char* name, const char* start, const char* end)
-{
-    if (strlen(name) != end - start + 1) {
-        return false;
-    }
-    return strcmp(name, start) == 0;
-}
-
 static bool clog_config_is_valid_name_char(const char ch)
 {
     if (ch == '_' || (ch >= '0' && ch <= '9')) {
@@ -119,7 +104,7 @@ static clog_config_group_t* clog_config_find_or_create_group(clog_config_group_t
     if (current == NULL) { /* no sub nodes, create */
         clog_config_group_t* new_group = clog_config_create_empty_group();
         CLOG_RET_IF_NULL(new_group, NULL);
-        new_group->name = clog_config_str_n_dup(name_start, name_end - name_start + 1);
+        new_group->name = clog_strndup(name_start, name_end - name_start + 1);
         if (new_group->name == NULL) {
             clog_config_destroy_group(new_group);
             return NULL;
@@ -133,16 +118,16 @@ static clog_config_group_t* clog_config_find_or_create_group(clog_config_group_t
 
     clog_config_group_t* last = current;
     while (current != NULL) {
-        if (clog_config_is_same_group_name(current->name, name_start, name_end)) { /* same name group found */
-            CLOG_RET_IF(name_end == end, current);
-            return clog_config_find_or_create_group(current, name_end + 2, end);
+        if (clog_strncmp(current->name, name_start, name_end - name_start + 1) == 0) {
+            CLOG_RET_IF(name_end == end, current); /* same name group found, and there is no more subgroup */
+            return clog_config_find_or_create_group(current, name_end + 2, end); /* parse subgroup */
         }
         last = current;
         current = current->sibling; /* find next sibling */
     }
     clog_config_group_t* new_group = clog_config_create_empty_group();
     CLOG_RET_IF_NULL(new_group, NULL);
-    new_group->name = clog_config_str_n_dup(name_start, name_end - name_start + 1);
+    new_group->name = clog_strndup(name_start, name_end - name_start + 1);
     if (new_group->name == NULL) {
         clog_config_destroy_group(new_group);
         return NULL;
@@ -335,7 +320,7 @@ static bool clog_config_parse_value_double(const char* start, const char* end, c
         tmp++;
     }
     CLOG_RET_IF(!clog_config_check_inline_comment(tmp, end), false);
-    char* str = clog_config_str_n_dup(start, number_end - start + 1);
+    char* str = clog_strndup(start, number_end - start + 1);
     CLOG_RET_IF_NULL(str, false);
     errno = 0;
     const double res = strtod(str, NULL);
@@ -544,7 +529,7 @@ static clog_config_item_t* clog_config_parse_content(const char* start, const ch
         switch (phase) {
             case PARSE_KEY:
                 if (*tmp == ' ' || *tmp == '=') {
-                    item->key = clog_config_str_n_dup(name_start, name_end - name_start + 1);
+                    item->key = clog_strndup(name_start, name_end - name_start + 1);
                     if (item->key == NULL) {
                         clog_free(item);
                         return NULL;
@@ -626,8 +611,8 @@ static clog_config_group_t* clog_config_parse_raw_data(clog_context_t* ctx, cons
             /* start to end indicate a line, end char is not included */
             current = clog_config_format_line(start, end, root, current);
             if (current == NULL) {
-                char* line = clog_config_str_n_dup(start, end - start + 1);
-                clog_err_set(ctx, "[%s] format error", line);
+                char* line = clog_strndup(start, end - start + 1);
+                clog_err_append(ctx, "[%s] format error", line == NULL ? "DUPLICATE FAILED" : line);
                 clog_free(line);
                 clog_config_destroy_group(root);
                 return NULL;
@@ -648,16 +633,16 @@ clog_res_e clog_config_load(clog_context_t* ctx, const char* data)
 
     ctx->config.raw = clog_config_parse_raw_data(ctx, data);
 
-    CLOG_RET_IF_NULL(ctx->config.raw, CLOG_FAIL);
+    CLOG_RET_IF_NULL(ctx->config.raw, CLOG_ERROR_FORMAT);
     return CLOG_SUCCESS;
 }
 
 static size_t clog_config_dump_set_indent(char* buf, const size_t size, const size_t level)
 {
-    const size_t num = level * 2;
+    const size_t num = level;
     CLOG_RET_IF(num >= size, 0);
     for (size_t i = 0; i < num; i++) {
-        buf[i] = ' ';
+        buf[i] = '\t';
     }
     return num;
 }

@@ -35,6 +35,22 @@ void clog_err_clear(clog_context_t* context);
 void clog_err_set(clog_context_t* context, const char* fmt, ...);
 
 /**
+ * append error message
+ * @param context context to be appended msg
+ * @param fmt message format
+ * @param ... var
+ */
+void clog_err_append(clog_context_t* context, const char* fmt, ...);
+
+/**
+ * append error message with line
+ * @param context context to be appended msg
+ * @param fmt message format
+ * @param ... var
+ */
+void clog_err_append_line(clog_context_t* context, const char* fmt, ...);
+
+/**
  * get error message, never return NULL, safe to print
  * @param context context
  * @return error message, return string "NULL" if context is NULL

@@ -38,6 +38,7 @@ typedef enum clog_res {
     CLOG_FAIL = 1, /* exec failed */
     CLOG_NOT_SUPPORTED = 2, /* operation not supported */
     CLOG_INVALID_PARAM = 3, /* invalid param */
+    CLOG_ERROR_FORMAT = 4, /* error format */
 } clog_res_e;
 
 typedef enum clog_config_item_type {
