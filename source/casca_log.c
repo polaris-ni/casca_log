@@ -22,7 +22,7 @@ clog_context_t* clog_create(const char* process, const char* config, char* err, 
         return NULL;
     }
     (void)clog_memset(ctx, sizeof(clog_context_t), 0, sizeof(clog_context_t));
-    ctx->process = clog_str_dup(process);
+    ctx->process = clog_strdup(process);
     if (ctx->process == NULL) {
         clog_free(ctx);
         return NULL;
@@ -56,7 +56,7 @@ void clog_err_clear(clog_context_t* context)
 void clog_err_set(clog_context_t* context, const char* fmt, ...)
 {
     CLOG_RET_VOID_IF_NULL(context);
-    CLOG_RET_VOID_IF(fmt == NULL);
+    CLOG_RET_VOID_IF_NULL(fmt);
     va_list args;
     va_start(args, fmt);
     const int ret = vsnprintf(context->err, sizeof(context->err), fmt, args);
@@ -69,7 +69,7 @@ void clog_err_set(clog_context_t* context, const char* fmt, ...)
 void clog_err_append(clog_context_t* context, const char* fmt, ...)
 {
     CLOG_RET_VOID_IF_NULL(context);
-    CLOG_RET_VOID_IF(fmt == NULL);
+    CLOG_RET_VOID_IF_NULL(fmt);
     const size_t len = strlen(context->err);
     CLOG_RET_VOID_IF(len >= sizeof(context->err) - 1);
     va_list args;
@@ -84,7 +84,7 @@ void clog_err_append(clog_context_t* context, const char* fmt, ...)
 void clog_err_append_line(clog_context_t* context, const char* fmt, ...)
 {
     CLOG_RET_VOID_IF_NULL(context);
-    CLOG_RET_VOID_IF(fmt == NULL);
+    CLOG_RET_VOID_IF_NULL(fmt);
     const size_t len = strlen(context->err);
     CLOG_RET_VOID_IF(len >= sizeof(context->err) - 1);
     va_list args;
@@ -102,8 +102,6 @@ void clog_err_append_line(clog_context_t* context, const char* fmt, ...)
 
 const char* clog_err_get(const clog_context_t* context)
 {
-    if (context == NULL) {
-        return "NULL";
-    }
+    CLOG_RET_IF_NULL(context, "NULL");
     return context->err;
 }

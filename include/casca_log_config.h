@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#define CASCA_LOG_DEBUG 1
+#define CASCA_LOG_DEBUG 1 /* 0 means debug mode disabled, other values mean enabled */
 #define CASCA_LOG_HOOKS 1 /* enable hook in casca log */
 #define CASCA_LOG_MEM_POOL 1 /* enable mem pool to improve memory allocator performance */
 

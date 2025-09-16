@@ -15,16 +15,37 @@
 extern "C" {
 #endif
 
+/**
+ * set memory to padding
+ * @param dest destination memory
+ * @param size size of memory
+ * @param padding padding char
+ * @param count count of padding
+ * @return result
+ */
 clog_res_e clog_memset(void* dest, size_t size, char padding, size_t count);
 
+/**
+ * copy memory
+ * @param dest destination memory
+ * @param size size of memory
+ * @param src source memory
+ * @param count count of memory
+ * @return result
+ */
 clog_res_e clog_memcpy(void* dest, size_t size, const void* src, size_t count);
 
-char* clog_str_dup(const char* str);
+/**
+ * duplicate string
+ * @param str string
+ * @return result, NULL if str is NULL
+ */
+char* clog_strdup(const char* str);
 
 /**
- * duplicate the first n bytes of string\n
- * example:\n
- *      "clog, hello, world": start -> 'h', end -> 'r'\n
+ * duplicate the first n bytes of string
+ * example:
+ *      "clog, hello, world": start -> 'h', end -> 'r'
  *      result: "hello, wor"
  * @param start start char of string that to be copied
  * @param num the num to be duplicated

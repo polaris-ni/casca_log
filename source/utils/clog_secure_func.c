@@ -22,7 +22,7 @@ clog_res_e clog_memcpy(void* dest, const size_t size, const void* src, const siz
     return CLOG_SUCCESS;
 }
 
-char* clog_str_dup(const char* str)
+char* clog_strdup(const char* str)
 {
     CLOG_RET_IF_NULL(str, NULL);
     const size_t len = strlen(str);

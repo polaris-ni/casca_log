@@ -702,6 +702,36 @@ static size_t clog_config_dump_item(const clog_config_item_t* item, char* buf, c
     return offset + len;
 }
 
+const clog_config_item_t* clog_config_find_item(const clog_config_group_t* root, const char* groups[],
+                                                const size_t count, const char* key)
+{
+    CLOG_RET_IF_NULL(root, NULL);
+    CLOG_RET_IF_NULL(key, NULL);
+#if CASCA_LOG_DEBUG == 0
+    CLOG_RET_IF(count > 1024, NULL); /* attention stack overflow */
+#endif
+    if (count == 0) { /* find key in root itself */
+        const clog_config_item_t* item = root->content;
+        while (item != NULL) {
+            if (strcmp(item->key, key) == 0) {
+                return item;
+            }
+            item = item->next;
+        }
+        return NULL;
+    }
+    CLOG_RET_IF(groups[0] == NULL, NULL);
+    const clog_config_group_t* group = root->child;
+    while (group != NULL) {
+        if (strcmp(group->name, groups[0]) == 0) {
+            return clog_config_find_item(group, groups + 1, count - 1, key);
+        }
+        group = group->sibling;
+    }
+    return NULL;
+}
+
+
 static size_t clog_config_dump_group_internal(const clog_config_group_t* group, char* buf, const size_t size,
                                               const size_t level)
 {

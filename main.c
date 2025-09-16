@@ -38,6 +38,15 @@ int main(void)
     clog_config_dump_group(ctx->config.raw, tmp, len);
     printf("config dump:\n%s", tmp);
     clog_free(tmp);
+    const char* groups[] = {"Process", "main", "test"};
+
+    clog_res_e res = CLOG_SUCCESS;
+    const clog_config_item_t* item = clog_config_find_item(ctx->config.raw, groups, CLOG_ARRAY_SIZE(groups), "char1");
+    if (item == NULL || item->type != CLOG_CONFIG_ITEM_TYPE_CHAR) {
+        res = CLOG_FAIL;
+    } else {
+        printf("Process.main.test: char1=%c\n", item->value.ch);
+    }
     clog_destroy(ctx);
-    return CLOG_SUCCESS;
+    return res;
 }
