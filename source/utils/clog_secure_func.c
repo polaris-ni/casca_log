@@ -1,5 +1,5 @@
 /**
- * @auther Polaris
+ * @author Polaris
  * @date  2025/9/8
  */
 #include "clog_secure_func.h"

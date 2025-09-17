@@ -2,7 +2,6 @@
 #include "casca_log.h"
 #include "casca_log_defines.h"
 #include "utils/clog_config.h"
-#include "utils/clog_mem_pool.h"
 #include "utils/clog_secure_func.h"
 
 int main(void)

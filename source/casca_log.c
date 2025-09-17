@@ -1,5 +1,5 @@
 /**
- * @auther Polaris
+ * @author Polaris
  * @date  2025/9/3
  */
 

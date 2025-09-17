@@ -1,5 +1,5 @@
 /**
- * @auther Polaris
+ * @author Polaris
  * @date  2025/9/2
  */
 #ifndef CASCA_LOG_CASCA_LOG_H

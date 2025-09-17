@@ -1,5 +1,5 @@
 /**
- * @auther Polaris
+ * @author Polaris
  * @date  2025/9/12
  */
 #ifndef CASCA_LOG_CLOG_CONFIG_H
@@ -39,6 +39,7 @@ void clog_config_destroy_group(clog_config_group_t* group);
 
 /**
  * dump group that parsed from config file
+ * @param group group to be dumped, nonnull
  * @param buf buffer to save dumped string, nonnull
  * @param size buffer size
  * @return true if success, false otherwise

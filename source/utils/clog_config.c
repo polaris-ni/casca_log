@@ -1,5 +1,5 @@
 /**
- * @auther Polaris
+ * @author Polaris
  * @date  2025/9/12
  */
 #include "clog_config.h"
@@ -594,37 +594,6 @@ static clog_config_group_t* clog_config_format_line(const char* start, const cha
         return NULL;
     }
     return NULL;
-}
-
-static clog_config_group_t* clog_config_parse_raw_data(const char* data, char* err, size_t size)
-{
-    clog_config_group_t* root = clog_config_create_empty_group();
-    clog_config_group_t* current = root; /* current parsing group */
-    CLOG_RET_IF_NULL(root, NULL);
-    const char* tmp = data;
-    while (*tmp != '\0') {
-        const char* start = tmp; /* start of a line */
-        while (*tmp != '\n' && *tmp != '\r' && *tmp != '\0') {
-            tmp++;
-        }
-        const char* end = tmp; /* end of a line, \n \r or \0 */
-        if (start != end) {
-            /* start to end indicate a line, end char is not included */
-            current = clog_config_format_line(start, end, root, current);
-            if (current == NULL) {
-                char* line = clog_strndup(start, end - start + 1);
-                (void)vsnprintf(err, size, "[%s] format error", line == NULL ? "DUPLICATE FAILED" : line);
-                clog_free(line);
-                clog_config_destroy_group(root);
-                return NULL;
-            }
-        }
-
-        while (*tmp == '\n' || *tmp == '\r') {
-            tmp++; /* move to start of next line */
-        }
-    }
-    return root;
 }
 
 clog_config_group_t* clog_config_parse(const char* data, char* err, const size_t size)
