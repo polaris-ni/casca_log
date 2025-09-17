@@ -32,7 +32,7 @@ void clog_mp_init(size_t level);
  * @param size memory size, must be greater than 0
  * @return memory pointer, NULL if memory allocation failed or size is 0
  */
-void* clog_mp_allocate(size_t size);
+void* clog_mp_acquire(size_t size);
 
 /**
  * release memory to mem pool if allocated from mem pool
