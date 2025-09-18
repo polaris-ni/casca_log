@@ -3,7 +3,6 @@
  * @date  2025/9/9
  */
 #include "clog_mem_pool.h"
-#include <pthread.h>
 #include <stdint.h>
 #include "casca_log_defines.h"
 #include "clog_hooks.h"
