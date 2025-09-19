@@ -47,6 +47,7 @@ typedef enum clog_res {
     CLOG_NOT_SUPPORTED = 2, /* operation not supported */
     CLOG_INVALID_PARAM = 3, /* invalid param */
     CLOG_ERROR_FORMAT = 4, /* error format */
+    CLOG_NO_MEMORY = 5, /* no memory, malloc failed */
 } clog_res_e;
 
 typedef enum clog_config_item_type {

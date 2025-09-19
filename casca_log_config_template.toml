@@ -1,0 +1,4 @@
+# casca_log_config_template
+
+[Formatter]
+format="{_date} {_time} {_process}:{_ file}:{_line} {_content}{_new}"
