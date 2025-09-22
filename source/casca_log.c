@@ -32,6 +32,9 @@ clog_context_t* clog_create(const char* process, const char* config, char* err, 
         clog_destroy(ctx);
         return NULL;
     }
+    ctx->formatter.placeholder.name= NULL;
+    ctx->formatter.placeholder.func = NULL;
+    ctx->formatter.placeholder.next= NULL;
 #ifdef CASCA_LOG_MEM_POOL
     clog_mp_init(CLOG_MP_PRE_ALLOCATED_NORMAL);
 #endif

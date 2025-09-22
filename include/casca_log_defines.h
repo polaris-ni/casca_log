@@ -41,6 +41,22 @@ extern "C" {
         }                            \
     } while (0)
 
+#define CLOG_RET_IF_X(ctx, cond, ret, msg, args...) \
+    do {                                            \
+        if (cond) {                                 \
+            clog_err_set(ctx, msg, ##args);         \
+            return ret;                             \
+        }                                           \
+    } while (0)
+
+#define CLOG_RET_IF_NULL_X(ctx, ptr, ret, msg, args...) \
+    do {                                                \
+        if ((ptr) == NULL) {                            \
+            clog_err_set(ctx, msg, ##args);             \
+            return ret;                                 \
+        }                                               \
+    } while (0)
+
 typedef enum clog_res {
     CLOG_SUCCESS = 0, /* exec success */
     CLOG_FAIL = 1, /* exec failed */
@@ -48,6 +64,7 @@ typedef enum clog_res {
     CLOG_INVALID_PARAM = 3, /* invalid param */
     CLOG_ERROR_FORMAT = 4, /* error format */
     CLOG_NO_MEMORY = 5, /* no memory, malloc failed */
+    CLOG_TARGET_NOT_FOUND = 6, /* something not found */
 } clog_res_e;
 
 typedef enum clog_config_item_type {
@@ -59,6 +76,8 @@ typedef enum clog_config_item_type {
     CLOG_CONFIG_ITEM_TYPE_BOOL,
     CLOG_CONFIG_ITEM_TYPE_INVALID,
 } clog_config_item_type_e;
+
+typedef struct clog_context clog_context_t;
 
 typedef struct clog_config_item clog_config_item_t;
 
@@ -90,11 +109,22 @@ typedef struct clog_config {
     clog_level_e level;
 } clog_config_t;
 
-typedef struct clog_context {
+typedef size_t (*clog_placeholder_f)(const clog_context_t* context, char* buf, size_t buf_size);
+
+typedef struct clog_placeholder {
+    const char* name;
+    clog_placeholder_f func;
+    struct clog_placeholder* next;
+} clog_placeholder_t;
+
+struct clog_context {
     const char* process;
     char err[256];
     clog_config_t config;
-} clog_context_t;
+    struct {
+        clog_placeholder_t placeholder;
+    } formatter;
+};
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
