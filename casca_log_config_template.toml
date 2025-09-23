@@ -1,4 +1,4 @@
 # casca_log_config_template
 
 [Formatter]
-format="{_date} {_time} {_process}:{_file}:{_line} {_content}{_new}"
+format="{_year}-{_month}-{_day} {_hour}:{_minute}:{_second}.{_millisecond} {_process}:{_file}:{_line} {_content}{_new}"

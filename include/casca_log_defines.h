@@ -77,6 +77,26 @@ typedef enum clog_config_item_type {
     CLOG_CONFIG_ITEM_TYPE_INVALID,
 } clog_config_item_type_e;
 
+typedef struct clog_item {
+    const char* filepath;
+    const char* filename;
+    const char* function;
+    unsigned long long tid;
+    unsigned int line;
+    clog_level_e level;
+    struct {
+        unsigned short year;
+        unsigned char month;
+        unsigned char day;
+        unsigned char hour;
+        unsigned char minute;
+        unsigned char second;
+        unsigned short millisecond;
+    };
+    const char* format;
+    va_list args;
+} clog_item_t;
+
 typedef struct clog_context clog_context_t;
 
 typedef struct clog_config_item clog_config_item_t;
@@ -109,7 +129,15 @@ typedef struct clog_config {
     clog_level_e level;
 } clog_config_t;
 
-typedef size_t (*clog_placeholder_f)(const clog_context_t* context, char* buf, size_t buf_size);
+/**
+ * placeholder
+ * @param ctx context
+ * @param item log item, contains log info and content
+ * @param buf the buffer to store log
+ * @param size buffer size
+ * @return size_t write size
+ */
+typedef size_t (*clog_placeholder_f)(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
 
 typedef struct clog_placeholder {
     const char* name;
