@@ -35,7 +35,7 @@ size_t clog_placeholder_year(const clog_context_t* ctx, const clog_item_t* item,
 
 size_t clog_placeholder_month(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
 {
-    CLOG_RET_IF(size < 4, 0);
+    CLOG_RET_IF(size < 2, 0);
     const int ret = sprintf(buf, "%02u", item->month);
     CLOG_RET_IF(ret < 0, 0);
     return ret;
@@ -43,7 +43,7 @@ size_t clog_placeholder_month(const clog_context_t* ctx, const clog_item_t* item
 
 size_t clog_placeholder_day(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
 {
-    CLOG_RET_IF(size < 4, 0);
+    CLOG_RET_IF(size < 2, 0);
     const int ret = sprintf(buf, "%02u", item->day);
     CLOG_RET_IF(ret < 0, 0);
     return ret;
@@ -51,7 +51,7 @@ size_t clog_placeholder_day(const clog_context_t* ctx, const clog_item_t* item, 
 
 size_t clog_placeholder_hour(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
 {
-    CLOG_RET_IF(size < 4, 0);
+    CLOG_RET_IF(size < 2, 0);
     const int ret = sprintf(buf, "%02u", item->hour);
     CLOG_RET_IF(ret < 0, 0);
     return ret;
@@ -59,7 +59,7 @@ size_t clog_placeholder_hour(const clog_context_t* ctx, const clog_item_t* item,
 
 size_t clog_placeholder_minute(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
 {
-    CLOG_RET_IF(size < 4, 0);
+    CLOG_RET_IF(size < 2, 0);
     const int ret = sprintf(buf, "%02u", item->minute);
     CLOG_RET_IF(ret < 0, 0);
     return ret;
@@ -67,7 +67,7 @@ size_t clog_placeholder_minute(const clog_context_t* ctx, const clog_item_t* ite
 
 size_t clog_placeholder_second(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
 {
-    CLOG_RET_IF(size < 4, 0);
+    CLOG_RET_IF(size < 2, 0);
     const int ret = sprintf(buf, "%02u", item->second);
     CLOG_RET_IF(ret < 0, 0);
     return ret;
@@ -75,7 +75,7 @@ size_t clog_placeholder_second(const clog_context_t* ctx, const clog_item_t* ite
 
 size_t clog_placeholder_millisecond(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size)
 {
-    CLOG_RET_IF(size < 4, 0);
+    CLOG_RET_IF(size < 3, 0);
     const int ret = sprintf(buf, "%03u", item->millisecond);
     CLOG_RET_IF(ret < 0, 0);
     return ret;
