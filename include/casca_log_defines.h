@@ -41,20 +41,20 @@ extern "C" {
         }                            \
     } while (0)
 
-#define CLOG_RET_IF_X(ctx, cond, ret, msg, args...) \
-    do {                                            \
-        if (cond) {                                 \
-            clog_err_set(ctx, msg, ##args);         \
-            return ret;                             \
-        }                                           \
+#define CLOG_RET_IF_X(ctx, cond, ret, msg, ...)    \
+    do {                                           \
+        if (cond) {                                \
+            clog_err_set(ctx, msg, ##__VA_ARGS__); \
+            return ret;                            \
+        }                                          \
     } while (0)
 
-#define CLOG_RET_IF_NULL_X(ctx, ptr, ret, msg, args...) \
-    do {                                                \
-        if ((ptr) == NULL) {                            \
-            clog_err_set(ctx, msg, ##args);             \
-            return ret;                                 \
-        }                                               \
+#define CLOG_RET_IF_NULL_X(ctx, ptr, ret, msg, ...) \
+    do {                                            \
+        if ((ptr) == NULL) {                        \
+            clog_err_set(ctx, msg, ##__VA_ARGS__);  \
+            return ret;                             \
+        }                                           \
     } while (0)
 
 typedef enum clog_res {
