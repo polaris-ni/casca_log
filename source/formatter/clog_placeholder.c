@@ -3,6 +3,8 @@
  * @date  2025/9/19
  */
 #include "clog_placeholder.h"
+
+#include <stdio.h>
 #include <time.h>
 #include "casca_log.h"
 #include "clog_config.h"
@@ -14,18 +16,69 @@
 #define CLOG_PLACEHOLDER_DECLARE_LAST(n, f) {.name = n, .func = f, .next = NULL}
 
 static clog_placeholder_t g_placeholder_list[] = {
-    CLOG_PLACEHOLDER_DECLARE("_date", clog_placeholder_date, 0),
-    CLOG_PLACEHOLDER_DECLARE_LAST("_time", clog_placeholder_time),
+    CLOG_PLACEHOLDER_DECLARE("_year", clog_placeholder_year, 0),
+    CLOG_PLACEHOLDER_DECLARE("_month", clog_placeholder_month, 1),
+    CLOG_PLACEHOLDER_DECLARE("_day", clog_placeholder_day, 2),
+    CLOG_PLACEHOLDER_DECLARE("_hour", clog_placeholder_hour, 3),
+    CLOG_PLACEHOLDER_DECLARE("_minute", clog_placeholder_minute, 4),
+    CLOG_PLACEHOLDER_DECLARE("_second", clog_placeholder_second, 5),
+    CLOG_PLACEHOLDER_DECLARE_LAST("_millisecond", clog_placeholder_millisecond),
 };
 
-size_t clog_placeholder_date(const clog_context_t* context, char* buf, size_t buf_size)
+size_t clog_placeholder_year(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
 {
-    return 0;
+    CLOG_RET_IF(size < 4, 0);
+    const int ret = sprintf(buf, "%04u", item->year);
+    CLOG_RET_IF(ret < 0, 0);
+    return ret;
 }
 
-size_t clog_placeholder_time(const clog_context_t* context, char* buf, size_t buf_size)
+size_t clog_placeholder_month(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
 {
-    return 0;
+    CLOG_RET_IF(size < 4, 0);
+    const int ret = sprintf(buf, "%02u", item->month);
+    CLOG_RET_IF(ret < 0, 0);
+    return ret;
+}
+
+size_t clog_placeholder_day(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
+{
+    CLOG_RET_IF(size < 4, 0);
+    const int ret = sprintf(buf, "%02u", item->day);
+    CLOG_RET_IF(ret < 0, 0);
+    return ret;
+}
+
+size_t clog_placeholder_hour(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
+{
+    CLOG_RET_IF(size < 4, 0);
+    const int ret = sprintf(buf, "%02u", item->hour);
+    CLOG_RET_IF(ret < 0, 0);
+    return ret;
+}
+
+size_t clog_placeholder_minute(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
+{
+    CLOG_RET_IF(size < 4, 0);
+    const int ret = sprintf(buf, "%02u", item->minute);
+    CLOG_RET_IF(ret < 0, 0);
+    return ret;
+}
+
+size_t clog_placeholder_second(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
+{
+    CLOG_RET_IF(size < 4, 0);
+    const int ret = sprintf(buf, "%02u", item->second);
+    CLOG_RET_IF(ret < 0, 0);
+    return ret;
+}
+
+size_t clog_placeholder_millisecond(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size)
+{
+    CLOG_RET_IF(size < 4, 0);
+    const int ret = sprintf(buf, "%03u", item->millisecond);
+    CLOG_RET_IF(ret < 0, 0);
+    return ret;
 }
 
 static bool clog_placeholder_is_name_valid(const char ch)

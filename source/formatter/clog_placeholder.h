@@ -11,9 +11,13 @@
 extern "C" {
 #endif
 
-size_t clog_placeholder_date(const clog_context_t* context, char* buf, size_t buf_size);
-
-size_t clog_placeholder_time(const clog_context_t* context, char* buf, size_t buf_size);
+size_t clog_placeholder_year(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
+size_t clog_placeholder_month(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
+size_t clog_placeholder_day(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
+size_t clog_placeholder_hour(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
+size_t clog_placeholder_minute(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
+size_t clog_placeholder_second(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
+size_t clog_placeholder_millisecond(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
 
 /**
  * register customize placeholder func
