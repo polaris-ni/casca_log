@@ -66,7 +66,7 @@ extern "C" {
 #define CLOG_ASSERT(cond)
 #endif
 
-#define CLOG_UNUSED __attribute__((unused))
+#define CLOG_UNUSED_VAR(x) (void)x
 
 typedef enum clog_res {
     CLOG_SUCCESS = 0, /* exec success */

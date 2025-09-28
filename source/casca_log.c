@@ -4,7 +4,6 @@
  */
 
 #include "casca_log.h"
-#include <pthread.h>
 #include <stdio.h>
 #include "clog_config.h"
 #include "clog_hooks.h"

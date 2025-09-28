@@ -76,8 +76,9 @@ static inline size_t clog_placeholder_string_copy(const char* str, char* buf, co
     return i;
 }
 
-static size_t clog_placeholder_process(CLOG_UNUSED const clog_item_t* item, char* buf, const size_t size)
+static size_t clog_placeholder_process(const clog_item_t* item, char* buf, const size_t size)
 {
+    CLOG_UNUSED_VAR(item);
     return clog_placeholder_string_copy(clog_get_process(), buf, size);
 }
 
@@ -96,8 +97,10 @@ static size_t clog_placeholder_content(const clog_item_t* item, char* buf, const
     return clog_placeholder_string_copy(item->content, buf, size);
 }
 
-static size_t clog_placeholder_ln(CLOG_UNUSED const clog_item_t* item, char* buf, CLOG_UNUSED const size_t size)
+static size_t clog_placeholder_ln(const clog_item_t* item, char* buf, const size_t size)
 {
+    CLOG_UNUSED_VAR(item);
+    CLOG_UNUSED_VAR(size);
     buf[0] = '\n';
     return 1;
 }
