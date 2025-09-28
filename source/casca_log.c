@@ -82,7 +82,7 @@ void clog_destroy(void)
     g_context.config.level = CLOG_LEVEL_OFF;
 }
 
-inline void clog_err_clear(void)
+void clog_err_clear(void)
 {
     g_err[0] = '\0';
 }
