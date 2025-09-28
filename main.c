@@ -6,7 +6,7 @@
 
 int main(void)
 {
-    FILE* fp = fopen("../casca_log_test.toml", "r");
+    FILE* fp = fopen("../casca_log_config_template.toml", "r");
     CLOG_RET_IF_NULL(fp, CLOG_FAIL);
     fseek(fp, 0, SEEK_END);
     const long len = ftell(fp);
@@ -21,31 +21,23 @@ int main(void)
     (void)fclose(fp);
     fp = NULL;
 
-    char err[512] = {0};
-    clog_context_t* ctx = clog_create("casca_log_test", buf, err, sizeof(err));
-    if (ctx == NULL) {
+    const clog_res_e ret = clog_init("casca_log_test", buf);
+    if (ret != CLOG_SUCCESS) {
         clog_free(buf);
-        printf("create context failed, reason: %s", err);
-        return CLOG_FAIL;
+        printf("create context failed, reason: %s", clog_err_get());
+        return ret;
     }
     clog_free(buf);
     char* tmp = clog_malloc(len);
     if (tmp == NULL) {
-        clog_destroy(ctx);
+        clog_destroy();
         return CLOG_FAIL;
     }
-    clog_config_dump_group(ctx->config.raw, tmp, len);
+    const clog_config_group_t* root = clog_get_config_root();
+    clog_config_dump_group(root, tmp, len);
     printf("config dump:\n%s", tmp);
     clog_free(tmp);
-    const char* groups[] = {"Process", "main", "test"};
-
-    clog_res_e res = CLOG_SUCCESS;
-    const clog_config_item_t* item = clog_config_find_item(ctx->config.raw, groups, CLOG_ARRAY_SIZE(groups), "char1");
-    if (item == NULL || item->type != CLOG_CONFIG_ITEM_TYPE_CHAR) {
-        res = CLOG_FAIL;
-    } else {
-        printf("Process.main.test: char1=%c\n", item->value.ch);
-    }
-    clog_destroy(ctx);
-    return res;
+    clog_destroy();
+    clog_err_clear();
+    return CLOG_SUCCESS;
 }
