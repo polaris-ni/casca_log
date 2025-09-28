@@ -4,107 +4,135 @@
  */
 
 #include "casca_log.h"
-
-#include <stdarg.h>
+#include <pthread.h>
 #include <stdio.h>
-
 #include "clog_config.h"
 #include "clog_hooks.h"
 #include "clog_mem_pool.h"
-#include "utils/clog_secure_func.h"
+#include "clog_placeholder.h"
+#include "clog_secure_func.h"
 
-clog_context_t* clog_create(const char* process, const char* config, char* err, const size_t size)
+static clog_context_t g_context = {0};
+
+static char g_err[CASCA_LOG_ERR_BUF_SIZE] = {0};
+
+/**
+ * this function will parse [Formatter.format]
+ * if customized placeholder is used, please call [clog_placeholder_register] before [clog_init]
+ * @param root config group root
+ * @return #clog_res_e
+ */
+static clog_res_e clog_formatter_init(const clog_config_group_t* root)
 {
-    CLOG_RET_IF_NULL(process, NULL);
-    CLOG_RET_IF_NULL(config, NULL);
-    clog_context_t* ctx = clog_malloc(sizeof(clog_context_t));
-    if (ctx == NULL) {
-        return NULL;
+    const char* groups[] = {"Formatter"};
+    const clog_config_item_t* item = clog_config_find_item(root, groups, CLOG_ARRAY_SIZE(groups), "format");
+    CLOG_RET_IF_NULL_X(item, CLOG_TARGET_NOT_FOUND, "item \"format\" of group [Formatter] not found");
+    CLOG_RET_IF_X(item->type != CLOG_CONFIG_ITEM_TYPE_STRING, CLOG_ERROR_FORMAT,
+                  "format type error, CLOG_CONFIG_ITEM_TYPE_STRING expected, but %u found", item->type);
+    CLOG_RET_IF_NULL_X(item->value.str, CLOG_ERROR_FORMAT, "format string is NULL");
+    return clog_placeholder_parse(item->value.str, &g_context.formatter.placeholder);
+}
+
+clog_res_e clog_init(const char* process, const char* config)
+{
+    CLOG_RET_IF_NULL_X(process, CLOG_INVALID_PARAM, "process is NULL");
+    CLOG_RET_IF_NULL_X(config, CLOG_INVALID_PARAM, "config is NULL");
+    g_context.process = clog_strdup(process);
+    if (g_context.process == NULL) {
+        return CLOG_NO_MEMORY;
     }
-    (void)clog_memset(ctx, sizeof(clog_context_t), 0, sizeof(clog_context_t));
-    ctx->process = clog_strdup(process);
-    if (ctx->process == NULL) {
-        clog_free(ctx);
-        return NULL;
+
+    g_context.config.root = clog_config_parse(config);
+    clog_res_e ret = CLOG_ERROR_FORMAT;
+    if (g_context.config.root == NULL) {
+        goto CLOG_LEBAL_CLEAR;
     }
-    ctx->config.raw = clog_config_parse(config, err, size);
-    if (ctx->config.raw == NULL) {
-        clog_destroy(ctx);
-        return NULL;
+
+    ret = clog_formatter_init(g_context.config.root);
+    if (ret != CLOG_SUCCESS) {
+        goto CLOG_LEBAL_CLEAR;
     }
-    ctx->formatter.placeholder.name= NULL;
-    ctx->formatter.placeholder.func = NULL;
-    ctx->formatter.placeholder.next= NULL;
+
 #ifdef CASCA_LOG_MEM_POOL
     clog_mp_init(CLOG_MP_PRE_ALLOCATED_NORMAL);
 #endif
-    return ctx;
+    return CLOG_SUCCESS;
+
+CLOG_LEBAL_CLEAR:
+    clog_destroy();
+    return ret;
 }
 
-void clog_destroy(clog_context_t* context)
+const clog_config_group_t* clog_get_config_root(void)
 {
-    CLOG_RET_VOID_IF_NULL(context);
-    CLOG_FREE_IF_NOT_NULL(context->process);
-    clog_config_destroy_group(context->config.raw);
-    context->config.level = CLOG_LEVEL_OFF;
-    CLOG_FREE_IF_NOT_NULL(context);
+    return g_context.config.root;
 }
 
-void clog_err_clear(clog_context_t* context)
+const char* clog_get_process(void)
 {
-    CLOG_RET_VOID_IF_NULL(context);
-    context->err[0] = '\0';
+    return g_context.process == NULL ? "NULL" : g_context.process;
 }
 
-void clog_err_set(clog_context_t* context, const char* fmt, ...)
+void clog_destroy(void)
 {
-    CLOG_RET_VOID_IF_NULL(context);
+    CLOG_SAFE_FREE(g_context.process);
+    clog_config_destroy_group(g_context.config.root);
+    clog_placeholder_clear(&g_context.formatter.placeholder);
+    clog_mp_finalize();
+    g_context.config.root = NULL;
+    g_context.config.level = CLOG_LEVEL_OFF;
+}
+
+inline void clog_err_clear(void)
+{
+    g_err[0] = '\0';
+}
+
+void clog_err_set(const char* fmt, ...)
+{
     CLOG_RET_VOID_IF_NULL(fmt);
     va_list args;
     va_start(args, fmt);
-    const int ret = vsnprintf(context->err, sizeof(context->err), fmt, args);
+    const int ret = vsnprintf(g_err, sizeof(g_err), fmt, args);
     va_end(args);
     if (ret <= 0) {
-        context->err[0] = '\0';
+        clog_err_clear();
     }
 }
 
-void clog_err_append(clog_context_t* context, const char* fmt, ...)
+void clog_err_append(const char* fmt, ...)
 {
-    CLOG_RET_VOID_IF_NULL(context);
     CLOG_RET_VOID_IF_NULL(fmt);
-    const size_t len = strlen(context->err);
-    CLOG_RET_VOID_IF(len >= sizeof(context->err) - 1);
+    const size_t len = strlen(g_err);
+    CLOG_RET_VOID_IF(len >= sizeof(g_err) - 1);
     va_list args;
     va_start(args, fmt);
-    const int ret = vsnprintf(context->err + len, sizeof(context->err) - len, fmt, args);
+    const int ret = vsnprintf(g_err + len, sizeof(g_err) - len, fmt, args);
     va_end(args);
     if (ret <= 0) {
-        context->err[0] = '\0';
+        g_err[len - 1] = '\0';
     }
 }
 
-void clog_err_append_line(clog_context_t* context, const char* fmt, ...)
+void clog_err_append_line(const char* fmt, ...)
 {
-    CLOG_RET_VOID_IF_NULL(context);
     CLOG_RET_VOID_IF_NULL(fmt);
-    const size_t len = strlen(context->err);
-    CLOG_RET_VOID_IF(len >= sizeof(context->err) - 1);
+    const size_t len = strlen(g_err);
+    CLOG_RET_VOID_IF(len >= sizeof(g_err) - 1);
     va_list args;
     va_start(args, fmt);
-    const int ret = vsnprintf(context->err + len, sizeof(context->err) - len, fmt, args);
+    const int ret = vsnprintf(g_err + len, sizeof(g_err) - len, fmt, args);
     va_end(args);
     if (ret <= 0) {
-        context->err[0] = '\0';
+        g_err[len - 1] = '\0';
     } else {
-        CLOG_RET_VOID_IF(len + ret >= sizeof(context->err));
-        context->err[len + ret] = '\n';
-        context->err[len + ret + 1] = '\0';
+        CLOG_RET_VOID_IF(len + ret >= sizeof(g_err));
+        g_err[len + ret] = '\n';
+        g_err[len + ret + 1] = '\0';
     }
 }
 
-const char* clog_err_get(const clog_context_t* context)
+const char* clog_err_get(void)
 {
-    CLOG_RET_IF_NULL(context, "NULL");
-    return context->err;
+    return g_err;
 }

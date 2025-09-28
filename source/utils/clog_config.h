@@ -14,11 +14,9 @@ extern "C" {
 /**
  * parse config file to #clog_config_group_t
  * @param data config file, there must be an end char '\0', nonnull
- * @param err buffer to save error message, nullable
- * @param size buffer size
  * @return #clog_config_group_t if success, NULL otherwise
  */
-clog_config_group_t* clog_config_parse(const char* data, char* err, size_t size);
+clog_config_group_t* clog_config_parse(const char* data);
 
 /**
  * get item from group, if groups is empty, item will be searched in root group

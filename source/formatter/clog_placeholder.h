@@ -11,30 +11,28 @@
 extern "C" {
 #endif
 
-size_t clog_placeholder_year(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
-size_t clog_placeholder_month(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
-size_t clog_placeholder_day(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
-size_t clog_placeholder_hour(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
-size_t clog_placeholder_minute(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
-size_t clog_placeholder_second(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
-size_t clog_placeholder_millisecond(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
-
 /**
  * register customize placeholder func
  * if you register a placeholder with the same name, the previous one will be replaced
- * @param context context
  * @param name placeholder name, should start with [a-z, A-Z, 0-9]
  * @param func placeholder func
  * @return #clog_res_e
  */
-clog_res_e clog_placeholder_register(clog_context_t* context, const char* name, clog_placeholder_f func);
+clog_res_e clog_placeholder_register(const char* name, clog_placeholder_f func);
 
 /**
  * parse "Formatter.format" to placeholder function
- * @param context log context
+ * @param format log context
+ * @param root root node, parsed results will be added to #next of root, so #next of root shall be NULL
  * @return #clog_res_e
  */
-clog_res_e clog_placeholder_parse(clog_context_t* context);
+clog_res_e clog_placeholder_parse(const char* format, clog_placeholder_t* root);
+
+/**
+ * recursively clean up all child nodes contained in root, but root itself will not be freed.
+ * @param root placeholder to be clear
+ */
+void clog_placeholder_clear(clog_placeholder_t* root);
 
 
 #if defined(__cplusplus) || defined(c_plusplus)

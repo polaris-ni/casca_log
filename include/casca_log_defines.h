@@ -5,9 +5,10 @@
 #ifndef CASCA_LOG_CASCA_LOG_DEFINES_H
 #define CASCA_LOG_CASCA_LOG_DEFINES_H
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdarg.h>
+#include "casca_log_config.h"
 #include "casca_log_level.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
@@ -34,7 +35,7 @@ extern "C" {
 
 #define CLOG_ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-#define CLOG_FREE_IF_NOT_NULL(mem)   \
+#define CLOG_SAFE_FREE(mem)          \
     do {                             \
         if (mem != NULL) {           \
             clog_free((void*)(mem)); \
@@ -42,21 +43,30 @@ extern "C" {
         }                            \
     } while (0)
 
-#define CLOG_RET_IF_X(ctx, cond, ret, msg, ...)    \
-    do {                                           \
-        if (cond) {                                \
-            clog_err_set(ctx, msg, ##__VA_ARGS__); \
-            return ret;                            \
-        }                                          \
+#define CLOG_RET_IF_X(cond, ret, msg, ...)    \
+    do {                                      \
+        if (cond) {                           \
+            clog_err_set(msg, ##__VA_ARGS__); \
+            return ret;                       \
+        }                                     \
     } while (0)
 
-#define CLOG_RET_IF_NULL_X(ctx, ptr, ret, msg, ...) \
-    do {                                            \
-        if ((ptr) == NULL) {                        \
-            clog_err_set(ctx, msg, ##__VA_ARGS__);  \
-            return ret;                             \
-        }                                           \
+#define CLOG_RET_IF_NULL_X(ptr, ret, msg, ...) \
+    do {                                       \
+        if ((ptr) == NULL) {                   \
+            clog_err_set(msg, ##__VA_ARGS__);  \
+            return ret;                        \
+        }                                      \
     } while (0)
+
+#ifdef CASCA_LOG_DEBUG
+#include <assert.h>
+#define CLOG_ASSERT(cond) assert(cond)
+#else
+#define CLOG_ASSERT(cond)
+#endif
+
+#define CLOG_UNUSED __attribute__((unused))
 
 typedef enum clog_res {
     CLOG_SUCCESS = 0, /* exec success */
@@ -82,6 +92,7 @@ typedef struct clog_item {
     const char* filepath;
     const char* filename;
     const char* function;
+    const char* module;
     unsigned long long tid;
     unsigned int line;
     clog_level_e level;
@@ -94,8 +105,7 @@ typedef struct clog_item {
         unsigned char second;
         unsigned short millisecond;
     };
-    const char* format;
-    va_list args;
+    const char* content;
 } clog_item_t;
 
 typedef struct clog_context clog_context_t;
@@ -126,19 +136,18 @@ struct clog_config_group {
 };
 
 typedef struct clog_config {
-    clog_config_group_t* raw;
+    clog_config_group_t* root;
     clog_level_e level;
 } clog_config_t;
 
 /**
  * placeholder
- * @param ctx context
- * @param item log item, contains log info and content
+ * @param item log item, contains log info and content, it should never be NULL
  * @param buf the buffer to store log
  * @param size buffer size
  * @return size_t write size
  */
-typedef size_t (*clog_placeholder_f)(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size);
+typedef size_t (*clog_placeholder_f)(const clog_item_t* item, char* buf, size_t size);
 
 typedef struct clog_placeholder {
     const char* name;
@@ -148,7 +157,6 @@ typedef struct clog_placeholder {
 
 struct clog_context {
     const char* process;
-    char err[256];
     clog_config_t config;
     struct {
         clog_placeholder_t placeholder;

@@ -3,13 +3,105 @@
  * @date  2025/9/19
  */
 #include "clog_placeholder.h"
-
+#include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
 #include "casca_log.h"
-#include "clog_config.h"
 #include "clog_hooks.h"
 #include "clog_secure_func.h"
+
+/* << default placeholder implementation start */
+
+static size_t clog_num_to_str(uint32_t value, const uint32_t num, char* buf, const size_t size, const bool is_padding)
+{
+    (void)size;
+    static const char digits[] = "0123456789";
+    if (value == 0) {
+        buf[0] = '0';
+        return 1;
+    }
+    if (is_padding) {
+        unsigned int tmp = num;
+        while (tmp-- > 0) {
+            buf[tmp] = digits[value % 10];
+            value /= 10;
+        }
+        return num;
+    }
+    static const unsigned int max_values[] = {0, 10, 100, 1000, 10000, 100000};
+    uint32_t index = num;
+    while (max_values[index] > value) {
+        index--;
+    }
+    uint32_t i = 0;
+    while (index != 0) {
+        buf[i] = digits[value / max_values[index]];
+        value = value % max_values[index];
+        i++;
+        index--;
+    }
+    return i;
+}
+
+#define CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(name, max, num, is_padding)                        \
+    static inline size_t clog_placeholder_##name(const clog_item_t* item, char* buf, const size_t size) \
+    {                                                                                                   \
+        CLOG_RET_IF(size < num, 0);                                                                     \
+        CLOG_ASSERT(item != NULL);                                                                      \
+        CLOG_ASSERT(buf != NULL);                                                                       \
+        CLOG_ASSERT(item->name <= max);                                                                 \
+        return clog_num_to_str(item->name, num, buf, size, is_padding);                                 \
+    }
+
+CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(year, 9999, 4, true)
+CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(month, 12, 2, true)
+CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(day, 31, 2, true)
+CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(hour, 23, 2, true)
+CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(minute, 59, 2, true)
+CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(second, 59, 2, true)
+CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(millisecond, 999, 3, true)
+CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(line, 999999, 6, false)
+CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(tid, 9999999999, 10, false)
+
+static inline size_t clog_placeholder_string_copy(const char* str, char* buf, const size_t size)
+{
+    const char* p = str;
+    size_t i = 0;
+    while (*p != '\0') {
+        if (i == size) {
+            return i;
+        }
+        buf[i++] = *p++;
+    }
+    return i;
+}
+
+static size_t clog_placeholder_process(CLOG_UNUSED const clog_item_t* item, char* buf, const size_t size)
+{
+    return clog_placeholder_string_copy(clog_get_process(), buf, size);
+}
+
+static size_t clog_placeholder_module(const clog_item_t* item, char* buf, const size_t size)
+{
+    return clog_placeholder_string_copy(item->module, buf, size);
+}
+
+static size_t clog_placeholder_file(const clog_item_t* item, char* buf, const size_t size)
+{
+    return clog_placeholder_string_copy(item->filename, buf, size);
+}
+
+static size_t clog_placeholder_content(const clog_item_t* item, char* buf, const size_t size)
+{
+    return clog_placeholder_string_copy(item->content, buf, size);
+}
+
+static size_t clog_placeholder_ln(CLOG_UNUSED const clog_item_t* item, char* buf, CLOG_UNUSED const size_t size)
+{
+    buf[0] = '\n';
+    return 1;
+}
+
 
 #define CLOG_PLACEHOLDER_DECLARE(n, f, i) {.name = n, .func = f, .next = &g_placeholder_list[i + 1]}
 
@@ -22,80 +114,33 @@ static clog_placeholder_t g_placeholder_list[] = {
     CLOG_PLACEHOLDER_DECLARE("_hour", clog_placeholder_hour, 3),
     CLOG_PLACEHOLDER_DECLARE("_minute", clog_placeholder_minute, 4),
     CLOG_PLACEHOLDER_DECLARE("_second", clog_placeholder_second, 5),
-    CLOG_PLACEHOLDER_DECLARE_LAST("_millisecond", clog_placeholder_millisecond),
+    CLOG_PLACEHOLDER_DECLARE("_millisecond", clog_placeholder_millisecond, 6),
+    CLOG_PLACEHOLDER_DECLARE("_process", clog_placeholder_process, 7),
+    CLOG_PLACEHOLDER_DECLARE("_module", clog_placeholder_module, 8),
+    CLOG_PLACEHOLDER_DECLARE("_tid", clog_placeholder_tid, 9),
+    CLOG_PLACEHOLDER_DECLARE("_file", clog_placeholder_file, 10),
+    CLOG_PLACEHOLDER_DECLARE("_line", clog_placeholder_line, 11),
+    CLOG_PLACEHOLDER_DECLARE("_content", clog_placeholder_content, 12),
+    CLOG_PLACEHOLDER_DECLARE_LAST("_ln", clog_placeholder_ln),
 };
-
-size_t clog_placeholder_year(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
-{
-    CLOG_RET_IF(size < 4, 0);
-    const int ret = sprintf(buf, "%04u", item->year);
-    CLOG_RET_IF(ret < 0, 0);
-    return ret;
-}
-
-size_t clog_placeholder_month(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
-{
-    CLOG_RET_IF(size < 2, 0);
-    const int ret = sprintf(buf, "%02u", item->month);
-    CLOG_RET_IF(ret < 0, 0);
-    return ret;
-}
-
-size_t clog_placeholder_day(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
-{
-    CLOG_RET_IF(size < 2, 0);
-    const int ret = sprintf(buf, "%02u", item->day);
-    CLOG_RET_IF(ret < 0, 0);
-    return ret;
-}
-
-size_t clog_placeholder_hour(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
-{
-    CLOG_RET_IF(size < 2, 0);
-    const int ret = sprintf(buf, "%02u", item->hour);
-    CLOG_RET_IF(ret < 0, 0);
-    return ret;
-}
-
-size_t clog_placeholder_minute(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
-{
-    CLOG_RET_IF(size < 2, 0);
-    const int ret = sprintf(buf, "%02u", item->minute);
-    CLOG_RET_IF(ret < 0, 0);
-    return ret;
-}
-
-size_t clog_placeholder_second(const clog_context_t* ctx, const clog_item_t* item, char* buf, const size_t size)
-{
-    CLOG_RET_IF(size < 2, 0);
-    const int ret = sprintf(buf, "%02u", item->second);
-    CLOG_RET_IF(ret < 0, 0);
-    return ret;
-}
-
-size_t clog_placeholder_millisecond(const clog_context_t* ctx, const clog_item_t* item, char* buf, size_t size)
-{
-    CLOG_RET_IF(size < 3, 0);
-    const int ret = sprintf(buf, "%03u", item->millisecond);
-    CLOG_RET_IF(ret < 0, 0);
-    return ret;
-}
+#undef CLOG_PLACEHOLDER_DECLARE_LAST
+#undef CLOG_PLACEHOLDER_DECLARE
 
 static bool clog_placeholder_is_name_valid(const char ch)
 {
-    if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9')) {
-        return false;
+    if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_') {
+        return true;
     }
-    return true;
+    return false;
 }
 
-clog_res_e clog_placeholder_register(clog_context_t* context, const char* name, const clog_placeholder_f func)
+clog_res_e clog_placeholder_register(const char* name, const clog_placeholder_f func)
 {
-    CLOG_RET_IF_NULL(context, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(name, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(func, CLOG_INVALID_PARAM);
-    if (!clog_placeholder_is_name_valid(name[0])) {
-        clog_err_set(context, "placeholder name [%s] not start with [a-z, A-Z, 0-9]", name);
+    /* customize placeholder should not start with '_' */
+    if (!clog_placeholder_is_name_valid(name[0]) || name[0] == '_') {
+        clog_err_set("placeholder name [%s] not start with [a-z, A-Z, 0-9]", name);
         return CLOG_INVALID_PARAM;
     }
 
@@ -113,7 +158,7 @@ clog_res_e clog_placeholder_register(clog_context_t* context, const char* name, 
     return CLOG_SUCCESS;
 }
 
-static clog_placeholder_t* clog_placeholder_create(clog_context_t* ctx, const char* name, const bool is_placeholder)
+static clog_placeholder_t* clog_placeholder_create(const char* name, const bool is_placeholder)
 {
     clog_placeholder_t* placeholder = clog_malloc(sizeof(clog_placeholder_t));
     CLOG_RET_IF_NULL(placeholder, NULL);
@@ -132,17 +177,17 @@ static clog_placeholder_t* clog_placeholder_create(clog_context_t* ctx, const ch
         }
         tmp = tmp->next;
     }
-    clog_err_append_line(ctx, "process function of placeholder {%s} not found", name);
+    clog_err_append_line("process function of placeholder {%s} not found", name);
     clog_free(placeholder);
     return NULL;
 }
 
 /* {hello} -> hello */
-static const char* clog_placeholder_parse_name(clog_context_t* context, const char* format)
+static const char* clog_placeholder_parse_name(const char* format)
 {
     const char* tmp = format + 1;
     if (*tmp == '}') {
-        clog_err_append_line(context, "placeholder name empty {}");
+        clog_err_append_line("placeholder name empty {}");
         return NULL;
     }
 
@@ -151,33 +196,31 @@ static const char* clog_placeholder_parse_name(clog_context_t* context, const ch
             return tmp - 1;
         }
         if (!clog_placeholder_is_name_valid(*tmp)) {
-            clog_err_append_line(context, "placeholder contains invalid char [%c]", *tmp);
+            clog_err_append_line("placeholder contains invalid char [%c]", *tmp);
             return NULL;
         }
         tmp++;
     }
-    clog_err_append_line(context, "placeholder does not contain '}'");
+    clog_err_append_line("placeholder does not contain '}'");
     return NULL;
 }
 
-static clog_res_e clog_placeholder_parse_format(clog_context_t* ctx, clog_placeholder_t* root, const char* format)
+static clog_res_e clog_placeholder_parse_format(const char* format, clog_placeholder_t* root)
 {
     CLOG_RET_IF(format[0] == '\0', CLOG_SUCCESS); /* parse over */
     const char* tmp = format;
     if (*tmp == '{') {
-        tmp = clog_placeholder_parse_name(ctx, format);
-        if (tmp == NULL) {
-            return CLOG_ERROR_FORMAT;
-        }
-        char* name = clog_strndup(format, tmp - format + 1);
+        tmp = clog_placeholder_parse_name(format);
+        CLOG_RET_IF_NULL(tmp, CLOG_INVALID_PARAM);
+        char* name = clog_strndup(format + 1, tmp - format);
         CLOG_RET_IF_NULL(name, CLOG_NO_MEMORY);
-        clog_placeholder_t* placeholder = clog_placeholder_create(ctx, name, true);
+        clog_placeholder_t* placeholder = clog_placeholder_create(name, true);
         if (placeholder == NULL) {
             clog_free(name);
             return CLOG_FAIL;
         }
         root->next = placeholder;
-        return clog_placeholder_parse_format(ctx, placeholder, tmp + 2);
+        return clog_placeholder_parse_format(tmp + 2, placeholder);
     }
     bool is_escape = false;
     while (*tmp != '\0') {
@@ -188,7 +231,7 @@ static clog_res_e clog_placeholder_parse_format(clog_context_t* ctx, clog_placeh
         }
         if (*tmp == '}') {
             if (!is_escape) {
-                clog_err_append_line(ctx, "there is no corresponding '{' for '}'");
+                clog_err_append_line("there is no corresponding '{' for '}'");
                 return false;
             }
         }
@@ -210,30 +253,39 @@ static clog_res_e clog_placeholder_parse_format(clog_context_t* ctx, clog_placeh
         start++;
     }
     *name = '\0';
-    clog_placeholder_t* placeholder = clog_placeholder_create(ctx, name, false);
+    clog_placeholder_t* placeholder = clog_placeholder_create(name, false);
     if (placeholder == NULL) {
         clog_free(name);
         return CLOG_FAIL;
     }
     root->next = placeholder;
-    return clog_placeholder_parse_format(ctx, placeholder, tmp);
+    return clog_placeholder_parse_format(tmp, placeholder);
 }
 
-clog_res_e clog_placeholder_parse(clog_context_t* context)
+clog_res_e clog_placeholder_parse(const char* format, clog_placeholder_t* root)
 {
-    CLOG_RET_IF_NULL(context, CLOG_INVALID_PARAM);
-    clog_err_clear(context);
-    const char* groups[] = {"Formatter"};
-    const clog_config_group_t* root = context->config.raw;
-    const clog_config_item_t* item = clog_config_find_item(root, groups, CLOG_ARRAY_SIZE(groups), "format");
-    CLOG_RET_IF_NULL_X(context, item, CLOG_TARGET_NOT_FOUND, "item \"format\" of group [Formatter] not found");
-    CLOG_RET_IF_X(context, item->type != CLOG_CONFIG_ITEM_TYPE_STRING, CLOG_ERROR_FORMAT,
-                  "format type error, CLOG_CONFIG_ITEM_TYPE_STRING expected, but %u found", item->type);
-    CLOG_RET_IF_NULL_X(context, item->value.str, CLOG_ERROR_FORMAT, "format string is NULL");
-
-    const clog_res_e ret = clog_placeholder_parse_format(context, &context->formatter.placeholder, item->value.str);
+    CLOG_RET_IF_NULL(format, CLOG_INVALID_PARAM);
+    CLOG_RET_IF_NULL(root, CLOG_INVALID_PARAM);
+    CLOG_RET_IF_X(root->next, CLOG_INVALID_PARAM, "root.next is not null, please clear first");
+    clog_err_clear();
+    const clog_res_e ret = clog_placeholder_parse_format(format, root);
     if (ret != CLOG_SUCCESS) {
-        clog_err_append_line(context, "parse format [] failed", item->value.str);
+        clog_placeholder_clear(root);
+        clog_err_append_line("parse format [%s] failed", format);
     }
     return ret;
+}
+
+void clog_placeholder_clear(clog_placeholder_t* root)
+{
+    CLOG_RET_VOID_IF(root);
+    CLOG_SAFE_FREE(root->name);
+    root->func = NULL;
+    clog_placeholder_t* cur = root->next;
+    while (cur != NULL) {
+        clog_placeholder_t* next = cur->next;
+        clog_free((void*)cur->name);
+        clog_free(cur);
+        cur = next;
+    }
 }

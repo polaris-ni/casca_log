@@ -20,54 +20,58 @@ extern "C" {
  * create context with config
  * @param process process name, will be copied to context, nonnull
  * @param config config string, nonnull
- * @param err buffer to save error message, nullable
- * @param size size of err buffer
- * @return #clog_context_t, NULL if failed
+ * @return #clog_res_e
  */
-clog_context_t* clog_create(const char* process, const char* config, char* err, size_t size);
+clog_res_e clog_init(const char* process, const char* config);
+
+/**
+ * get pared clog_config_group_t from config file
+ * @return parsed clog_config_group_t, NULL if clog_init failed or clog_setup called
+ */
+const clog_config_group_t* clog_get_config_root(void);
+
+/**
+ * get current process name
+ * @return process, return "NULL" if process is not set
+ */
+const char* clog_get_process(void);
 
 /**
  * destroy context
- * @param context context to be destroyed, nonnull
  */
-void clog_destroy(clog_context_t* context);
+void clog_destroy(void);
 
 /**
  * clear error message
- * @param context context, nonnull
  */
-void clog_err_clear(clog_context_t* context);
+void clog_err_clear(void);
 
 /**
  * set err msg, will clear previous error message even if set failed
- * @param context context to be set msg, nonnull
  * @param fmt message format, nonnull
  * @param ... var
  */
-void clog_err_set(clog_context_t* context, const char* fmt, ...);
+void clog_err_set(const char* fmt, ...);
 
 /**
  * append error message
- * @param context context to be appended msg, nonnull
  * @param fmt message format, nonnull
  * @param ... var
  */
-void clog_err_append(clog_context_t* context, const char* fmt, ...);
+void clog_err_append(const char* fmt, ...);
 
 /**
  * append error message with line
- * @param context context to be appended msg, nonnull
  * @param fmt message format, nonnull
  * @param ... var
  */
-void clog_err_append_line(clog_context_t* context, const char* fmt, ...);
+void clog_err_append_line(const char* fmt, ...);
 
 /**
  * get error message, it will never return NULL, safe to print
- * @param context context, nonnull
  * @return error message, return string "NULL" if context is NULL
  */
-const char* clog_err_get(const clog_context_t* context);
+const char* clog_err_get(void);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
