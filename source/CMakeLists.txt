@@ -10,13 +10,13 @@ add_subdirectory(formatter)
 set(CASCA_LOG_SOURCES
         casca_log.c
         ${CASCA_LOG_HOOKS_SOURCES}
-        ${CASCA_LOG_SECURE_FUNC_SOURCES}
+        ${CASCA_LOG_UTILS_SOURCES}
         ${CASCA_LOG_FORMATTER_SOURCES}
 )
 
 add_library(casca_log ${CASCA_LOG_SOURCES}
         ${CASCA_LOG_HOOKS_HEADERS}
-        ${CASCA_LOG_SECURE_FUNC_HEADERS}
+        ${CASCA_LOG_UTILS_HEADERS}
         ${CASCA_LOG_FORMATTER_HEADERS}
 )
 
@@ -25,7 +25,7 @@ target_include_directories(casca_log
         ${CMAKE_CURRENT_SOURCE_DIR}
         PRIVATE
         ${CASCA_LOG_HOOKS_INCLUDE_DIR}
-        ${CASCA_LOG_SECURE_FUNC_INCLUDE_DIR}
+        ${CASCA_LOG_UTILS_INCLUDE_DIR}
         ${CASCA_LOG_FORMATTER_INCLUDE_DIR}
 )
 

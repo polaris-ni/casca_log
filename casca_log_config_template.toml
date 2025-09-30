@@ -1,4 +1,11 @@
 # casca_log_config_template
 
 [Formatter]
-format="{_year}-{_month}-{_day} {_hour}:{_minute}:{_second}.{_millisecond} {_process}:{_module}:{_tid}:{_file}:{_line} {_content}{_ln}"
+format="{_year}-{_month}-{_day} {_hour}:{_minute}:{_second}.{_millisecond} {_level} {_process}:{_module}:{_tid}:{_file}:{_line} {_content}{_ln}"
+[Formatter.Level.Tag]
+trace="T"
+debug="D"
+info="I"
+warn="W"
+error="E"
+fetal="F"
