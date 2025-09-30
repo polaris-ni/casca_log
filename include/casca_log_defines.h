@@ -149,10 +149,22 @@ typedef struct clog_config {
  */
 typedef size_t (*clog_placeholder_f)(const clog_item_t* item, char* buf, size_t size);
 
+/**
+ * setup function
+ * @return #clog_res_e
+ */
+typedef clog_res_e (*clog_setup_f)(void);
+
+/**
+ * setup function
+ * @return #clog_res_e
+ */
+typedef void (*clog_cleanup_f)(void);
+
 typedef struct clog_placeholder {
     const char* name;
     clog_placeholder_f func;
-    struct clog_placeholder* next;
+    const struct clog_placeholder* next;
 } clog_placeholder_t;
 
 struct clog_context {

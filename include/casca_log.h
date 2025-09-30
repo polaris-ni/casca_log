@@ -25,6 +25,14 @@ extern "C" {
 clog_res_e clog_init(const char* process, const char* config);
 
 /**
+ * setup clog, submodule's setup functions will be called, must be called after clog_init
+ * @param funcs customized setup functions, NULL if there is no customized setup function
+ * @param num number of funcs, 0 if there is no customized setup function
+ * @return #clog_res_e
+ */
+clog_res_e clog_setup(const clog_setup_f* funcs, size_t num);
+
+/**
  * get pared clog_config_group_t from config file
  * @return parsed clog_config_group_t, NULL if clog_init failed or clog_setup called
  */
@@ -44,9 +52,30 @@ const char* clog_get_process(void);
 const char* clog_get_level_tag(clog_level_e level);
 
 /**
- * destroy context
+ * set tag by level
+ * @param level log level
+ * @param tag tag
  */
-void clog_destroy(void);
+void clog_set_level_tag(clog_level_e level, const char* tag);
+
+/**
+ * get placeholders
+ * @return placeholders
+ */
+const clog_placeholder_t* clog_get_placeholders(void);
+
+/**
+ * set placeholder to context, attention that placeholder will not be copy in a new memory
+ * @param placeholder placeholder
+ */
+void clog_set_placeholders(const clog_placeholder_t* placeholder);
+
+/**
+ * destroy clog
+ * @param funcs customized cleanup functions, NULL if there is no customized cleanup function
+ * @param num number of funcs, 0 if there is no customized cleanup function
+ */
+void clog_destroy(const clog_cleanup_f* funcs, size_t num);
 
 /**
  * clear error message

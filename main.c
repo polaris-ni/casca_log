@@ -21,23 +21,30 @@ int main(void)
     (void)fclose(fp);
     fp = NULL;
 
-    const clog_res_e ret = clog_init("casca_log_test", buf);
+    clog_res_e ret = clog_init("casca_log_test", buf);
     if (ret != CLOG_SUCCESS) {
         clog_free(buf);
         printf("create context failed, reason: %s", clog_err_get());
         return ret;
     }
     clog_free(buf);
+
+    ret = clog_setup(NULL, 0);
+    if (ret != CLOG_SUCCESS) {
+        clog_destroy(NULL, 0);
+        return CLOG_FAIL;
+    }
+
     char* tmp = clog_malloc(len);
     if (tmp == NULL) {
-        clog_destroy();
+        clog_destroy(NULL, 0);
         return CLOG_FAIL;
     }
     const clog_config_group_t* root = clog_get_config_root();
     clog_config_dump_group(root, tmp, len);
     printf("config dump:\n%s", tmp);
     clog_free(tmp);
-    clog_destroy();
+    clog_destroy(NULL, 0);
     clog_err_clear();
     return CLOG_SUCCESS;
 }

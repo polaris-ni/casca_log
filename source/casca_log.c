@@ -6,6 +6,7 @@
 #include "casca_log.h"
 #include <stdio.h>
 #include "clog_config.h"
+#include "clog_formatter.h"
 #include "clog_hooks.h"
 #include "clog_mem_pool.h"
 #include "clog_placeholder.h"
@@ -15,53 +16,13 @@ static clog_context_t g_context = {0};
 
 static char g_err[CASCA_LOG_ERR_BUF_SIZE] = {0};
 
-static clog_res_e clog_format_init_level_tag(const clog_config_group_t* group, const char* tag, const char** dest)
-{
-    const clog_config_item_t* item = clog_config_find_item_in_group(group, tag);
-    CLOG_RET_IF_NULL_X(item, CLOG_TARGET_NOT_FOUND, "Formatter.Level.tag.%s not found", tag);
-    CLOG_RET_IF_X(item->type != CLOG_CONFIG_ITEM_TYPE_STRING, CLOG_INVALID_PARAM,
-                  "Formatter.Level.tag.trace type %u error", item->type);
-    *dest = clog_strdup(item->value.str);
-    CLOG_RET_IF_NULL_X(*dest, CLOG_NO_MEMORY, "clog_strdup tag str [%s] failed", item->value.str);
-    return CLOG_SUCCESS;
-}
+static const clog_setup_f g_setup_funcs[] = {
+    clog_formatter_setup,
+};
 
-/**
- * this function will parse [Formatter.format]
- * if customized placeholder is used, please call [clog_placeholder_register] before [clog_init]
- * @param root config group root
- * @return #clog_res_e
- */
-static clog_res_e clog_formatter_init(const clog_config_group_t* root)
-{
-    const char* groups[] = {"Formatter"};
-    const clog_config_item_t* item = clog_config_find_item(root, groups, CLOG_ARRAY_SIZE(groups), "format");
-    CLOG_RET_IF_NULL_X(item, CLOG_TARGET_NOT_FOUND, "item \"format\" of group [Formatter] not found");
-    CLOG_RET_IF_X(item->type != CLOG_CONFIG_ITEM_TYPE_STRING, CLOG_ERROR_FORMAT,
-                  "format type error, CLOG_CONFIG_ITEM_TYPE_STRING expected, but %u found", item->type);
-    CLOG_RET_IF_NULL_X(item->value.str, CLOG_ERROR_FORMAT, "format string is NULL");
-    clog_res_e ret = clog_placeholder_parse(item->value.str, &g_context.formatter.placeholder);
-    CLOG_RET_IF(ret != CLOG_SUCCESS, ret);
-
-    const char* tag_group[] = {"Formatter", "Level", "Tag"};
-    const clog_config_group_t* group = clog_config_find_group(root, tag_group, CLOG_ARRAY_SIZE(tag_group));
-    CLOG_RET_IF_NULL_X(group, CLOG_TARGET_NOT_FOUND, "Formatter.Level.tag not found");
-    const char* tag[] = {"trace", "debug", "info", "warn", "error", "fetal"};
-    const char** dest[] = {&g_context.formatter.level.tag.trace};
-    ret = clog_format_init_level_tag(group, "trace", &g_context.formatter.level.tag.trace);
-    CLOG_RET_IF(ret != CLOG_SUCCESS, ret);
-    ret = clog_format_init_level_tag(group, "debug", &g_context.formatter.level.tag.debug);
-    CLOG_RET_IF(ret != CLOG_SUCCESS, ret);
-    ret = clog_format_init_level_tag(group, "info", &g_context.formatter.level.tag.info);
-    CLOG_RET_IF(ret != CLOG_SUCCESS, ret);
-    ret = clog_format_init_level_tag(group, "warn", &g_context.formatter.level.tag.warn);
-    CLOG_RET_IF(ret != CLOG_SUCCESS, ret);
-    ret = clog_format_init_level_tag(group, "error", &g_context.formatter.level.tag.error);
-    CLOG_RET_IF(ret != CLOG_SUCCESS, ret);
-    ret = clog_format_init_level_tag(group, "fetal", &g_context.formatter.level.tag.fetal);
-    CLOG_RET_IF(ret != CLOG_SUCCESS, ret);
-    return CLOG_SUCCESS;
-}
+static const clog_cleanup_f g_cleanup_funcs[] = {
+    clog_formatter_cleanup,
+};
 
 clog_res_e clog_init(const char* process, const char* config)
 {
@@ -73,24 +34,33 @@ clog_res_e clog_init(const char* process, const char* config)
     }
 
     g_context.config.root = clog_config_parse(config);
-    clog_res_e ret = CLOG_ERROR_FORMAT;
+    const clog_res_e ret = CLOG_ERROR_FORMAT;
     if (g_context.config.root == NULL) {
-        goto CLOG_LABEL_CLEAR;
-    }
-
-    ret = clog_formatter_init(g_context.config.root);
-    if (ret != CLOG_SUCCESS) {
-        goto CLOG_LABEL_CLEAR;
+        clog_destroy(NULL, 0);
+        return ret;
     }
 
 #ifdef CASCA_LOG_MEM_POOL
     clog_mp_init(CLOG_MP_PRE_ALLOCATED_NORMAL);
 #endif
     return CLOG_SUCCESS;
+}
 
-CLOG_LABEL_CLEAR:
-    clog_destroy();
-    return ret;
+clog_res_e clog_setup(const clog_setup_f* funcs, const size_t num)
+{
+    CLOG_RET_IF_X(funcs == NULL && num != 0, CLOG_INVALID_PARAM, "funcs is NULL, but num is %zu", num);
+    const size_t count = CLOG_ARRAY_SIZE(g_setup_funcs);
+    clog_res_e ret;
+    for (size_t i = 0; i < count; i++) {
+        ret = g_setup_funcs[i]();
+        CLOG_RET_IF(ret != CLOG_SUCCESS, ret);
+    }
+    CLOG_RET_IF(num == 0, CLOG_SUCCESS);
+    for (size_t i = 0; i < num; ++i) {
+        ret = funcs[i]();
+        CLOG_RET_IF(ret != CLOG_SUCCESS, ret);
+    }
+    return CLOG_SUCCESS;
 }
 
 const clog_config_group_t* clog_get_config_root(void)
@@ -116,21 +86,67 @@ const char* clog_get_level_tag(clog_level_e level)
             return g_context.formatter.level.tag.warn;
         case CLOG_LEVEL_ERROR:
             return g_context.formatter.level.tag.error;
-        case CLOG_LEVEL_FATAL:
+        case CLOG_LEVEL_FETAL:
             return g_context.formatter.level.tag.fetal;
         default:
             return "NULL";
     }
 }
 
-void clog_destroy(void)
+void clog_set_level_tag(const clog_level_e level, const char* tag)
 {
+    switch (level) {
+        case CLOG_LEVEL_TRACE:
+            g_context.formatter.level.tag.trace = tag;
+            break;
+        case CLOG_LEVEL_DEBUG:
+            g_context.formatter.level.tag.debug = tag;
+            break;
+        case CLOG_LEVEL_INFO:
+            g_context.formatter.level.tag.info = tag;
+            break;
+        case CLOG_LEVEL_WARN:
+            g_context.formatter.level.tag.warn = tag;
+            break;
+        case CLOG_LEVEL_ERROR:
+            g_context.formatter.level.tag.error = tag;
+            break;
+        case CLOG_LEVEL_FETAL:
+            g_context.formatter.level.tag.fetal = tag;
+            break;
+        default:
+            clog_err_set("level %u is invalid", level);
+            break;
+    }
+}
+
+const clog_placeholder_t* clog_get_placeholders(void)
+{
+    return g_context.formatter.placeholder.next;
+}
+
+void clog_set_placeholders(const clog_placeholder_t* placeholder)
+{
+    g_context.formatter.placeholder.next = placeholder;
+}
+
+void clog_destroy(const clog_cleanup_f* funcs, const size_t num)
+{
+    const size_t count = CLOG_ARRAY_SIZE(g_cleanup_funcs);
+    for (size_t i = 0; i < count; i++) {
+        g_cleanup_funcs[i]();
+    }
     CLOG_SAFE_FREE(g_context.process);
     clog_config_destroy_group(g_context.config.root);
     clog_placeholder_clear(&g_context.formatter.placeholder);
     clog_mp_finalize();
     g_context.config.root = NULL;
     g_context.config.level = CLOG_LEVEL_OFF;
+    if (funcs != NULL && num != 0) {
+        for (size_t i = 0; i < num; ++i) {
+            funcs[i]();
+        }
+    }
 }
 
 void clog_err_clear(void)
