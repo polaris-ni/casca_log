@@ -7,9 +7,7 @@
 #include <stdio.h>
 #include "clog_config.h"
 #include "clog_formatter.h"
-#include "clog_hooks.h"
 #include "clog_mem_pool.h"
-#include "clog_placeholder.h"
 #include "clog_secure_func.h"
 
 static clog_context_t g_context = {0};
@@ -138,7 +136,6 @@ void clog_destroy(const clog_cleanup_f* funcs, const size_t num)
     }
     CLOG_SAFE_FREE(g_context.process);
     clog_config_destroy_group(g_context.config.root);
-    clog_placeholder_clear(&g_context.formatter.placeholder);
     clog_mp_finalize();
     g_context.config.root = NULL;
     g_context.config.level = CLOG_LEVEL_OFF;
