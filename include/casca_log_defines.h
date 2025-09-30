@@ -160,6 +160,16 @@ struct clog_context {
     clog_config_t config;
     struct {
         clog_placeholder_t placeholder;
+        struct {
+            struct {
+                const char* trace;
+                const char* debug;
+                const char* info;
+                const char* warn;
+                const char* error;
+                const char* fetal;
+            } tag;
+        } level;
     } formatter;
 };
 

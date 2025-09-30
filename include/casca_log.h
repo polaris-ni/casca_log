@@ -37,6 +37,13 @@ const clog_config_group_t* clog_get_config_root(void);
 const char* clog_get_process(void);
 
 /**
+ * get tag by level
+ * @param level log level
+ * @return tag
+ */
+const char* clog_get_level_tag(clog_level_e level);
+
+/**
  * destroy context
  */
 void clog_destroy(void);
