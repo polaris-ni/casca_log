@@ -14,6 +14,7 @@ extern "C" {
 /**
  * register customize placeholder func
  * if you register a placeholder with the same name, the previous one will be replaced
+ * this function should be called before clog_init which will parse customized and default placeholders
  * @param name placeholder name, should start with [a-z, A-Z, 0-9]
  * @param func placeholder func
  * @return #clog_res_e

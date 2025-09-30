@@ -10,6 +10,8 @@
 #include "clog_hooks.h"
 #include "clog_secure_func.h"
 
+static const char* g_tags[] = {NULL, NULL, NULL, NULL, NULL, NULL};
+
 /* << default placeholder implementation start */
 
 static size_t clog_num_to_str(uint32_t value, const uint32_t num, char* buf, const size_t size, const bool is_padding)
@@ -105,6 +107,32 @@ static size_t clog_placeholder_ln(const clog_item_t* item, char* buf, const size
     return 1;
 }
 
+static size_t clog_placeholder_level(const clog_item_t* item, char* buf, const size_t size)
+{
+    switch (item->level) {
+        case CLOG_LEVEL_TRACE:
+            CLOG_RET_IF_NULL(g_tags[0], 0);
+            return clog_placeholder_string_copy(g_tags[0], buf, size);
+        case CLOG_LEVEL_DEBUG:
+            CLOG_RET_IF_NULL(g_tags[1], 0);
+            return clog_placeholder_string_copy(g_tags[1], buf, size);
+        case CLOG_LEVEL_INFO:
+            CLOG_RET_IF_NULL(g_tags[2], 0);
+            return clog_placeholder_string_copy(g_tags[2], buf, size);
+        case CLOG_LEVEL_WARN:
+            CLOG_RET_IF_NULL(g_tags[3], 0);
+            return clog_placeholder_string_copy(g_tags[3], buf, size);
+        case CLOG_LEVEL_ERROR:
+            CLOG_RET_IF_NULL(g_tags[4], 0);
+            return clog_placeholder_string_copy(g_tags[4], buf, size);
+        case CLOG_LEVEL_FATAL:
+            CLOG_RET_IF_NULL(g_tags[5], 0);
+            return clog_placeholder_string_copy(g_tags[5], buf, size);
+        default:
+            return 0;
+    }
+}
+
 
 #define CLOG_PLACEHOLDER_DECLARE(n, f, i) {.name = n, .func = f, .next = &g_placeholder_list[i + 1]}
 
@@ -124,6 +152,7 @@ static clog_placeholder_t g_placeholder_list[] = {
     CLOG_PLACEHOLDER_DECLARE("_file", clog_placeholder_file, 10),
     CLOG_PLACEHOLDER_DECLARE("_line", clog_placeholder_line, 11),
     CLOG_PLACEHOLDER_DECLARE("_content", clog_placeholder_content, 12),
+    CLOG_PLACEHOLDER_DECLARE("_level", clog_placeholder_level, 13),
     CLOG_PLACEHOLDER_DECLARE_LAST("_ln", clog_placeholder_ln),
 };
 #undef CLOG_PLACEHOLDER_DECLARE_LAST
@@ -276,6 +305,13 @@ clog_res_e clog_placeholder_parse(const char* format, clog_placeholder_t* root)
         clog_placeholder_clear(root);
         clog_err_append_line("parse format [%s] failed", format);
     }
+    /* preload tag str */
+    g_tags[0] = clog_get_level_tag(CLOG_LEVEL_TRACE);
+    g_tags[1] = clog_get_level_tag(CLOG_LEVEL_DEBUG);
+    g_tags[2] = clog_get_level_tag(CLOG_LEVEL_INFO);
+    g_tags[3] = clog_get_level_tag(CLOG_LEVEL_WARN);
+    g_tags[4] = clog_get_level_tag(CLOG_LEVEL_ERROR);
+    g_tags[5] = clog_get_level_tag(CLOG_LEVEL_FATAL);
     return ret;
 }
 
