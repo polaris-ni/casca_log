@@ -16,7 +16,7 @@ typedef enum clog_level {
     CLOG_LEVEL_INFO = 4, /* 1 << 2 */
     CLOG_LEVEL_WARN = 8, /* 1 << 3 */
     CLOG_LEVEL_ERROR = 16, /* 1 << 4 */
-    CLOG_LEVEL_FATAL = 32, /* 1 << 5 */
+    CLOG_LEVEL_FETAL = 32, /* 1 << 5 */
 } clog_level_e;
 
 #if defined(__cplusplus) || defined(c_plusplus)
