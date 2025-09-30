@@ -125,7 +125,7 @@ static size_t clog_placeholder_level(const clog_item_t* item, char* buf, const s
         case CLOG_LEVEL_ERROR:
             CLOG_RET_IF_NULL(g_tags[4], 0);
             return clog_placeholder_string_copy(g_tags[4], buf, size);
-        case CLOG_LEVEL_FATAL:
+        case CLOG_LEVEL_FETAL:
             CLOG_RET_IF_NULL(g_tags[5], 0);
             return clog_placeholder_string_copy(g_tags[5], buf, size);
         default:
@@ -298,7 +298,7 @@ clog_res_e clog_placeholder_parse(const char* format, clog_placeholder_t* root)
 {
     CLOG_RET_IF_NULL(format, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(root, CLOG_INVALID_PARAM);
-    CLOG_RET_IF_X(root->next, CLOG_INVALID_PARAM, "root.next is not null, please clear first");
+    CLOG_RET_IF_X(root->next != NULL, CLOG_INVALID_PARAM, "root.next is not null, please clear first");
     clog_err_clear();
     const clog_res_e ret = clog_placeholder_parse_format(format, root);
     if (ret != CLOG_SUCCESS) {
@@ -311,7 +311,7 @@ clog_res_e clog_placeholder_parse(const char* format, clog_placeholder_t* root)
     g_tags[2] = clog_get_level_tag(CLOG_LEVEL_INFO);
     g_tags[3] = clog_get_level_tag(CLOG_LEVEL_WARN);
     g_tags[4] = clog_get_level_tag(CLOG_LEVEL_ERROR);
-    g_tags[5] = clog_get_level_tag(CLOG_LEVEL_FATAL);
+    g_tags[5] = clog_get_level_tag(CLOG_LEVEL_FETAL);
     return ret;
 }
 
@@ -320,11 +320,11 @@ void clog_placeholder_clear(clog_placeholder_t* root)
     CLOG_RET_VOID_IF(root);
     CLOG_SAFE_FREE(root->name);
     root->func = NULL;
-    clog_placeholder_t* cur = root->next;
+    const clog_placeholder_t* cur = root->next;
     while (cur != NULL) {
-        clog_placeholder_t* next = cur->next;
+        const clog_placeholder_t* next = cur->next;
         clog_free((void*)cur->name);
-        clog_free(cur);
+        clog_free((void *)cur);
         cur = next;
     }
 }
