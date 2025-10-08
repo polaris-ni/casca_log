@@ -55,7 +55,7 @@ static char* clog_strndup(const char* start, const size_t num)
 {
     CLOG_RET_IF(num == 0, NULL);
     CLOG_RET_IF_NULL(start, NULL);
-    char* tmp = clog_malloc(num + 1);
+    char* tmp = (char *)clog_malloc(num + 1);
     CLOG_RET_IF_NULL(tmp, NULL);
     (void)clog_memcpy(tmp, num + 1, start, num);
     tmp[num] = '\0';
