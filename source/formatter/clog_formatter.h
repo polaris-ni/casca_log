@@ -5,7 +5,7 @@
 #ifndef CASCA_LOG_CLOG_FORMATTER_H
 #define CASCA_LOG_CLOG_FORMATTER_H
 
-#include "casca_log_defines.h"
+#include "casca_log_base.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {

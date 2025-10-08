@@ -27,7 +27,6 @@ extern "C" {
 #define CLOG_ARCH_32BIT
 #endif
 
-
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

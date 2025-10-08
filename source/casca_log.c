@@ -2,7 +2,6 @@
  * @author Polaris
  * @date  2025/9/3
  */
-
 #include "casca_log.h"
 #include <stdarg.h>
 #include <stdio.h>
@@ -19,6 +18,25 @@
 #include <sys/time.h>
 #include <time.h>
 #endif
+
+typedef struct clog_context {
+    const char* process;
+    clog_hashmap_t* modules;
+    clog_config_t config;
+    struct {
+        clog_placeholder_t placeholder;
+        struct {
+            struct {
+                const char* trace;
+                const char* debug;
+                const char* info;
+                const char* warn;
+                const char* error;
+                const char* fetal;
+            } tag;
+        } level;
+    } formatter;
+} clog_context_t;
 
 static clog_context_t g_context = {0};
 
