@@ -14,9 +14,6 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-enable_testing()
-
 add_executable(casca_log_test test.cpp)
 target_link_libraries(casca_log_test GTest::gtest_main casca_log)
-include(GoogleTest)
-gtest_discover_tests(casca_log_test)
+add_test(NAME CascaLogTest COMMAND casca_log_test)
