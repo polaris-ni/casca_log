@@ -14,6 +14,9 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-add_executable(casca_log_test test.cpp)
+file(GLOB_RECURSE CASCA_LOG_TEST_SOURCES "./*.cpp")
+set(CASCA_LOG_TEST_SOURCES ${CASCA_LOG_TEST_SOURCES} PARENT_SCOPE)
+
+add_executable(casca_log_test ${CASCA_LOG_TEST_SOURCES})
 target_link_libraries(casca_log_test GTest::gtest_main casca_log)
 add_test(NAME CascaLogTest COMMAND casca_log_test)
