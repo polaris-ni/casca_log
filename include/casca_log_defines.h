@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include "casca_log_config.h"
 #include "casca_log_level.h"
 
@@ -67,6 +68,9 @@ extern "C" {
 #endif
 
 #define CLOG_UNUSED_VAR(x) (void)x
+#define CLOG_IGNORE_RES(f) (void)(f)
+
+#define CLOG_RECORDER_ID_INVALID 0u
 
 typedef enum clog_res {
     CLOG_SUCCESS = 0, /* exec success */
@@ -76,6 +80,7 @@ typedef enum clog_res {
     CLOG_ERROR_FORMAT = 4, /* error format */
     CLOG_NO_MEMORY = 5, /* no memory, malloc failed */
     CLOG_TARGET_NOT_FOUND = 6, /* something not found */
+    CLOG_OVERSIZE = 7, /* oversize */
 } clog_res_e;
 
 typedef enum clog_config_item_type {
@@ -89,6 +94,7 @@ typedef enum clog_config_item_type {
 } clog_config_item_type_e;
 
 typedef struct clog_item {
+    const uint32_t recorders[CASCA_LOG_TARGET_RECORDER_COUNT];
     const char* filepath;
     const char* filename;
     const char* function;
