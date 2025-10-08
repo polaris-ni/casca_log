@@ -6,7 +6,8 @@
 #define CASCA_LOG_CASCA_LOG_H
 
 #include "casca_log_config.h"
-#include "casca_log_defines.h"
+#include "formatter/clog_placeholder.h"
+#include "utils/clog_config.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -15,6 +16,40 @@ extern "C" {
 #ifdef CASCA_LOG_DEBUG
 /* suppress warning: Possibly unused #include directive */
 #endif
+
+#define CLOG_RET_IF_X(cond, ret, msg, ...)    \
+    do {                                      \
+        if (cond) {                           \
+            clog_err_set(msg, ##__VA_ARGS__); \
+            return ret;                       \
+        }                                     \
+    } while (0)
+
+#define CLOG_RET_IF_NULL_X(ptr, ret, msg, ...) \
+    do {                                       \
+        if ((ptr) == NULL) {                   \
+            clog_err_set(msg, ##__VA_ARGS__);  \
+            return ret;                        \
+        }                                      \
+    } while (0)
+
+#define CLOG_RECORDER_ID_INVALID 0u
+
+/**
+ * setup function
+ * @return #clog_res_e
+ */
+typedef clog_res_e (*clog_setup_f)(void);
+
+/**
+ * setup function
+ * @return #clog_res_e
+ */
+typedef void (*clog_cleanup_f)(void);
+
+typedef struct clog_module {
+    clog_level_e level;
+} clog_module_t;
 
 /**
  * create context with config
