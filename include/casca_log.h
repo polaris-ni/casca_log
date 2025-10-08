@@ -109,6 +109,22 @@ void clog_err_append_line(const char* fmt, ...);
  */
 const char* clog_err_get(void);
 
+/**
+ * record a log
+ * @param recorders where the log will be recorded
+ * @param count num of recorders, should not more than CASCA_LOG_TARGET_RECORDER_COUNT
+ * @param module module of current process
+ * @param file current file name
+ * @param function current function name
+ * @param line current line number
+ * @param level log level
+ * @param fmt message format
+ * @param ... var args
+ * @return #clog_res_e
+ */
+clog_res_e clog_log(const uint32_t* recorders, size_t count, const char* module, const char* file, const char* function,
+                    int line, clog_level_e level, const char* fmt, ...);
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

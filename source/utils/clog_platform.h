@@ -21,7 +21,7 @@ extern "C" {
 #define CLOG_PLATFORM_UNKNOWN
 #endif
 
-#if defined(_WIN64) || defined(__x86_64__) || defined(__amd64__)
+#if defined(_WIN64) || defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || defined(__LP64__)
 #define CLOG_ARCH_64BIT
 #else
 #define CLOG_ARCH_32BIT
