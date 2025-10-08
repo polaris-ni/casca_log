@@ -7,8 +7,7 @@
 
 #include <stdint.h>
 #include <string.h>
-
-#include "casca_log.h"
+#include "casca_log_base.h"
 #include "clog_hooks.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
@@ -55,9 +54,9 @@ static char* clog_strndup(const char* start, const size_t num)
 {
     CLOG_RET_IF(num == 0, NULL);
     CLOG_RET_IF_NULL(start, NULL);
-    char* tmp = (char *)clog_malloc(num + 1);
+    char* tmp = (char*)clog_malloc(num + 1);
     CLOG_RET_IF_NULL(tmp, NULL);
-    (void)clog_memcpy(tmp, num + 1, start, num);
+    CLOG_IGNORE_RES(clog_memcpy(tmp, num + 1, start, num));
     tmp[num] = '\0';
     return tmp;
 }

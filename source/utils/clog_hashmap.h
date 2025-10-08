@@ -7,7 +7,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "casca_log_defines.h"
 #include "clog_secure_func.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
@@ -22,7 +21,6 @@ struct clog_hashmap_entry {
     clog_hashmap_entry_t* next;
 };
 
-struct clog_hashmap;
 typedef struct clog_hashmap clog_hashmap_t;
 
 typedef bool (*clog_hashmap_cmp_f)(const void* key1, const void* key2);

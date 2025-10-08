@@ -5,8 +5,6 @@
 #include "clog_hashmap.h"
 #include <stdlib.h>
 #include <time.h>
-#include "clog_hooks.h"
-#include "clog_secure_func.h"
 
 #ifdef CLOG_ARCH_64BIT
 typedef uint64_t clog_hashmap_hash_t;

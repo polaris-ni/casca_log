@@ -1,11 +1,24 @@
 # casca_log_config_template
 
 [Formatter]
-format="{_year}-{_month}-{_day} {_hour}:{_minute}:{_second}.{_millisecond} {_level} {_process}:{_module}:{_tid}:{_file}:{_line} {_content}{_ln}"
+format = "{_year}-{_month}-{_day} {_hour}:{_minute}:{_second}.{_millisecond} {_level} {_process}:{_module}:{_tid}:{_file}:{_line} {_content}{_ln}"
 [Formatter.Level.Tag]
-trace="T"
-debug="D"
-info="I"
-warn="W"
-error="E"
-fetal="F"
+trace = "T"
+debug = "D"
+info = "I"
+warn = "W"
+error = "E"
+fetal = "F"
+[Process.casca_log_test]
+# CLOG_LEVEL_OFF = 0, /* log is not allowed to write */
+# CLOG_LEVEL_TRACE = 1, /* 1 << 0 */
+# CLOG_LEVEL_DEBUG = 2, /* 1 << 1 */
+# CLOG_LEVEL_INFO = 4, /* 1 << 2 */
+# CLOG_LEVEL_WARN = 8, /* 1 << 3 */
+# CLOG_LEVEL_ERROR = 16, /* 1 << 4 */
+# CLOG_LEVEL_FETAL = 32, /* 1 << 5 */
+level = 15 # CLOG_LEVEL_TRACE | CLOG_LEVEL_DEBUG | CLOG_LEVEL_INFO | CLOG_LEVEL_WARN | CLOG_LEVEL_ERROR | CLOG_LEVEL_FETAL
+[Process.casca_log_test.main]
+level = 31 # override process level
+[Process.casca_log_test.test]
+# level inherited from process
