@@ -30,10 +30,19 @@ const clog_config_group_t* clog_config_find_group(const clog_config_group_t* roo
 /**
  * get item from group
  * @param group group
- * @param key item key, nonnull
+ * @param key item key
  * @return item if success, NULL otherwise
  */
 const clog_config_item_t* clog_config_find_item_in_group(const clog_config_group_t* group, const char* key);
+
+/**
+ * get item from group, and check if it is UINT
+ * @param group group
+ * @param key item key
+ * @param value item value
+ * @return clog_res_e
+ */
+clog_res_e clog_config_find_item_in_group_uint(const clog_config_group_t* group, const char* key, uint32_t *value);
 
 /**
  * get item from group, if groups is empty, item will be searched in root group

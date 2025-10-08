@@ -16,7 +16,7 @@ static const char* g_tags[] = {NULL, NULL, NULL, NULL, NULL, NULL};
 
 static size_t clog_num_to_str(uint32_t value, const uint32_t num, char* buf, const size_t size, const bool is_padding)
 {
-    (void)size;
+    CLOG_UNUSED_VAR(size);
     static const char digits[] = "0123456789";
     if (value == 0) {
         buf[0] = '0';
@@ -271,6 +271,7 @@ static clog_res_e clog_placeholder_parse_format(const char* format, clog_placeho
         tmp++;
     }
     char* name = clog_malloc(tmp - format + 1);
+    char* ptr = name;
     CLOG_RET_IF_NULL(name, CLOG_NO_MEMORY);
     const char* start = format;
     while (start < tmp) {
@@ -280,11 +281,11 @@ static clog_res_e clog_placeholder_parse_format(const char* format, clog_placeho
                 continue;
             }
         }
-        *name = *start;
-        name++;
+        *ptr = *start;
+        ptr++;
         start++;
     }
-    *name = '\0';
+    *ptr = '\0';
     clog_placeholder_t* placeholder = clog_placeholder_create(name, false);
     if (placeholder == NULL) {
         clog_free(name);
@@ -298,8 +299,7 @@ clog_res_e clog_placeholder_parse(const char* format, clog_placeholder_t* root)
 {
     CLOG_RET_IF_NULL(format, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(root, CLOG_INVALID_PARAM);
-    CLOG_RET_IF_X(root->next != NULL, CLOG_INVALID_PARAM, "root.next is not null, please clear first");
-    clog_err_clear();
+    CLOG_RET_IF(root->next != NULL, CLOG_INVALID_PARAM);
     const clog_res_e ret = clog_placeholder_parse_format(format, root);
     if (ret != CLOG_SUCCESS) {
         clog_placeholder_clear(root);
@@ -317,14 +317,14 @@ clog_res_e clog_placeholder_parse(const char* format, clog_placeholder_t* root)
 
 void clog_placeholder_clear(clog_placeholder_t* root)
 {
-    CLOG_RET_VOID_IF(root);
+    CLOG_RET_VOID_IF_NULL(root);
     CLOG_SAFE_FREE(root->name);
     root->func = NULL;
     const clog_placeholder_t* cur = root->next;
     while (cur != NULL) {
         const clog_placeholder_t* next = cur->next;
         clog_free((void*)cur->name);
-        clog_free((void *)cur);
+        clog_free((void*)cur);
         cur = next;
     }
 }
