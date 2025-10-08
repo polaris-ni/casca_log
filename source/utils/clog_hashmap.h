@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "casca_log_defines.h"
-#include "clog_platform.h"
+#include "clog_secure_func.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -101,6 +101,13 @@ bool clog_hashmap_remove(clog_hashmap_t* map, const void* key);
 bool clog_hashmap_is_exists(const clog_hashmap_t* map, const void* key);
 
 /**
+ * get size of hashmap
+ * @param map #clog_hashmap_t
+ * @return size of hashmap
+ */
+size_t clog_hashmap_size(const clog_hashmap_t* map);
+
+/**
  * clear all key-value pairs
  * @param map #clog_hashmap_t
  */
@@ -111,6 +118,46 @@ void clog_hashmap_clear(clog_hashmap_t* map);
  * @param map #clog_hashmap_t, *map will be set to NULL
  */
 void clog_hashmap_destroy(clog_hashmap_t** map);
+
+/**
+ * duplicate string
+ * @param str string to duplicate
+ * @return duplicated string
+ */
+static void* clog_hashmap_string_dup(const void* str)
+{
+    return clog_strdup((const char *)str);
+}
+
+/**
+ * free string
+ * @param str string to be free
+ */
+static void clog_hashmap_string_free(void* str)
+{
+    clog_free(str);
+}
+
+/**
+ * compare string
+ * @param str1 string1
+ * @param str2 string2
+ * @return true if str1 == str2, false otherwise
+ */
+static bool clog_hashmap_string_cmp(const void* str1, const void* str2)
+{
+    return strcmp((const char *)str1, (const char *)str2) == 0;
+}
+
+/**
+ * get size of string
+ * @param str string
+ * @return size of string
+ */
+static size_t clog_hashmap_string_size(const void* str)
+{
+    return strlen((const char *)str);
+}
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

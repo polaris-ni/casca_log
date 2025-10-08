@@ -3,10 +3,8 @@
  * @date  2025/10/2
  */
 #include "clog_hashmap.h"
-
 #include <stdlib.h>
 #include <time.h>
-
 #include "clog_hooks.h"
 #include "clog_secure_func.h"
 
@@ -224,19 +222,17 @@ static void clog_hashmap_free_buckets(const clog_hashmap_t* map, clog_hashmap_en
 
 static clog_res_e clog_hashmap_put_internal(clog_hashmap_t* map, void* key, void* value, bool* is_replace)
 {
-    clog_hashmap_entry_t* entry = &map->buckets[clog_hashmap_get_index(map, key)];
-    if (entry->next != NULL) {
-        entry = entry->next;
-        while (entry->next != NULL) {
-            if (clog_hashmap_cmp(map, key, entry->key)) {
-                /* replace and free old value */
-                clog_hashmap_free_value(map, entry->value);
-                entry->value = value; /* no need to dup */
-                *is_replace = true;
-                return CLOG_SUCCESS;
-            }
-            entry = entry->next;
+    clog_hashmap_entry_t* bucket = &map->buckets[clog_hashmap_get_index(map, key)];
+    clog_hashmap_entry_t* entry = bucket->next;
+    while (entry != NULL) {
+        if (clog_hashmap_cmp(map, key, entry->key)) {
+            /* replace and free old value */
+            clog_hashmap_free_value(map, entry->value);
+            entry->value = value; /* no need to dup */
+            *is_replace = true;
+            return CLOG_SUCCESS;
         }
+        entry = entry->next;
     }
 
     /* insert new entry */
@@ -244,12 +240,12 @@ static clog_res_e clog_hashmap_put_internal(clog_hashmap_t* map, void* key, void
     CLOG_RET_IF_NULL(new_entry, CLOG_NO_MEMORY);
     new_entry->key = key;
     new_entry->value = value;
-    new_entry->next = entry->next;
+    new_entry->next = bucket->next;
     if (new_entry->key == NULL || new_entry->value == NULL) {
         clog_hashmap_free_entry(map, new_entry);
         return CLOG_NO_MEMORY;
     }
-    entry->next = new_entry;
+    bucket->next = new_entry;
     map->data_size++;
     return CLOG_SUCCESS;
 }
@@ -419,6 +415,12 @@ bool clog_hashmap_is_exists(const clog_hashmap_t* map, const void* key)
     }
 
     return entry != NULL;
+}
+
+size_t clog_hashmap_size(const clog_hashmap_t* map)
+{
+    CLOG_RET_IF_NULL(map, 0);
+    return map->data_size;
 }
 
 void clog_hashmap_clear(clog_hashmap_t* map)
