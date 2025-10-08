@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "clog_hooks.h"
+#include "casca_log.h"
 #include "clog_secure_func.h"
 
 static clog_config_group_t* clog_config_create_empty_group(void)
@@ -708,6 +708,16 @@ const clog_config_item_t* clog_config_find_item_in_group(const clog_config_group
         item = item->next;
     }
     return NULL;
+}
+
+clog_res_e clog_config_find_item_in_group_uint(const clog_config_group_t* group, const char* key, uint32_t* value)
+{
+    CLOG_RET_IF_NULL(value, CLOG_INVALID_PARAM);
+    const clog_config_item_t* item = clog_config_find_item_in_group(group, key);
+    CLOG_RET_IF_NULL(item, CLOG_TARGET_NOT_FOUND);
+    CLOG_RET_IF(item->type != CLOG_CONFIG_ITEM_TYPE_UINT, CLOG_ERROR_FORMAT);
+    *value = item->value.uint;
+    return CLOG_SUCCESS;
 }
 
 const clog_config_item_t* clog_config_find_item(const clog_config_group_t* root, const char* groups[],

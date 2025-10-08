@@ -4,6 +4,7 @@
  */
 
 #include "casca_log.h"
+#include <stdarg.h>
 #include <stdio.h>
 #include "clog_config.h"
 #include "clog_formatter.h"
@@ -31,18 +32,87 @@ static const clog_cleanup_f g_cleanup_funcs[] = {
     clog_formatter_cleanup,
 };
 
+static clog_res_e clog_init_process_attrs(const char* process, const clog_config_group_t* group)
+{
+    uint32_t value = 0;
+    const clog_res_e ret = clog_config_find_item_in_group_uint(group, "level", &value);
+    CLOG_RET_IF_X(ret != CLOG_SUCCESS, ret, "level not found or invalid in process[%s], ret = %d", process, ret);
+    if (value > (CLOG_LEVEL_FETAL | CLOG_LEVEL_ERROR | CLOG_LEVEL_WARN | CLOG_LEVEL_INFO | CLOG_LEVEL_DEBUG |
+                 CLOG_LEVEL_TRACE)) {
+        clog_err_set("the value of level is invalid, value = %u", value);
+        return CLOG_ERROR_FORMAT;
+    }
+    g_context.config.level = value;
+    return CLOG_SUCCESS;
+}
+
+static clog_res_e clog_init_process_module(const char* process, const clog_config_group_t* module, clog_hashmap_t* map)
+{
+    uint32_t value = 0;
+    const clog_res_e ret = clog_config_find_item_in_group_uint(module, "level", &value);
+    if (ret == CLOG_TARGET_NOT_FOUND) {
+        value = g_context.config.level;
+    } else {
+        CLOG_RET_IF_X(ret != CLOG_SUCCESS, ret, "level invalid in[%s.%s], ret = %d", process, module->name, ret);
+    }
+    if (value > (CLOG_LEVEL_FETAL | CLOG_LEVEL_ERROR | CLOG_LEVEL_WARN | CLOG_LEVEL_INFO | CLOG_LEVEL_DEBUG |
+                 CLOG_LEVEL_TRACE)) {
+        clog_err_set("the value of level is invalid, value = %u", value);
+        return CLOG_ERROR_FORMAT;
+    }
+    const clog_module_t tmp = {
+        .level = value,
+    };
+    return clog_hashmap_put(map, module->name, &tmp);
+}
+
+static clog_res_e clog_init_process(const char* process, const clog_config_group_t* root, clog_hashmap_t** modules)
+{
+    clog_hashmap_t* map =
+        clog_hashmap_create(0, sizeof(clog_module_t), clog_hashmap_string_dup, clog_hashmap_string_free, NULL, NULL,
+                            clog_hashmap_string_cmp, clog_hashmap_string_size, 0);
+    CLOG_RET_IF_NULL_X(map, CLOG_NO_MEMORY, "clog_hashmap_create failed");
+    const char* groups[] = {"Process", process};
+    const clog_config_group_t* group = clog_config_find_group(root, groups, CLOG_ARRAY_SIZE(groups));
+    if (group == NULL) {
+        clog_hashmap_destroy(&map);
+        clog_err_set("process [%s] not found", process);
+        return CLOG_TARGET_NOT_FOUND;
+    }
+    clog_res_e ret = clog_init_process_attrs(process, group);
+    if (ret != CLOG_SUCCESS) {
+        clog_hashmap_destroy(&map);
+        return ret;
+    }
+    const clog_config_group_t* child = group->child;
+    while (child != NULL) {
+        ret = clog_init_process_module(process, child, map);
+        if (ret != CLOG_SUCCESS) {
+            clog_hashmap_destroy(&map);
+            return ret;
+        }
+        child = child->sibling;
+    }
+    *modules = map;
+    return CLOG_SUCCESS;
+}
+
 clog_res_e clog_init(const char* process, const char* config)
 {
     CLOG_RET_IF_NULL_X(process, CLOG_INVALID_PARAM, "process is NULL");
     CLOG_RET_IF_NULL_X(config, CLOG_INVALID_PARAM, "config is NULL");
     g_context.process = clog_strdup(process);
-    if (g_context.process == NULL) {
-        return CLOG_NO_MEMORY;
-    }
+    CLOG_RET_IF_NULL_X(g_context.process, CLOG_NO_MEMORY, "clog_strdup process failed");
 
     g_context.config.root = clog_config_parse(config);
-    const clog_res_e ret = CLOG_ERROR_FORMAT;
+    clog_res_e ret = CLOG_ERROR_FORMAT;
     if (g_context.config.root == NULL) {
+        clog_destroy(NULL, 0);
+        return ret;
+    }
+
+    ret = clog_init_process(process, g_context.config.root, &g_context.modules);
+    if (g_context.modules == NULL) {
         clog_destroy(NULL, 0);
         return ret;
     }
@@ -145,6 +215,7 @@ void clog_destroy(const clog_cleanup_f* funcs, const size_t num)
     }
     CLOG_SAFE_FREE(g_context.process);
     clog_config_destroy_group(g_context.config.root);
+    clog_hashmap_destroy(&g_context.modules);
     clog_mp_finalize();
     g_context.config.root = NULL;
     g_context.config.level = CLOG_LEVEL_OFF;

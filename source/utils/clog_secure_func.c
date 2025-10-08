@@ -10,7 +10,7 @@ clog_res_e clog_memset(void* dest, const size_t size, const char padding, const 
 {
     CLOG_RET_IF_NULL(dest, CLOG_INVALID_PARAM);
     CLOG_RET_IF(count == 0 || count > size, CLOG_INVALID_PARAM);
-    (void)memset(dest, padding, count);
+    CLOG_IGNORE_RES(memset(dest, padding, count));
     return CLOG_SUCCESS;
 }
 
@@ -18,7 +18,7 @@ clog_res_e clog_memcpy(void* dest, const size_t size, const void* src, const siz
 {
     CLOG_RET_IF((dest == NULL) || (src == NULL), CLOG_INVALID_PARAM);
     CLOG_RET_IF(count == 0 || count > size, CLOG_INVALID_PARAM);
-    (void)memcpy(dest, src, count);
+    CLOG_IGNORE_RES(memcpy(dest, src, count));
     return CLOG_SUCCESS;
 }
 
