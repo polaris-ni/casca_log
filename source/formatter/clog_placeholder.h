@@ -5,11 +5,26 @@
 #ifndef CASCA_LOG_CLOG_PLACEHOLDER_H
 #define CASCA_LOG_CLOG_PLACEHOLDER_H
 
-#include "casca_log_defines.h"
+#include "casca_log_base.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
+
+/**
+ * placeholder
+ * @param item log item, contains log info and content, it should never be NULL
+ * @param buf the buffer to store log
+ * @param size buffer size
+ * @return size_t write size
+ */
+typedef size_t (*clog_placeholder_f)(const clog_item_t* item, char* buf, size_t size);
+
+typedef struct clog_placeholder {
+    const char* name;
+    clog_placeholder_f func;
+    const struct clog_placeholder* next;
+} clog_placeholder_t;
 
 /**
  * register customize placeholder func

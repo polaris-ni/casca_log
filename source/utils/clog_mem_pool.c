@@ -4,7 +4,7 @@
  */
 #include "clog_mem_pool.h"
 #include <stdint.h>
-#include "casca_log_defines.h"
+#include "casca_log_base.h"
 #include "clog_hooks.h"
 
 #define CLOG_MP_HEAP_SIZE_8 8

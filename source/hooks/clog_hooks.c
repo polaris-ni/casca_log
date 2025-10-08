@@ -3,7 +3,6 @@
  * @date  2025/9/3
  */
 #include "clog_hooks.h"
-
 #include <stdlib.h>
 
 #ifdef CASCA_LOG_HOOKS

@@ -5,6 +5,7 @@
 #ifndef CASCA_LOG_CASCA_LOG_BASE_H
 #define CASCA_LOG_CASCA_LOG_BASE_H
 
+#include <stddef.h>
 #include "casca_log_config.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
@@ -25,6 +26,14 @@ extern "C" {
         if (cond) {            \
             return;            \
         }                      \
+    } while (0)
+
+#define CLOG_SAFE_FREE(mem)          \
+    do {                             \
+        if (mem != NULL) {           \
+            clog_free((void*)(mem)); \
+            (mem) = NULL;            \
+        }                            \
     } while (0)
 
 #define CLOG_RET_VOID_IF_NULL(ptr) CLOG_RET_VOID_IF((ptr) == NULL)
@@ -51,6 +60,37 @@ typedef enum clog_res {
     CLOG_TARGET_NOT_FOUND = 6, /* something not found */
     CLOG_OVERSIZE = 7, /* oversize */
 } clog_res_e;
+
+typedef enum clog_level {
+    CLOG_LEVEL_OFF = 0, /* log is not allowed to write */
+    CLOG_LEVEL_TRACE = 1, /* 1 << 0 */
+    CLOG_LEVEL_DEBUG = 2, /* 1 << 1 */
+    CLOG_LEVEL_INFO = 4, /* 1 << 2 */
+    CLOG_LEVEL_WARN = 8, /* 1 << 3 */
+    CLOG_LEVEL_ERROR = 16, /* 1 << 4 */
+    CLOG_LEVEL_FETAL = 32, /* 1 << 5 */
+} clog_level_e;
+
+typedef struct clog_item {
+    const unsigned int recorders[CASCA_LOG_TARGET_RECORDER_COUNT];
+    const char* filepath;
+    const char* filename;
+    const char* function;
+    const char* module;
+    unsigned long long tid;
+    unsigned int line;
+    clog_level_e level;
+    struct {
+        unsigned short year;
+        unsigned char month;
+        unsigned char day;
+        unsigned char hour;
+        unsigned char minute;
+        unsigned char second;
+        unsigned short millisecond;
+    };
+    const char* content;
+} clog_item_t;
 
 
 #if defined(__cplusplus) || defined(c_plusplus)

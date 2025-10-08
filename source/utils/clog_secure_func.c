@@ -4,7 +4,6 @@
  */
 #include "clog_secure_func.h"
 #include <string.h>
-#include "casca_log_defines.h"
 
 clog_res_e clog_memset(void* dest, const size_t size, const char padding, const size_t count)
 {

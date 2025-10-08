@@ -4,6 +4,7 @@
  */
 #ifndef CASCA_LOG_CLOG_MEM_POOL_H
 #define CASCA_LOG_CLOG_MEM_POOL_H
+
 #include <stddef.h>
 
 #if defined(__cplusplus) || defined(c_plusplus)
