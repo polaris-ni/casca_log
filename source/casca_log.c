@@ -15,6 +15,8 @@
 #include <windows.h>
 #elif defined(CLOG_PLATFORM_MACOS) || defined(CLOG_PLATFORM_LINUX) || defined(CLOG_PLATFORM_UNIX)
 #include <pthread.h>
+#include <sys/time.h>
+#include <time.h>
 #endif
 
 static clog_context_t g_context = {0};
@@ -231,15 +233,16 @@ static void clog_item_init_datetime(clog_item_t* item)
     item->second = st.wSecond;
     item->millisecond = st.wMilliseconds;
 #elif defined(CLOG_PLATFORM_MACOS) || defined(CLOG_PLATFORM_LINUX) || defined(CLOG_PLATFORM_UNIX)
-    struct timeval tv = {0};
-    gettimeofday(&tv, NULL);
-    struct tm* tm_info = localtime(&tv.tv_sec);
-    item->year = tm_info->tm_year + 1900;
-    item->month = tm_info->tm_mon + 1;
-    item->day = tm_info->tm_mday;
-    item->hour = tm_info->tm_hour;
-    item->minute = tm_info->tm_min;
-    item->second = tm_info->tm_sec;
+    struct timeval tv;
+    CLOG_IGNORE_RES(gettimeofday(&tv, NULL));
+    struct tm tm_info;
+    CLOG_IGNORE_RES(localtime_r(&tv.tv_sec, &tm_info));
+    item->year = tm_info.tm_year + 1900;
+    item->month = tm_info.tm_mon + 1;
+    item->day = tm_info.tm_mday;
+    item->hour = tm_info.tm_hour;
+    item->minute = tm_info.tm_min;
+    item->second = tm_info.tm_sec;
     item->millisecond = tv.tv_usec / 1000;
 #else
     item->year = 1970;
