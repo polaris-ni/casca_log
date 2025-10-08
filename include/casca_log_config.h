@@ -15,6 +15,12 @@ extern "C" {
 #ifndef CASCA_LOG_ERR_BUF_SIZE
 #define CASCA_LOG_ERR_BUF_SIZE 256
 #endif
+#ifndef CASCA_LOG_SINGLE_LOG_MAX_SIZE
+#define CASCA_LOG_SINGLE_LOG_MAX_SIZE 256
+#endif
+#ifndef CASCA_LOG_TARGET_RECORDER_COUNT
+#define CASCA_LOG_TARGET_RECORDER_COUNT 10
+#endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
