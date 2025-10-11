@@ -38,7 +38,17 @@ TEST(CascaLogTest, CreateLog)
     printf("config dump:\n%s\n==================================================\n", tmp);
 
     const uint32_t recorder = 1;
-    ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_INFO, "test log print process > %s", clog_get_process());
+#ifdef __FILE_NAME__
+    ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_INFO,
+                   "test log print process > %s", clog_get_process());
+#elif defined(__FILE__)
+    ret = clog_log(&recorder, 1, "test", __FILE__, __FUNCTION__, __LINE__, CLOG_LEVEL_INFO,
+                   "test log print process > %s", clog_get_process());
+#else
+    ret = clog_log(&recorder, 1, "test", "test.cpp", __FUNCTION__, __LINE__, CLOG_LEVEL_INFO,
+                   "test log print process > %s", clog_get_process());
+#endif
+
     ASSERT_EQ(ret, CLOG_SUCCESS);
     clog_free(tmp);
     clog_destroy(nullptr, 0);
