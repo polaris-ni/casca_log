@@ -35,7 +35,11 @@ TEST(CascaLogTest, CreateLog)
     ASSERT_NE(buf, nullptr);
     const clog_config_group_t* root = clog_get_config_root();
     clog_config_dump_group(root, tmp, len);
-    printf("config dump:\n%s", tmp);
+    printf("config dump:\n%s\n==================================================\n", tmp);
+
+    const uint32_t recorder = 1;
+    ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_INFO, "test log print process > %s", clog_get_process());
+    ASSERT_EQ(ret, CLOG_SUCCESS);
     clog_free(tmp);
     clog_destroy(nullptr, 0);
     clog_err_clear();

@@ -5,7 +5,7 @@
 
 #include "clog_filter.h"
 
-bool clog_do_filter(const clog_filter_t* filters, const clog_item_t* item)
+bool clog_filter_log(const clog_filter_t* filters, const clog_item_t* item)
 {
     CLOG_RET_IF_NULL(item, false);
     const clog_filter_t* filter = filters;

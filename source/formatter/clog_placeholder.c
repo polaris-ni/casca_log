@@ -18,10 +18,6 @@ static size_t clog_num_to_str(uint32_t value, const uint32_t num, char* buf, con
 {
     CLOG_UNUSED_VAR(size);
     static const char digits[] = "0123456789";
-    if (value == 0) {
-        buf[0] = '0';
-        return 1;
-    }
     if (is_padding) {
         unsigned int tmp = num;
         while (tmp-- > 0) {
@@ -30,13 +26,18 @@ static size_t clog_num_to_str(uint32_t value, const uint32_t num, char* buf, con
         }
         return num;
     }
-    static const unsigned int max_values[] = {0, 10, 100, 1000, 10000, 100000};
-    uint32_t index = num;
+    if (value == 0) {
+        buf[0] = '0';
+        return 1;
+    }
+    static const unsigned int max_values[] = {1,       10,       100,       1000,       10000,     100000,
+                                              1000000, 10000000, 100000000, 1000000000, 1000000000};
+    int32_t index = num;
     while (max_values[index] > value) {
         index--;
     }
-    uint32_t i = 0;
-    while (index != 0) {
+    size_t i = 0;
+    while (index >= 0) {
         buf[i] = digits[value / max_values[index]];
         value = value % max_values[index];
         i++;
@@ -96,7 +97,9 @@ static size_t clog_placeholder_file(const clog_item_t* item, char* buf, const si
 
 static size_t clog_placeholder_content(const clog_item_t* item, char* buf, const size_t size)
 {
-    return clog_placeholder_string_copy(item->content, buf, size);
+    const int ret = vsnprintf(buf, size, item->fmt, item->args);
+    CLOG_RET_IF(ret < 0, CLOG_OVERSIZE);
+    return ret;
 }
 
 static size_t clog_placeholder_ln(const clog_item_t* item, char* buf, const size_t size)
