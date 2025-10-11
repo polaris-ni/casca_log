@@ -18,6 +18,13 @@
 #include <sys/time.h>
 #include <time.h>
 #endif
+#ifdef CLOG_PLATFORM_LINUX
+// #define _GNU_SOURCE
+#include <sys/syscall.h>
+#include <unistd.h>
+#elif defined(CLOG_PLATFORM_MACOS) || defined(CLOG_PLATFORM_UNIX)
+#include <pthread.h>
+#endif
 
 typedef struct clog_context {
     const char* process;
@@ -317,8 +324,14 @@ static unsigned long long clog_get_thread_id(void)
 {
 #ifdef CLOG_PLATFORM_WINDOWS
     return GetCurrentThreadId();
-#elif defined(CLOG_PLATFORM_MACOS) || defined(CLOG_PLATFORM_LINUX) || defined(CLOG_PLATFORM_UNIX)
-    return (unsigned long long)pthread_self();
+#elif defined(CLOG_PLATFORM_LINUX)
+    return syscall(SYS_gettid);
+#elif defined(CLOG_PLATFORM_MACOS)
+    uint64_t tid;
+    (void)pthread_threadid_np(NULL, &tid);
+    return tid;
+#elif defined(CLOG_PLATFORM_UNIX)
+    return pthread_self() & 0xFFFFFFFF; /* ignore highest 4 bytes on 64Bit system */
 #else
     return 0;
 #endif
@@ -362,6 +375,7 @@ static void clog_item_init_datetime(clog_item_t* item)
 clog_res_e clog_log(const uint32_t* recorders, const size_t count, const char* module, const char* file,
                     const char* function, const int line, const clog_level_e level, const char* fmt, ...)
 {
+
     clog_item_t item = {.filepath = file,
                         .filename = file,
                         .function = function,
@@ -369,17 +383,31 @@ clog_res_e clog_log(const uint32_t* recorders, const size_t count, const char* m
                         .tid = clog_get_thread_id(),
                         .line = line,
                         .level = level,
-                        .content = NULL};
-    bool pass = clog_do_filter(clog_get_filters(CLOG_FILTER_PRE), &item);
-    CLOG_RET_IF(!pass, CLOG_NOT_PERMITTED);
-    item.content = clog_malloc(CASCA_LOG_SINGLE_LOG_MAX_SIZE);
-    CLOG_RET_IF_NULL_X(item.content, CLOG_NO_MEMORY, "malloc log content buf failed, size = %d",
-                       CASCA_LOG_SINGLE_LOG_MAX_SIZE);
-    va_list args;
-    va_start(args, fmt);
-    CLOG_IGNORE_RES(vsnprintf((char*)item.content, CASCA_LOG_SINGLE_LOG_MAX_SIZE, fmt, args));
-    va_end(args);
+                        .fmt = fmt};
     clog_item_init_datetime(&item);
+    /* prefilter */
+    bool pass = clog_filter_log(clog_get_filters(CLOG_FILTER_PRE), &item);
+    CLOG_RET_IF(!pass, CLOG_NOT_PERMITTED);
+    char* buf = clog_malloc(CASCA_LOG_SINGLE_LOG_MAX_SIZE);
+    CLOG_RET_IF_NULL_X(buf, CLOG_NO_MEMORY, "malloc log content buf failed, size = %d", CASCA_LOG_SINGLE_LOG_MAX_SIZE);
+    /* formatter */
+    va_start(item.args, fmt);
+    clog_res_e ret = clog_format_log(g_context.formatter.placeholder.next, &item, buf, CASCA_LOG_SINGLE_LOG_MAX_SIZE);
+    va_end(item.args);
+    if (ret != CLOG_SUCCESS) {
+        clog_free(buf);
+        return ret;
+    }
+    item.content = buf;
+    /* postfilter */
+    pass = clog_filter_log(clog_get_filters(CLOG_FILTER_PRE), &item);
+    if (!pass) {
+        clog_free(buf);
+        return CLOG_NOT_PERMITTED;
+    }
+
+    (void)printf("[===>]: %s\n", buf);
+
     const size_t num = count > CASCA_LOG_TARGET_RECORDER_COUNT ? CASCA_LOG_TARGET_RECORDER_COUNT : count;
     uint32_t* ptr = (uint32_t*)item.recorders;
     for (int i = 0; i < CASCA_LOG_TARGET_RECORDER_COUNT; ++i) {

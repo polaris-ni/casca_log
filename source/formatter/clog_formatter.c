@@ -3,6 +3,9 @@
  * @date  2025/10/1
  */
 #include "clog_formatter.h"
+
+#include <stdio.h>
+
 #include "casca_log.h"
 #include "clog_config.h"
 #include "clog_placeholder.h"
@@ -49,6 +52,32 @@ clog_res_e clog_formatter_setup(void)
     ret = clog_placeholder_parse(item->value.str, &placeholder);
     CLOG_RET_IF(ret != CLOG_SUCCESS, ret);
     clog_set_placeholders(placeholder.next);
+    return CLOG_SUCCESS;
+}
+
+clog_res_e clog_format_log(const clog_placeholder_t* placeholders, const clog_item_t* item, char* content, size_t size)
+{
+    CLOG_RET_IF_NULL(placeholders, CLOG_INVALID_PARAM);
+    CLOG_RET_IF_NULL(item, CLOG_INVALID_PARAM);
+    CLOG_RET_IF_NULL(content, CLOG_INVALID_PARAM);
+    CLOG_RET_IF(size == 0, CLOG_OVERSIZE);
+    const size_t remain = size - 1;
+    size_t offset = 0;
+    const clog_placeholder_t* placeholder = placeholders;
+    while (placeholder != NULL) {
+        if (placeholder->func == NULL) {
+            const int ret = snprintf(content + offset, remain - offset, "%s", placeholder->name);
+            CLOG_RET_IF(ret < 0, CLOG_OVERSIZE);
+            offset += ret;
+        } else {
+            const size_t len = placeholder->func(item, content + offset, remain - offset);
+            CLOG_RET_IF(len == 0, CLOG_OVERSIZE);
+            offset += len;
+        }
+        CLOG_RET_IF(offset >= remain, CLOG_OVERSIZE);
+        placeholder = placeholder->next;
+    }
+    content[offset] = '\0'; /* ensure there is an end char */
     return CLOG_SUCCESS;
 }
 
