@@ -59,6 +59,7 @@ typedef enum clog_res {
     CLOG_NO_MEMORY = 5, /* no memory, malloc failed */
     CLOG_TARGET_NOT_FOUND = 6, /* something not found */
     CLOG_OVERSIZE = 7, /* oversize */
+    CLOG_NOT_PERMITTED = 8, /* operation not permitted */
 } clog_res_e;
 
 typedef enum clog_level {

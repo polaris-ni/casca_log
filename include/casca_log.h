@@ -6,6 +6,7 @@
 #define CASCA_LOG_CASCA_LOG_H
 
 #include "casca_log_config.h"
+#include "formatter/clog_filter.h"
 #include "formatter/clog_placeholder.h"
 #include "utils/clog_config.h"
 
@@ -104,6 +105,13 @@ const clog_placeholder_t* clog_get_placeholders(void);
  * @param placeholder placeholder
  */
 void clog_set_placeholders(const clog_placeholder_t* placeholder);
+
+/**
+ * get pre-filters
+ * @param type #clog_filter_type_e
+ * @return #clog_filter_t, NULL if there is no filter
+ */
+const clog_filter_t* clog_get_filters(clog_filter_type_e type);
 
 /**
  * destroy clog
