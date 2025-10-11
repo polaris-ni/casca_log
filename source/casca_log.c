@@ -36,6 +36,10 @@ typedef struct clog_context {
             } tag;
         } level;
     } formatter;
+    struct {
+        clog_filter_t pre;
+        clog_filter_t post;
+    } filters;
 } clog_context_t;
 
 static clog_context_t g_context = {0};
@@ -225,6 +229,17 @@ void clog_set_placeholders(const clog_placeholder_t* placeholder)
     g_context.formatter.placeholder.next = placeholder;
 }
 
+const clog_filter_t* clog_get_filters(const clog_filter_type_e type)
+{
+    if (type == CLOG_FILTER_PRE) {
+        return g_context.filters.pre.next;
+    }
+    if (type == CLOG_FILTER_POST) {
+        return g_context.filters.post.next;
+    }
+    return NULL;
+}
+
 void clog_destroy(const clog_cleanup_f* funcs, const size_t num)
 {
     const size_t count = CLOG_ARRAY_SIZE(g_cleanup_funcs);
@@ -347,9 +362,6 @@ static void clog_item_init_datetime(clog_item_t* item)
 clog_res_e clog_log(const uint32_t* recorders, const size_t count, const char* module, const char* file,
                     const char* function, const int line, const clog_level_e level, const char* fmt, ...)
 {
-    char* content = clog_malloc(CASCA_LOG_SINGLE_LOG_MAX_SIZE);
-    CLOG_RET_IF_NULL_X(content, CLOG_NO_MEMORY, "malloc log content buf failed, size = %d",
-                       CASCA_LOG_SINGLE_LOG_MAX_SIZE);
     clog_item_t item = {.filepath = file,
                         .filename = file,
                         .function = function,
@@ -357,7 +369,12 @@ clog_res_e clog_log(const uint32_t* recorders, const size_t count, const char* m
                         .tid = clog_get_thread_id(),
                         .line = line,
                         .level = level,
-                        .content = content};
+                        .content = NULL};
+    bool pass = clog_do_filter(clog_get_filters(CLOG_FILTER_PRE), &item);
+    CLOG_RET_IF(!pass, CLOG_NOT_PERMITTED);
+    item.content = clog_malloc(CASCA_LOG_SINGLE_LOG_MAX_SIZE);
+    CLOG_RET_IF_NULL_X(item.content, CLOG_NO_MEMORY, "malloc log content buf failed, size = %d",
+                       CASCA_LOG_SINGLE_LOG_MAX_SIZE);
     va_list args;
     va_start(args, fmt);
     CLOG_IGNORE_RES(vsnprintf((char*)item.content, CASCA_LOG_SINGLE_LOG_MAX_SIZE, fmt, args));
