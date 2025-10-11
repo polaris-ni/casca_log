@@ -5,6 +5,7 @@
 #ifndef CASCA_LOG_CASCA_LOG_BASE_H
 #define CASCA_LOG_CASCA_LOG_BASE_H
 
+#include <stdarg.h>
 #include <stddef.h>
 #include "casca_log_config.h"
 
@@ -90,6 +91,8 @@ typedef struct clog_item {
         unsigned char second;
         unsigned short millisecond;
     };
+    const char* fmt;
+    va_list args;
     const char* content;
 } clog_item_t;
 

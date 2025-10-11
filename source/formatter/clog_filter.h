@@ -9,6 +9,10 @@
 #include <stdint.h>
 #include "casca_log_base.h"
 
+#if defined(__cplusplus) || defined(c_plusplus)
+extern "C" {
+#endif
+
 typedef enum clog_filter_type {
     CLOG_FILTER_PRE, /* prefilter, will be executed before formatter, item.content is NULL */
     CLOG_FILTER_POST /* postfilter, will be executed after formatter, item.content is valid */
@@ -31,6 +35,9 @@ struct clog_filter {
     clog_filter_t* next;
 };
 
-bool clog_do_filter(const clog_filter_t* filters, const clog_item_t* item);
+bool clog_filter_log(const clog_filter_t* filters, const clog_item_t* item);
 
-#endif // CASCA_LOG_CLOG_FILTER_H
+#if defined(__cplusplus) || defined(c_plusplus)
+}
+#endif
+#endif /* CASCA_LOG_CLOG_FILTER_H */
