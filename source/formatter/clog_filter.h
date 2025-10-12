@@ -37,6 +37,8 @@ struct clog_filter {
 
 bool clog_filter_log(const clog_filter_t* filters, const clog_item_t* item);
 
+bool clog_filter_basic(const clog_item_t* item);
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

@@ -250,6 +250,11 @@ const clog_filter_t* clog_get_filters(const clog_filter_type_e type)
     return NULL;
 }
 
+const clog_module_t* clog_get_module_info(const char* module)
+{
+    return clog_hashmap_get(g_context.modules, module);
+}
+
 void clog_destroy(const clog_cleanup_f* funcs, const size_t num)
 {
     const size_t count = CLOG_ARRAY_SIZE(g_cleanup_funcs);
