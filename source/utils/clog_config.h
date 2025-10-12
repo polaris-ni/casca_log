@@ -88,6 +88,15 @@ const clog_config_item_t* clog_config_find_item_in_group(const clog_config_group
 clog_res_e clog_config_find_item_in_group_uint(const clog_config_group_t* group, const char* key, uint32_t* value);
 
 /**
+ * get item from group, and check if it is BOOL
+ * @param group group
+ * @param key item key
+ * @param value item value
+ * @return clog_res_e
+ */
+clog_res_e clog_config_find_item_in_group_bool(const clog_config_group_t* group, const char* key, bool* value);
+
+/**
  * get item from group, if groups is empty, item will be searched in root group
  * @param root root group
  * @param groups group names, nullable, e.g. ["Performance", "Memory"] means find item in Performance.Memory
