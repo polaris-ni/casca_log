@@ -18,7 +18,8 @@ fetal = "F"
 # CLOG_LEVEL_ERROR = 16, /* 1 << 4 */
 # CLOG_LEVEL_FETAL = 32, /* 1 << 5 */
 level = 15 # CLOG_LEVEL_TRACE | CLOG_LEVEL_DEBUG | CLOG_LEVEL_INFO | CLOG_LEVEL_WARN | CLOG_LEVEL_ERROR | CLOG_LEVEL_FETAL
-[Process.casca_log_test.main]
-level = 31 # override process level
 [Process.casca_log_test.test]
+level = 31 # override process level
+[Process.casca_log_test.main]
 # level inherited from process
+enabled = false # main is not allowed to output log, if not set, default value is true

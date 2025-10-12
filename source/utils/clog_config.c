@@ -710,15 +710,20 @@ const clog_config_item_t* clog_config_find_item_in_group(const clog_config_group
     return NULL;
 }
 
-clog_res_e clog_config_find_item_in_group_uint(const clog_config_group_t* group, const char* key, uint32_t* value)
-{
-    CLOG_RET_IF_NULL(value, CLOG_INVALID_PARAM);
-    const clog_config_item_t* item = clog_config_find_item_in_group(group, key);
-    CLOG_RET_IF_NULL(item, CLOG_TARGET_NOT_FOUND);
-    CLOG_RET_IF(item->type != CLOG_CONFIG_ITEM_TYPE_UINT, CLOG_ERROR_FORMAT);
-    *value = item->value.uint;
-    return CLOG_SUCCESS;
-}
+#define CLOG_DECLARE_FIND_ITEM_FUNC(suffix, t, mem, item_type)                                                      \
+    clog_res_e clog_config_find_item_in_group_##suffix(const clog_config_group_t* group, const char* key, t* value) \
+    {                                                                                                               \
+        CLOG_RET_IF_NULL(value, CLOG_INVALID_PARAM);                                                                \
+        const clog_config_item_t* item = clog_config_find_item_in_group(group, key);                                \
+        CLOG_RET_IF_NULL(item, CLOG_TARGET_NOT_FOUND);                                                              \
+        CLOG_RET_IF(item->type != item_type, CLOG_ERROR_FORMAT);                                                    \
+        *value = item->value.mem;                                                                                   \
+        return CLOG_SUCCESS;                                                                                        \
+    }
+
+CLOG_DECLARE_FIND_ITEM_FUNC(uint, uint32_t, uint, CLOG_CONFIG_ITEM_TYPE_UINT)
+CLOG_DECLARE_FIND_ITEM_FUNC(bool, bool, flag, CLOG_CONFIG_ITEM_TYPE_BOOL)
+#undef CLOG_DECLARE_FIND_ITEM_FUNC
 
 const clog_config_item_t* clog_config_find_item(const clog_config_group_t* root, const char* groups[],
                                                 const size_t count, const char* key)
