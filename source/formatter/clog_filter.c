@@ -4,6 +4,7 @@
  */
 
 #include "clog_filter.h"
+#include "casca_log.h"
 
 bool clog_filter_log(const clog_filter_t* filters, const clog_item_t* item)
 {
@@ -17,4 +18,12 @@ bool clog_filter_log(const clog_filter_t* filters, const clog_item_t* item)
         filter = filter->next;
     }
     return true;
+}
+
+bool clog_filter_basic(const clog_item_t* item)
+{
+    CLOG_RET_IF_NULL(item, false);
+    const clog_module_t* info = clog_get_module_info(item->module);
+    CLOG_RET_IF_NULL(info, false);
+    return (item->level & info->level) != 0;
 }
