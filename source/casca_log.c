@@ -77,6 +77,9 @@ static clog_res_e clog_init_process_attrs(const char* process, const clog_config
 
 static clog_res_e clog_init_process_module(const char* process, const clog_config_group_t* module, clog_hashmap_t* map)
 {
+    bool enabled = true;
+    CLOG_IGNORE_RES(clog_config_find_item_in_group_bool(module, "enabled", &enabled));
+    CLOG_RET_IF(!enabled, CLOG_SUCCESS); /* module is not enabled, skip parse */
     uint32_t value = 0;
     const clog_res_e ret = clog_config_find_item_in_group_uint(module, "level", &value);
     if (ret == CLOG_TARGET_NOT_FOUND) {
