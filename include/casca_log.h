@@ -114,6 +114,13 @@ void clog_set_placeholders(const clog_placeholder_t* placeholder);
 const clog_filter_t* clog_get_filters(clog_filter_type_e type);
 
 /**
+ * get module config
+ * @param module module name
+ * @return #clog_module_t, NULL if module is not existed or not enabled
+ */
+const clog_module_t* clog_get_module_info(const char* module);
+
+/**
  * destroy clog
  * @param funcs customized cleanup functions, NULL if there is no customized cleanup function
  * @param num number of funcs, 0 if there is no customized cleanup function
