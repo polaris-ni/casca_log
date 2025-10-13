@@ -23,3 +23,10 @@ level = 31 # override process level
 [Process.casca_log_test.main]
 # level inherited from process
 enabled = false # main is not allowed to output log, if not set, default value is true
+
+[Filters]
+[Filters.KeywordsFilter]
+enabled = true
+priority = 1
+type = 1 # 0 - prefilter, 1 - postfilter
+keywords = "pw,password"
