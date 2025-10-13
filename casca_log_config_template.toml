@@ -25,8 +25,10 @@ level = 31 # override process level
 enabled = false # main is not allowed to output log, if not set, default value is true
 
 [Filters]
-[Filters.KeywordsFilter]
+# internal filter is start will "Clog", customized filter should not start with "Clog", if you define a filter
+# starting with "Clog", this won't cause an error, but it might lead to conflicts in future updates.
+[Filters.ClogKeywordsFilter]
 enabled = true
 priority = 1
 type = 1 # 0 - prefilter, 1 - postfilter
-keywords = "pw,password"
+keywords = "pw,password,ip\\,,dns" # if a keyword contains ',', use escape char '\\'

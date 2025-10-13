@@ -170,7 +170,7 @@ static clog_hashmap_entry_t* clog_hashmap_create_empty_buckets(const size_t size
 clog_hashmap_t* clog_hashmap_create(const size_t key_size, const size_t value_size, const clog_hashmap_dup_f key_dup,
                                     const clog_hashmap_free_f key_free, const clog_hashmap_dup_f value_dup,
                                     const clog_hashmap_free_f value_free, const clog_hashmap_cmp_f cmp,
-                                    const clog_hashmap_size_f size_of_key, uint32_t seed)
+                                    const clog_hashmap_size_f size_of_key, const uint32_t seed)
 {
     clog_hashmap_t* map = clog_malloc(sizeof(clog_hashmap_t));
     CLOG_RET_IF_NULL(map, NULL);
@@ -405,7 +405,7 @@ bool clog_hashmap_is_exists(const clog_hashmap_t* map, const void* key)
         return false;
     }
 
-    clog_hashmap_entry_t* entry = map->buckets[clog_hashmap_get_index(map, key)].next;
+    const clog_hashmap_entry_t* entry = map->buckets[clog_hashmap_get_index(map, key)].next;
     CLOG_RET_IF_NULL(entry, false);
 
     while ((entry != NULL) && (!clog_hashmap_cmp(map, entry->key, key))) {

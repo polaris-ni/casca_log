@@ -34,7 +34,6 @@ static clog_config_item_t* clog_config_create_empty_item(void)
     return item;
 }
 
-
 static void clog_config_free_item(clog_config_item_t* item)
 {
     CLOG_RET_VOID_IF_NULL(item);
@@ -716,13 +715,14 @@ const clog_config_item_t* clog_config_find_item_in_group(const clog_config_group
         CLOG_RET_IF_NULL(value, CLOG_INVALID_PARAM);                                                                \
         const clog_config_item_t* item = clog_config_find_item_in_group(group, key);                                \
         CLOG_RET_IF_NULL(item, CLOG_TARGET_NOT_FOUND);                                                              \
-        CLOG_RET_IF(item->type != item_type, CLOG_ERROR_FORMAT);                                                    \
+        CLOG_RET_IF(item->type != (item_type), CLOG_ERROR_FORMAT);                                                  \
         *value = item->value.mem;                                                                                   \
         return CLOG_SUCCESS;                                                                                        \
     }
 
 CLOG_DECLARE_FIND_ITEM_FUNC(uint, uint32_t, uint, CLOG_CONFIG_ITEM_TYPE_UINT)
 CLOG_DECLARE_FIND_ITEM_FUNC(bool, bool, flag, CLOG_CONFIG_ITEM_TYPE_BOOL)
+CLOG_DECLARE_FIND_ITEM_FUNC(string, const char*, str, CLOG_CONFIG_ITEM_TYPE_STRING)
 #undef CLOG_DECLARE_FIND_ITEM_FUNC
 
 const clog_config_item_t* clog_config_find_item(const clog_config_group_t* root, const char* groups[],
@@ -753,7 +753,6 @@ const clog_config_item_t* clog_config_find_item(const clog_config_group_t* root,
     }
     return NULL;
 }
-
 
 static size_t clog_config_dump_group_internal(const clog_config_group_t* group, char* buf, const size_t size,
                                               const size_t level)

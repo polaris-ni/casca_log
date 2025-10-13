@@ -124,7 +124,7 @@ void clog_hashmap_destroy(clog_hashmap_t** map);
  */
 static void* clog_hashmap_string_dup(const void* str)
 {
-    return clog_strdup((const char *)str);
+    return clog_strdup((const char*)str);
 }
 
 /**
@@ -144,7 +144,7 @@ static void clog_hashmap_string_free(void* str)
  */
 static bool clog_hashmap_string_cmp(const void* str1, const void* str2)
 {
-    return strcmp((const char *)str1, (const char *)str2) == 0;
+    return strcmp((const char*)str1, (const char*)str2) == 0;
 }
 
 /**
@@ -154,7 +154,7 @@ static bool clog_hashmap_string_cmp(const void* str1, const void* str2)
  */
 static size_t clog_hashmap_string_size(const void* str)
 {
-    return strlen((const char *)str);
+    return strlen((const char*)str);
 }
 
 #if defined(__cplusplus) || defined(c_plusplus)

@@ -50,7 +50,6 @@ clog_res_e clog_placeholder_parse(const char* format, clog_placeholder_t* root);
  */
 void clog_placeholder_clear(clog_placeholder_t* root);
 
-
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif
