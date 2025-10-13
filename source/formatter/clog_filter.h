@@ -29,15 +29,29 @@ typedef clog_filter_res_e (*clog_filter_f)(const clog_item_t* item);
 typedef struct clog_filter clog_filter_t;
 
 struct clog_filter {
+    const char* name; /* filter name, it should be the same as the filter defined in config file */
     uint32_t priority; /* filter priority, if same, the order defined in the configuration file will be applied */
     clog_filter_type_e type; /* pre-filter or post-filter */
     clog_filter_f filter; /* filter function */
     clog_filter_t* next;
 };
 
-bool clog_filter_log(const clog_filter_t* filters, const clog_item_t* item);
+/**
+ * register customized filter
+ * @param name filter name, it will be copied
+ * @param type #clog_filter_type_e
+ * @param filter #clog_filter_f
+ * @return #clog_res_e
+ */
+clog_res_e clog_filter_register(const char* name, clog_filter_type_e type, clog_filter_f filter);
 
-bool clog_filter_basic(const clog_item_t* item);
+/**
+ * execute filter
+ * @param filters filter chain
+ * @param item log item
+ * @return true if item is allowed to be output, false otherwise
+ */
+bool clog_filter_log(const clog_filter_t* filters, const clog_item_t* item);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
