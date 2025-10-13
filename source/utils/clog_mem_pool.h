@@ -43,7 +43,7 @@ void* clog_mp_acquire(size_t size);
 void clog_mp_release(void* ptr);
 
 /**
- * TODO: get allocated memory size
+ * get allocated memory size
  * @return allocated memory size
  */
 size_t clog_mp_get_allocated_size(void);

@@ -18,7 +18,6 @@
 #include <time.h>
 #endif
 #ifdef CLOG_PLATFORM_LINUX
-// #define _GNU_SOURCE
 #include <sys/syscall.h>
 #include <unistd.h>
 #elif defined(CLOG_PLATFORM_MACOS) || defined(CLOG_PLATFORM_UNIX)
@@ -54,10 +53,12 @@ static char g_err[CASCA_LOG_ERR_BUF_SIZE] = {0}; /* NOT thread-safe */
 
 static const clog_setup_f g_setup_funcs[] = {
     clog_formatter_setup,
+    clog_filter_setup,
 };
 
 static const clog_cleanup_f g_cleanup_funcs[] = {
     clog_formatter_cleanup,
+    clog_filter_cleanup,
 };
 
 static clog_res_e clog_init_process_attrs(const char* process, const clog_config_group_t* group)
@@ -181,7 +182,7 @@ const char* clog_get_process(void)
     return g_context.process == NULL ? "NULL" : g_context.process;
 }
 
-const char* clog_get_level_tag(clog_level_e level)
+const char* clog_get_level_tag(const clog_level_e level)
 {
     switch (level) {
         case CLOG_LEVEL_TRACE:
@@ -249,6 +250,12 @@ const clog_filter_t* clog_get_filters(const clog_filter_type_e type)
     return NULL;
 }
 
+void clog_set_filters(const clog_filter_t* pre, const clog_filter_t* post)
+{
+    g_context.filters.pre.next = pre;
+    g_context.filters.post.next = post;
+}
+
 const clog_module_t* clog_get_module_info(const char* module)
 {
     return clog_hashmap_get(g_context.modules, module);
@@ -261,6 +268,10 @@ void clog_destroy(const clog_cleanup_f* funcs, const size_t num)
         g_cleanup_funcs[i]();
     }
     CLOG_SAFE_FREE(g_context.process);
+    clog_filter_free((clog_filter_t*)g_context.filters.pre.next);
+    g_context.filters.pre.next = NULL;
+    clog_filter_free((clog_filter_t*)g_context.filters.post.next);
+    g_context.filters.post.next = NULL;
     clog_config_destroy_group(g_context.config.root);
     clog_hashmap_destroy(&g_context.modules);
     clog_mp_finalize();
@@ -416,12 +427,11 @@ clog_res_e clog_log(const uint32_t* recorders, const size_t count, const char* m
     (void)printf("[===>]: %s\n", buf);
 
     const size_t num = count > CASCA_LOG_TARGET_RECORDER_COUNT ? CASCA_LOG_TARGET_RECORDER_COUNT : count;
-    uint32_t* ptr = (uint32_t*)item.recorders;
     for (int i = 0; i < CASCA_LOG_TARGET_RECORDER_COUNT; ++i) {
         if (i < num) {
-            ptr[i] = recorders[i];
+            item.recorders[i] = recorders[i];
         } else {
-            ptr[i] = CLOG_RECORDER_ID_INVALID;
+            item.recorders[i] = CLOG_RECORDER_ID_INVALID;
         }
     }
     /* TODO: pre-filter -> formatter -> post-filter -> dispatcher -> recorder */

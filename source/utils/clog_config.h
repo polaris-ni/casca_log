@@ -79,7 +79,7 @@ const clog_config_group_t* clog_config_find_group(const clog_config_group_t* roo
 const clog_config_item_t* clog_config_find_item_in_group(const clog_config_group_t* group, const char* key);
 
 /**
- * get item from group, and check if it is UINT
+ * get item from group, and check if it is #CLOG_CONFIG_ITEM_TYPE_UINT
  * @param group group
  * @param key item key
  * @param value item value
@@ -88,13 +88,22 @@ const clog_config_item_t* clog_config_find_item_in_group(const clog_config_group
 clog_res_e clog_config_find_item_in_group_uint(const clog_config_group_t* group, const char* key, uint32_t* value);
 
 /**
- * get item from group, and check if it is BOOL
+ * get item from group, and check if it is #CLOG_CONFIG_ITEM_TYPE_BOOL
  * @param group group
  * @param key item key
  * @param value item value
  * @return clog_res_e
  */
 clog_res_e clog_config_find_item_in_group_bool(const clog_config_group_t* group, const char* key, bool* value);
+
+/**
+ * get item from group, and check if it is #CLOG_CONFIG_ITEM_TYPE_STRING
+ * @param group group
+ * @param key item key
+ * @param value item value
+ * @return clog_res_e
+ */
+clog_res_e clog_config_find_item_in_group_string(const clog_config_group_t* group, const char* key, const char** value);
 
 /**
  * get item from group, if groups is empty, item will be searched in root group

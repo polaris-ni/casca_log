@@ -5,15 +5,12 @@
 #ifndef CASCA_LOG_CLOG_ATOMIC_H
 #define CASCA_LOG_CLOG_ATOMIC_H
 
-#include "clog_platform.h"
-
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
 
 #ifdef __has_include
 #if __has_include(<stdatomic.h>) && !defined(_MSC_VER)
-#include <stdatomic.h>
 #define CLOG_USE_NATIVE_STD_ATOMIC
 #endif
 #else
@@ -85,8 +82,7 @@ static inline int atomic_compare_exchange_strong(volatile LONG* object, LONG* ex
     LONG old = InterlockedCompareExchange((LONG volatile*)object, desired, *expected);
     if (old == *expected) {
         return 1;
-    }
-    else {
+    } else {
         *expected = old;
         return 0;
     }

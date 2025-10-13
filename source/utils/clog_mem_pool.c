@@ -34,7 +34,6 @@ typedef enum clog_heap_state {
 } clog_heap_state_e;
 
 #define CLOG_GET_HEAP_SIZE(type) (1 << ((type) + 3))
-
 #define CLOG_MEM_BLOCK_HEAP 1 /* block allocated from heap, will put back to heap when clog_mp_release  */
 #define CLOG_MEM_BLOCK_SYSTEM 2 /* block allocated from system, will be free when clog_mp_release  */
 

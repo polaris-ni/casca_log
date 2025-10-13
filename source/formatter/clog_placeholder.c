@@ -32,7 +32,7 @@ static size_t clog_num_to_str(uint32_t value, const uint32_t num, char* buf, con
     }
     static const unsigned int max_values[] = {1,       10,       100,       1000,       10000,     100000,
                                               1000000, 10000000, 100000000, 1000000000, 1000000000};
-    int32_t index = num;
+    int32_t index = (int32_t)num;
     while (max_values[index] > value) {
         index--;
     }
@@ -49,11 +49,11 @@ static size_t clog_num_to_str(uint32_t value, const uint32_t num, char* buf, con
 #define CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(name, max, num, is_padding)                        \
     static inline size_t clog_placeholder_##name(const clog_item_t* item, char* buf, const size_t size) \
     {                                                                                                   \
-        CLOG_RET_IF(size < num, 0);                                                                     \
+        CLOG_RET_IF(size < (num), 0);                                                                   \
         CLOG_ASSERT(item != NULL);                                                                      \
         CLOG_ASSERT(buf != NULL);                                                                       \
-        CLOG_ASSERT(item->name <= max);                                                                 \
-        return clog_num_to_str(item->name, num, buf, size, is_padding);                                 \
+        CLOG_ASSERT(item->name <= (max));                                                               \
+        return clog_num_to_str(item->name, (num), buf, size, (is_padding));                             \
     }
 
 CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(year, 9999, 4, true)
@@ -66,7 +66,7 @@ CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(millisecond, 999, 3, true)
 CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(line, 999999, 6, false)
 CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(tid, 9999999999, 10, false)
 
-static inline size_t clog_placeholder_string_copy(const char* str, char* buf, const size_t size)
+static size_t clog_placeholder_string_copy(const char* str, char* buf, const size_t size)
 {
     const char* p = str;
     size_t i = 0;
@@ -137,9 +137,9 @@ static size_t clog_placeholder_level(const clog_item_t* item, char* buf, const s
 }
 
 
-#define CLOG_PLACEHOLDER_DECLARE(n, f, i) {.name = n, .func = f, .next = &g_placeholder_list[i + 1]}
+#define CLOG_PLACEHOLDER_DECLARE(n, f, i) {.name = (n), .func = (f), .next = &g_placeholder_list[(i) + 1]}
 
-#define CLOG_PLACEHOLDER_DECLARE_LAST(n, f) {.name = n, .func = f, .next = NULL}
+#define CLOG_PLACEHOLDER_DECLARE_LAST(n, f) {.name = (n), .func = (f), .next = NULL}
 
 static clog_placeholder_t g_placeholder_list[] = {
     CLOG_PLACEHOLDER_DECLARE("_year", clog_placeholder_year, 0),
