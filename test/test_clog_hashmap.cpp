@@ -7,7 +7,7 @@
 #include <string>
 #include "utils/clog_hashmap.h"
 
-class ClogHashMapTest : public ::testing::Test
+class ClogHashMapTest : public testing::Test
 {
 protected:
     clog_hashmap_t* map = nullptr;

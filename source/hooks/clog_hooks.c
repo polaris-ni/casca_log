@@ -9,9 +9,15 @@
 static clog_allocator_f g_allocator = malloc;
 static clog_deallocator_f g_deallocator = free;
 
-void* clog_malloc(const size_t size) { return g_allocator(size); }
+void* clog_malloc(const size_t size)
+{
+    return g_allocator(size);
+}
 
-void clog_free(void* ptr) { g_deallocator(ptr); }
+void clog_free(void* ptr)
+{
+    g_deallocator(ptr);
+}
 
 void clog_register_memory_hook_func(const clog_allocator_f allocator, const clog_deallocator_f deallocator)
 {

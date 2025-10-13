@@ -55,7 +55,8 @@ clog_res_e clog_formatter_setup(void)
     return CLOG_SUCCESS;
 }
 
-clog_res_e clog_format_log(const clog_placeholder_t* placeholders, const clog_item_t* item, char* content, size_t size)
+clog_res_e clog_format_log(const clog_placeholder_t* placeholders, const clog_item_t* item, char* content,
+                           const size_t size)
 {
     CLOG_RET_IF_NULL(placeholders, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(item, CLOG_INVALID_PARAM);

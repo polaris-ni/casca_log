@@ -5,17 +5,12 @@
 #ifndef CASCA_LOG_CASCA_LOG_H
 #define CASCA_LOG_CASCA_LOG_H
 
-#include "casca_log_config.h"
-#include "formatter/clog_filter.h"
+#include "filter/clog_filter.h"
 #include "formatter/clog_placeholder.h"
 #include "utils/clog_config.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
-#endif
-
-#ifdef CASCA_LOG_DEBUG
-/* suppress warning: Possibly unused #include directive */
 #endif
 
 #define CLOG_RET_IF_X(cond, ret, msg, ...)    \
@@ -112,6 +107,13 @@ void clog_set_placeholders(const clog_placeholder_t* placeholder);
  * @return #clog_filter_t, NULL if there is no filter
  */
 const clog_filter_t* clog_get_filters(clog_filter_type_e type);
+
+/**
+ * set prefilter and postfilter
+ * @param pre prefilter chain
+ * @param post postfilter chain
+ */
+void clog_set_filters(const clog_filter_t* pre, const clog_filter_t* post);
 
 /**
  * get module config

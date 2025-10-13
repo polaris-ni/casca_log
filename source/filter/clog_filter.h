@@ -33,7 +33,7 @@ struct clog_filter {
     uint32_t priority; /* filter priority, if same, the order defined in the configuration file will be applied */
     clog_filter_type_e type; /* pre-filter or post-filter */
     clog_filter_f filter; /* filter function */
-    clog_filter_t* next;
+    const clog_filter_t* next;
 };
 
 /**
@@ -44,6 +44,23 @@ struct clog_filter {
  * @return #clog_res_e
  */
 clog_res_e clog_filter_register(const char* name, clog_filter_type_e type, clog_filter_f filter);
+
+/**
+ * filter setup
+ * @return clog_res_e
+ */
+clog_res_e clog_filter_setup(void);
+
+/**
+ * cleanup filter resource
+ */
+void clog_filter_cleanup(void);
+
+/**
+ * free filter chain
+ * @param filter filter chain
+ */
+void clog_filter_free(clog_filter_t* filter);
 
 /**
  * execute filter

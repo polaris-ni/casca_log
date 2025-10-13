@@ -22,6 +22,8 @@ extern "C" {
 
 #define CLOG_RET_IF_NULL(ptr, ret) CLOG_RET_IF((ptr) == NULL, (ret))
 
+#define CLOG_RET_IF_FAILED(ret) CLOG_RET_IF((ret) != CLOG_SUCCESS, (ret))
+
 #define CLOG_RET_VOID_IF(cond) \
     do {                       \
         if (cond) {            \
@@ -29,15 +31,29 @@ extern "C" {
         }                      \
     } while (0)
 
+#define CLOG_RET_VOID_IF_NULL(ptr) CLOG_RET_VOID_IF((ptr) == NULL)
+
+#define CLOG_RET_VOID_IF_FAILED(ret) CLOG_RET_VOID_IF((ret) != CLOG_SUCCESS)
+
+#define CLOG_CLEAN_RET_IF(cond, clean, ret) \
+    do {                                    \
+        if (cond) {                         \
+            (clean);                        \
+            return ret;                     \
+        }                                   \
+    } while (0)
+
+#define CLOG_CLEAN_RET_IF_NULL(ptr, clean, ret) CLOG_CLEAN_RET_IF((ptr) == NULL, clean, ret)
+
+#define CLOG_CLEAN_RET_IF_FAILED(ret, clean) CLOG_CLEAN_RET_IF((ret) != CLOG_SUCCESS, (clean), (ret))
+
 #define CLOG_SAFE_FREE(mem)          \
     do {                             \
-        if (mem != NULL) {           \
+        if ((mem) != NULL) {         \
             clog_free((void*)(mem)); \
             (mem) = NULL;            \
         }                            \
     } while (0)
-
-#define CLOG_RET_VOID_IF_NULL(ptr) CLOG_RET_VOID_IF((ptr) == NULL)
 
 #define CLOG_ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
@@ -74,7 +90,7 @@ typedef enum clog_level {
 } clog_level_e;
 
 typedef struct clog_item {
-    const unsigned int recorders[CASCA_LOG_TARGET_RECORDER_COUNT];
+    unsigned int recorders[CASCA_LOG_TARGET_RECORDER_COUNT];
     const char* filepath;
     const char* filename;
     const char* function;
@@ -95,7 +111,6 @@ typedef struct clog_item {
     va_list args;
     const char* content;
 } clog_item_t;
-
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
