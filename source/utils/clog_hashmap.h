@@ -6,7 +6,6 @@
 #define CASCA_LOG_CLOG_HASHMAP_H
 
 #include <stdbool.h>
-#include <stdint.h>
 #include "clog_secure_func.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)

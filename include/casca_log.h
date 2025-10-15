@@ -13,23 +13,29 @@
 extern "C" {
 #endif
 
-#define CLOG_RET_IF_X(cond, ret, msg, ...)    \
-    do {                                      \
-        if (cond) {                           \
-            clog_err_set(msg, ##__VA_ARGS__); \
-            return ret;                       \
-        }                                     \
+#define CLOG_RET_IF_X(cond, ret, msg, ...)            \
+    do {                                              \
+        if (cond) {                                   \
+            clog_err_append_line(msg, ##__VA_ARGS__); \
+            return ret;                               \
+        }                                             \
     } while (0)
 
-#define CLOG_RET_IF_NULL_X(ptr, ret, msg, ...) \
-    do {                                       \
-        if ((ptr) == NULL) {                   \
-            clog_err_set(msg, ##__VA_ARGS__);  \
-            return ret;                        \
-        }                                      \
+#define CLOG_RET_IF_NULL_X(ptr, ret, msg, ...)        \
+    do {                                              \
+        if ((ptr) == NULL) {                          \
+            clog_err_append_line(msg, ##__VA_ARGS__); \
+            return ret;                               \
+        }                                             \
     } while (0)
 
-#define CLOG_RECORDER_ID_INVALID 0u
+#define CLOG_RET_IF_FAILED_X(ret, msg, ...)           \
+    do {                                              \
+        if ((ret) != CLOG_SUCCESS) {                  \
+            clog_err_append_line(msg, ##__VA_ARGS__); \
+            return ret;                               \
+        }                                             \
+    } while (0)
 
 /**
  * setup function

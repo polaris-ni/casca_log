@@ -5,7 +5,6 @@
 #ifndef CASCA_LOG_CLOG_SECURE_FUNC_H
 #define CASCA_LOG_CLOG_SECURE_FUNC_H
 
-#include <stdint.h>
 #include <string.h>
 #include "casca_log_base.h"
 #include "clog_hooks.h"
