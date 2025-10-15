@@ -9,6 +9,11 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "casca_log_config.h"
+#include "utils/clog_platform.h"
+
+#ifdef CLOG_COMPILER_MSVC
+#define _CRT_SECURE_NO_WARNINGS 1 /* suppress warning: warning C4996: 'x': This function or variable may be unsafe */
+#endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
