@@ -32,7 +32,7 @@ typedef enum clog_heap_state {
     CLOG_MP_HEAP_STATE_TERMINATED = 3
 } clog_heap_state_e;
 
-#define CLOG_GET_HEAP_SIZE(type) (1 << ((uint32_t)(type) + 3))
+#define CLOG_GET_HEAP_SIZE(type) ((size_t)(1U << ((size_t)(type) + 3)))
 #define CLOG_MEM_BLOCK_HEAP 1 /* block allocated from heap, will put back to heap when clog_mp_release  */
 #define CLOG_MEM_BLOCK_SYSTEM 2 /* block allocated from system, will be free when clog_mp_release  */
 
