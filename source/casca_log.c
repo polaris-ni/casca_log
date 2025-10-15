@@ -361,11 +361,11 @@ static void clog_item_init_datetime(clog_item_t* item)
     SYSTEMTIME st;
     GetLocalTime(&st);
     item->year = st.wYear;
-    item->month = st.wMonth;
-    item->day = st.wDay;
-    item->hour = st.wHour;
-    item->minute = st.wMinute;
-    item->second = st.wSecond;
+    item->month = (uint8_t)st.wMonth;
+    item->day = (uint8_t)st.wDay;
+    item->hour = (uint8_t)st.wHour;
+    item->minute = (uint8_t)st.wMinute;
+    item->second = (uint8_t)st.wSecond;
     item->millisecond = st.wMilliseconds;
 #elif defined(CLOG_PLATFORM_MACOS) || defined(CLOG_PLATFORM_LINUX) || defined(CLOG_PLATFORM_UNIX)
     struct timeval tv;
