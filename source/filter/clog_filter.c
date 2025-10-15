@@ -13,8 +13,10 @@
  */
 static clog_filter_res_e clog_filter_basic(const clog_item_t* item);
 
+static clog_filter_res_e clog_filter_keywords(const clog_item_t* item);
+
 static clog_filter_t g_filters[] = {{CLOG_STR_BASIC_FILTER, 0, CLOG_FILTER_PRE, clog_filter_basic, &g_filters[1]},
-                                    {CLOG_STR_KEYWORDS_FILTER, 0, CLOG_FILTER_POST, NULL, NULL}};
+                                    {CLOG_STR_KEYWORDS_FILTER, 0, CLOG_FILTER_POST, clog_filter_keywords, NULL}};
 
 static char** g_keywords = NULL;
 static uint32_t g_keywords_count = 0;
@@ -313,5 +315,16 @@ static clog_filter_res_e clog_filter_basic(const clog_item_t* item)
     if ((item->level & info->level) != 0) {
         return CLOG_FILTER_CONTINUE;
     }
-    return CLOG_FILTER_ACCEPT;
+    return CLOG_FILTER_REJECT;
+}
+
+static clog_filter_res_e clog_filter_keywords(const clog_item_t* item)
+{
+    CLOG_RET_IF_NULL(item, CLOG_FILTER_REJECT);
+    CLOG_RET_IF_NULL(g_keywords, CLOG_FILTER_REJECT);
+    for (uint32_t i = 0; i < g_keywords_count; ++i) {
+        const char* str = strstr(item->content, g_keywords[i]);
+        CLOG_RET_IF(str != NULL, CLOG_FILTER_REJECT);
+    }
+    return CLOG_FILTER_CONTINUE;
 }

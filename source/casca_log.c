@@ -418,7 +418,7 @@ clog_res_e clog_log(const uint32_t* recorders, const size_t count, const char* m
     }
     item.content = buf;
     /* postfilter */
-    pass = clog_filter_log(clog_get_filters(CLOG_FILTER_PRE), &item);
+    pass = clog_filter_log(clog_get_filters(CLOG_FILTER_POST), &item);
     if (!pass) {
         clog_free(buf);
         return CLOG_NOT_PERMITTED;
