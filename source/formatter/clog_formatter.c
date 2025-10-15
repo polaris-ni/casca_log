@@ -3,9 +3,7 @@
  * @date  2025/10/1
  */
 #include "clog_formatter.h"
-
 #include <stdio.h>
-
 #include "casca_log.h"
 #include "clog_config.h"
 #include "clog_placeholder.h"

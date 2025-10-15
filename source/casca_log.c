@@ -394,8 +394,7 @@ clog_res_e clog_log(const uint32_t* recorders, const size_t count, const char* m
                     const char* function, const int line, const clog_level_e level, const char* fmt, ...)
 {
 
-    clog_item_t item = {.filepath = file,
-                        .filename = file,
+    clog_item_t item = {.filename = file,
                         .function = function,
                         .module = module,
                         .tid = clog_get_thread_id(),
@@ -426,14 +425,6 @@ clog_res_e clog_log(const uint32_t* recorders, const size_t count, const char* m
 
     (void)printf("[===>]: %s\n", buf);
 
-    const size_t num = count > CASCA_LOG_TARGET_RECORDER_COUNT ? CASCA_LOG_TARGET_RECORDER_COUNT : count;
-    for (int i = 0; i < CASCA_LOG_TARGET_RECORDER_COUNT; ++i) {
-        if (i < num) {
-            item.recorders[i] = recorders[i];
-        } else {
-            item.recorders[i] = CLOG_RECORDER_ID_INVALID;
-        }
-    }
     /* TODO: pre-filter -> formatter -> post-filter -> dispatcher -> recorder */
     return CLOG_SUCCESS;
 }

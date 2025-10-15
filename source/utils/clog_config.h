@@ -7,7 +7,6 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
 #include "casca_log_base.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
