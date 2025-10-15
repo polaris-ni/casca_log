@@ -6,7 +6,6 @@
 #define CASCA_LOG_CLOG_FILTER_H
 
 #include <stdbool.h>
-#include <stdint.h>
 #include "casca_log_base.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)

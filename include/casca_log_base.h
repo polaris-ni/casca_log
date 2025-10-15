@@ -7,6 +7,7 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 #include "casca_log_config.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
@@ -77,6 +78,8 @@ typedef enum clog_res {
     CLOG_TARGET_NOT_FOUND = 6, /* something not found */
     CLOG_OVERSIZE = 7, /* oversize */
     CLOG_NOT_PERMITTED = 8, /* operation not permitted */
+    CLOG_REQUEST_FLUSH = 9, /* request flush */
+    CLOG_ALREADY_EXISTED = 10, /* something already existed */
 } clog_res_e;
 
 typedef enum clog_level {
@@ -90,22 +93,20 @@ typedef enum clog_level {
 } clog_level_e;
 
 typedef struct clog_item {
-    unsigned int recorders[CASCA_LOG_TARGET_RECORDER_COUNT];
-    const char* filepath;
     const char* filename;
     const char* function;
     const char* module;
-    unsigned long long tid;
-    unsigned int line;
+    uint64_t tid;
+    uint32_t line;
     clog_level_e level;
     struct {
-        unsigned short year;
-        unsigned char month;
-        unsigned char day;
-        unsigned char hour;
-        unsigned char minute;
-        unsigned char second;
-        unsigned short millisecond;
+        uint16_t year;
+        uint8_t month;
+        uint8_t day;
+        uint8_t hour;
+        uint8_t minute;
+        uint8_t second;
+        uint16_t millisecond;
     };
     const char* fmt;
     va_list args;
