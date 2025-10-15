@@ -108,7 +108,7 @@ static size_t clog_hashmap_size_of_key(const clog_hashmap_t* map, const void* ke
 
 static uint32_t clog_hashmap_get_index(const clog_hashmap_t* map, const void* key)
 {
-    return map->hash(map, key) & (map->buckets_size - 1);
+    return (uint32_t)(map->hash(map, key) & (map->buckets_size - 1));
 }
 
 static clog_hashmap_hash_t murmur3_32(const clog_hashmap_t* map, const void* key)
