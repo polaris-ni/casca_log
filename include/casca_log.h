@@ -21,6 +21,15 @@ extern "C" {
         }                                             \
     } while (0)
 
+#define CLOG_CLEAN_RET_IF_X(cond, clean, ret, msg, ...) \
+    do {                                                \
+        if (cond) {                                     \
+            (clean);                                    \
+            clog_err_append_line(msg, ##__VA_ARGS__);   \
+            return ret;                                 \
+        }                                               \
+    } while (0)
+
 #define CLOG_RET_IF_NULL_X(ptr, ret, msg, ...)        \
     do {                                              \
         if ((ptr) == NULL) {                          \
@@ -29,12 +38,30 @@ extern "C" {
         }                                             \
     } while (0)
 
+#define CLOG_CLEAN_RET_IF_NULL_X(ptr, clean, ret, msg, ...) \
+    do {                                                    \
+        if ((ptr) == NULL) {                                \
+            (clean);                                        \
+            clog_err_append_line(msg, ##__VA_ARGS__);       \
+            return ret;                                     \
+        }                                                   \
+    } while (0)
+
 #define CLOG_RET_IF_FAILED_X(ret, msg, ...)           \
     do {                                              \
         if ((ret) != CLOG_SUCCESS) {                  \
             clog_err_append_line(msg, ##__VA_ARGS__); \
             return ret;                               \
         }                                             \
+    } while (0)
+
+#define CLOG_CLEAN_RET_IF_FAILED_X(ret, clean, msg, ...) \
+    do {                                                 \
+        if ((ret) != CLOG_SUCCESS) {                     \
+            (clean);                                     \
+            clog_err_append_line(msg, ##__VA_ARGS__);    \
+            return ret;                                  \
+        }                                                \
     } while (0)
 
 /**

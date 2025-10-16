@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 #define CLOG_RECORDER_ID_INVALID 0u /* invalid recorder id */
-#define CLOG_RECODER_ID_RESERVED 1000u /* 0 ~ 1000 is reserved for internal recorder, > 1000 for customized id */
+#define CLOG_RECORDER_ID_RESERVED 1000u /* 0 ~ 1000 is reserved for internal recorder, > 1000 for customized id */
 
 typedef struct clog_recorder clog_recorder_t;
 
