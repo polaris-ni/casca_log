@@ -9,13 +9,19 @@
 extern "C" {
 #endif
 
-#define CLOG_STR_FILTERS "Filters"
+/* attributes */
+#define CLOG_STR_ID "id"
 #define CLOG_STR_TYPE "type"
 #define CLOG_STR_PRIORITY "priority"
 #define CLOG_STR_ENABLED "enabled"
 #define CLOG_STR_KEYWORDS "keywords"
+
+/* groups */
+#define CLOG_STR_FILTERS "Filters"
 #define CLOG_STR_BASIC_FILTER "ClogBasicFilter"
 #define CLOG_STR_KEYWORDS_FILTER "ClogKeywordsFilter"
+#define CLOG_STR_RECORDERS "Recorders"
+#define CLOG_STR_RECORDER_STDOUT "ClogRecorderStdout"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

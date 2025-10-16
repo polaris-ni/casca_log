@@ -11,7 +11,9 @@
 extern "C" {
 #endif
 
-clog_res_e clog_recorder_register(const clog_recorder_t* recorder);
+#define CLOG_RECORDER_STDOUT_ID (1)
+
+clog_res_e clog_recorder_register(const clog_recorder_t* recorders, size_t num);
 
 clog_res_e clog_recorder_setup(void);
 

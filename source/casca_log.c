@@ -9,6 +9,7 @@
 #include "clog_hashmap.h"
 #include "clog_mem_pool.h"
 #include "clog_platform.h"
+#include "clog_recorder_manager.h"
 #include "clog_secure_func.h"
 #ifdef CLOG_PLATFORM_WINDOWS
 #include <windows.h>
@@ -54,6 +55,7 @@ static char g_err[CASCA_LOG_ERR_BUF_SIZE] = {0}; /* NOT thread-safe */
 static const clog_setup_f g_setup_funcs[] = {
     clog_formatter_setup,
     clog_filter_setup,
+    clog_recorder_setup,
 };
 
 static const clog_cleanup_f g_cleanup_funcs[] = {
