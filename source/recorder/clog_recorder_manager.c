@@ -10,7 +10,7 @@
 
 static clog_hashmap_t* g_recorders = NULL;
 
-static const clog_recorder_t* g_customized_recorders = NULL;
+static clog_recorder_t* g_customized_recorders = NULL;
 static size_t g_customized_recorders_num = 0;
 
 clog_res_e clog_recorder_register(const clog_recorder_t* recorders, size_t num)
@@ -106,7 +106,7 @@ clog_res_e clog_recorder_setup(void)
         ret = clog_config_find_item_in_group_bool(item, CLOG_STR_ENABLED, &enabled);
         enabled = enabled || (ret == CLOG_TARGET_NOT_FOUND);
         if (!enabled) {
-            CLOG_CLEAN_RET_IF_X(ret != CLOG_TARGET_NOT_FOUND, clog_hashmap_destroy(&map), "enabled of %s not found", item->name);
+            CLOG_CLEAN_RET_IF_X(ret != CLOG_TARGET_NOT_FOUND, clog_hashmap_destroy(&map), ret, "enabled of %s not found", item->name);
             continue;
         }
         const clog_recorder_t* recorder = clog_recorder_get_origin_by_id(item->name, id);
