@@ -5,37 +5,125 @@
 #include "clog_recorder_manager.h"
 
 #include "casca_log.h"
+#include "casca_log_keywords.h"
 #include "clog_hashmap.h"
+#include "clog_recorder_stdout.h"
 
-static clog_hashmap_t* g_recorders;
+static clog_hashmap_t* g_recorders = NULL;
 
-clog_hashmap_t* clog_recorder_get_all(void)
+static const clog_recorder_t* g_customized_recorders = NULL;
+static size_t g_customized_recorders_num = 0;
+
+clog_res_e clog_recorder_register(const clog_recorder_t* recorders, size_t num)
 {
-    if (g_recorders == NULL) {
-        g_recorders =
-            clog_hashmap_create(sizeof(uint32_t), sizeof(clog_recorder_t), NULL, NULL, NULL, NULL, NULL, NULL, 0);
-        return g_recorders;
+    CLOG_RET_IF_NULL_X(recorders, CLOG_INVALID_PARAM, "recoders to be registered is NULL");
+    CLOG_RET_IF_X(num == 0, CLOG_INVALID_PARAM, "recoders num is 0");
+    for (size_t i = 0; i < num; ++i) {
+        const uint32_t id = recorders[i].id;
+        CLOG_RET_IF_X(id <= CLOG_RECORDER_ID_RESERVED, CLOG_INVALID_PARAM,
+                      "customized recorders %zu id (%u) is invalid", i, id);
+        CLOG_RET_IF_NULL_X(recorders[i].write, CLOG_INVALID_PARAM, "customized recorder %zu write func is NULL",
+                           recorders[i].write);
     }
-    return g_recorders;
+    clog_recorder_t* tmp = clog_malloc(sizeof(clog_recorder_t) * num);
+    CLOG_RET_IF_NULL_X(tmp, CLOG_INVALID_PARAM, "clog_malloc failed");
+    for (size_t i = 0; i < num; ++i) {
+        CLOG_IGNORE_RES(clog_memcpy(&tmp[i], sizeof(clog_recorder_t), &recorders[i], sizeof(clog_recorder_t)));
+        tmp[i].extra = NULL;
+    }
+    g_customized_recorders = tmp;
+    g_customized_recorders_num = num;
+    return CLOG_SUCCESS;
 }
 
-clog_res_e clog_recorder_register(const clog_recorder_t* recorder)
+static void* clog_recoder_dup(const void* ptr)
 {
-    CLOG_RET_IF_NULL_X(recorder, CLOG_INVALID_PARAM, "recoder to be registered is NULL");
-    const uint32_t id = recorder->id;
-    CLOG_RET_IF_X(id < CLOG_RECODER_ID_RESERVED, CLOG_INVALID_PARAM, "recorder id %u is reserved", id);
-    CLOG_RET_IF_X(id == CLOG_RECORDER_ID_INVALID, CLOG_INVALID_PARAM, "recorder id 0 is invalid");
-    CLOG_RET_IF_NULL_X(recorder->setup, CLOG_INVALID_PARAM, "recoder setup func is NULL");
-    CLOG_RET_IF_NULL_X(recorder->open, CLOG_INVALID_PARAM, "recoder open func is NULL");
-    CLOG_RET_IF_NULL_X(recorder->write, CLOG_INVALID_PARAM, "reader write func is NULL");
-    CLOG_RET_IF_NULL_X(recorder->flush, CLOG_INVALID_PARAM, "recorder flush func is NULL");
-    CLOG_RET_IF_NULL_X(recorder->close, CLOG_INVALID_PARAM, "recorder close func is NULL");
-    CLOG_RET_IF_NULL_X(recorder->cleanup, CLOG_INVALID_PARAM, "recoder setup func is NULL");
-    clog_hashmap_t* map = clog_recorder_get_all();
-    CLOG_RET_IF_NULL(map, CLOG_INVALID_PARAM);
-    const void* data = clog_hashmap_get(map, &recorder->id);
-    CLOG_RET_IF_X(data != NULL, CLOG_ALREADY_EXISTED, "recorder has existed, id = %u", recorder->id);
-    const clog_res_e ret = clog_hashmap_put(map, &recorder->id, recorder);
-    CLOG_RET_IF_FAILED_X(ret, "clog_hashmap_put failed, ret = %d", ret);
+    clog_recorder_t* tmp = (clog_recorder_t*)clog_malloc(sizeof(clog_recorder_t));
+    CLOG_RET_IF_NULL(tmp, NULL);
+    const clog_recorder_t* src = (const clog_recorder_t*)ptr;
+    tmp->id = src->id;
+    tmp->setup = src->setup;
+    tmp->open = src->open;
+    tmp->write = src->write;
+    tmp->flush = src->flush;
+    tmp->close = src->close;
+    tmp->cleanup = src->cleanup;
+    tmp->extra = NULL;
+    return tmp;
+}
+
+static void clog_recoder_free(void* ptr)
+{
+    clog_recorder_t* tmp = (clog_recorder_t*)ptr;
+    if (tmp->close != NULL) {
+        tmp->close(tmp);
+    }
+    if (tmp->cleanup != NULL) {
+        tmp->cleanup(NULL);
+    }
+    clog_free(tmp);
+}
+
+static const clog_recorder_t* clog_recorder_get_origin_by_id(const char* name, uint32_t id)
+{
+    CLOG_RET_IF_X(id == CLOG_RECORDER_ID_INVALID, NULL, "the id of recoder %s is invalid", name);
+    if (id < CLOG_RECORDER_ID_RESERVED) {
+        uint32_t ids[] = {CLOG_RECORDER_STDOUT_ID};
+        const clog_recorder_t* recorders[] = {clog_recorder_stdout()};
+        const size_t num = CLOG_ARRAY_SIZE(ids);
+        CLOG_ASSERT(CLOG_ARRAY_SIZE(recorders) == num);
+        CLOG_RET_IF_X(id > num, NULL, "recorder not found, name is %s, id is %u", name, id);
+        return recorders[id - 1];
+    }
+
+    CLOG_RET_IF_X((g_customized_recorders == NULL) || (g_customized_recorders_num == 0), NULL,
+                  "customized recorder not found, name is %s, id is %u", name, id);
+    const clog_recorder_t* recorder = NULL;
+    for (size_t i = 0; i < g_customized_recorders_num; ++i) {
+        if (g_customized_recorders[i].id == id) {
+            recorder = &g_customized_recorders[i];
+        }
+    }
+
+    CLOG_RET_IF_NULL_X(recorder, NULL, "customized recorder not found, name is %s, id is %u", name, id);
+    return recorder;
+}
+
+clog_res_e clog_recorder_setup(void)
+{
+    clog_hashmap_t* map =
+        clog_hashmap_create(sizeof(uint32_t), 0, NULL, NULL, clog_recoder_dup, clog_recoder_free, NULL, NULL, 0);
+    CLOG_RET_IF_NULL_X(map, CLOG_NO_MEMORY, "clog_hashmap_create failed");
+    const char* groups[] = {CLOG_STR_RECORDERS};
+    const clog_config_group_t* group = clog_config_find_group(clog_get_config_root(), groups, CLOG_ARRAY_SIZE(groups));
+    CLOG_RET_IF_NULL_X(group, CLOG_INVALID_PARAM, CLOG_STR_RECORDERS " not found");
+    const clog_config_group_t* item = group->child;
+    while (item != NULL) {
+        uint32_t id = CLOG_RECORDER_ID_INVALID;
+        clog_res_e ret = clog_config_find_item_in_group_uint(item, CLOG_STR_ID, &id);
+        CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_hashmap_destroy(&map), "get id of %s failed, ret = %d", item->name, ret);
+        bool enabled = false;
+        ret = clog_config_find_item_in_group_bool(item, CLOG_STR_ENABLED, &enabled);
+        enabled = enabled || (ret == CLOG_TARGET_NOT_FOUND);
+        if (!enabled) {
+            CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_hashmap_destroy(&map), "enabled of %s not found", item->name);
+        }
+        const clog_recorder_t* recorder = clog_recorder_get_origin_by_id(item->name, id);
+        CLOG_CLEAN_RET_IF_NULL(recorder, clog_hashmap_destroy(&map), CLOG_TARGET_NOT_FOUND);
+        ret = clog_hashmap_put(map, &id, recorder);
+        CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_hashmap_destroy(&map), "add %s failed, ret = %d", item->name, ret);
+        recorder = clog_hashmap_get(map, &id);
+        CLOG_CLEAN_RET_IF_NULL_X(recorder, clog_hashmap_destroy(&map), CLOG_FAIL, "get id of %s failed", item->name);
+        if (recorder->setup != NULL) {
+            ret = recorder->setup((clog_recorder_t*)recorder, item);
+            CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_hashmap_destroy(&map), "setup %s failed, ret = %d", item->name, ret);
+        }
+        if (recorder->open != NULL) {
+            ret = recorder->open((clog_recorder_t*)recorder);
+            CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_hashmap_destroy(&map), "open %s failed, ret = %d", item->name, ret);
+        }
+        item = item->sibling;
+    }
+    g_recorders = map;
     return CLOG_SUCCESS;
 }

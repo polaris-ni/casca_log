@@ -29,6 +29,9 @@ TEST(CascaLogTest, CreateLog)
     clog_free(buf);
 
     ret = clog_setup(nullptr, 0);
+    if (ret != CLOG_SUCCESS) {
+        printf("reason: \n\t%s\n", clog_err_get());
+    }
     ASSERT_EQ(ret, CLOG_SUCCESS);
 
     const auto tmp = static_cast<char*>(clog_malloc(len));
