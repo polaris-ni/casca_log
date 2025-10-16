@@ -3,7 +3,6 @@
  * @date  2025/10/16
  */
 #include "clog_recorder_manager.h"
-
 #include "casca_log.h"
 #include "casca_log_keywords.h"
 #include "clog_hashmap.h"
@@ -82,6 +81,7 @@ static const clog_recorder_t* clog_recorder_get_origin_by_id(const char* name, u
     for (size_t i = 0; i < g_customized_recorders_num; ++i) {
         if (g_customized_recorders[i].id == id) {
             recorder = &g_customized_recorders[i];
+            break;
         }
     }
 
@@ -107,6 +107,7 @@ clog_res_e clog_recorder_setup(void)
         enabled = enabled || (ret == CLOG_TARGET_NOT_FOUND);
         if (!enabled) {
             CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_hashmap_destroy(&map), "enabled of %s not found", item->name);
+            continue;
         }
         const clog_recorder_t* recorder = clog_recorder_get_origin_by_id(item->name, id);
         CLOG_CLEAN_RET_IF_NULL(recorder, clog_hashmap_destroy(&map), CLOG_TARGET_NOT_FOUND);
@@ -125,5 +126,10 @@ clog_res_e clog_recorder_setup(void)
         item = item->sibling;
     }
     g_recorders = map;
+    if (g_customized_recorders != NULL) {
+        clog_free(g_customized_recorders);
+        g_customized_recorders = NULL;
+    }
+    g_customized_recorders_num = 0;
     return CLOG_SUCCESS;
 }
