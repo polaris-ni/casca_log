@@ -37,3 +37,8 @@ keywords = "pw,password,ip\\,,dns" # if a keyword contains ',', use escape char 
 [Recorders.ClogRecorderStdout]
 id = 1
 enabled = true
+
+[Dispatchers]
+[Dispatchers.ClogDirectDispatcher]
+id = 1
+enabled = true
