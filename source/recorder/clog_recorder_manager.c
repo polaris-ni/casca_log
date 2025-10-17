@@ -13,6 +13,30 @@ static clog_hashmap_t* g_recorders = NULL;
 static clog_recorder_t* g_customized_recorders = NULL;
 static size_t g_customized_recorders_num = 0;
 
+clog_res_e clog_recoder_write(uint32_t id, const clog_item_t* item)
+{
+    CLOG_RET_IF_NULL(item, CLOG_INVALID_PARAM);
+    clog_recorder_t* recorder = clog_hashmap_get(g_recorders, &id);
+    CLOG_RET_IF_NULL(recorder, CLOG_TARGET_NOT_FOUND);
+    clog_res_e ret = recorder->write(recorder, item);
+    if (ret == CLOG_SUCCESS) {
+        return CLOG_SUCCESS;
+    }
+    if (ret != CLOG_REQUEST_FLUSH) {
+        return ret;
+    }
+    CLOG_RET_IF_NULL(recorder->flush, CLOG_SUCCESS);
+    ret = recorder->flush(recorder);
+    if (ret != CLOG_SUCCESS) {
+        if (recorder->close != NULL) {
+            recorder->close(recorder);
+        }
+        CLOG_RET_IF_NULL(recorder->open, CLOG_SUCCESS);
+        return recorder->open(recorder);
+    }
+    return CLOG_SUCCESS;
+}
+
 clog_res_e clog_recorder_register(const clog_recorder_t* recorders, size_t num)
 {
     CLOG_RET_IF_NULL_X(recorders, CLOG_INVALID_PARAM, "recoders to be registered is NULL");
@@ -114,14 +138,14 @@ clog_res_e clog_recorder_setup(void)
         CLOG_CLEAN_RET_IF_NULL(recorder, clog_recorder_cleanup(), CLOG_TARGET_NOT_FOUND);
         ret = clog_hashmap_put(g_recorders, &id, recorder);
         CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_cleanup(), "add %s failed, ret = %d", item->name, ret);
-        recorder = clog_hashmap_get(g_recorders, &id);
-        CLOG_CLEAN_RET_IF_NULL_X(recorder, clog_recorder_cleanup(), CLOG_FAIL, "get id of %s failed", item->name);
-        if (recorder->setup != NULL) {
-            ret = recorder->setup((clog_recorder_t*)recorder, item);
+        clog_recorder_t* tmp = clog_hashmap_get(g_recorders, &id);
+        CLOG_CLEAN_RET_IF_NULL_X(tmp, clog_recorder_cleanup(), CLOG_FAIL, "get id of %s failed", item->name);
+        if (tmp->setup != NULL) {
+            ret = tmp->setup(tmp, item);
             CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_cleanup(), "setup %s failed, ret = %d", item->name, ret);
         }
-        if (recorder->open != NULL) {
-            ret = recorder->open((clog_recorder_t*)recorder);
+        if (tmp->open != NULL) {
+            ret = tmp->open(tmp);
             CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_cleanup(), "open %s failed, ret = %d", item->name, ret);
         }
         item = item->sibling;

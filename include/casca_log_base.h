@@ -98,6 +98,7 @@ typedef enum clog_level {
 } clog_level_e;
 
 typedef struct clog_item {
+    uint32_t seq;
     const char* filename;
     const char* function;
     const char* module;

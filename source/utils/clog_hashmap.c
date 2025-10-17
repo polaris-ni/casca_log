@@ -322,7 +322,7 @@ clog_res_e clog_hashmap_put(clog_hashmap_t* map, const void* key, const void* va
     return ret;
 }
 
-const void* clog_hashmap_get(const clog_hashmap_t* map, const void* key)
+void* clog_hashmap_get(const clog_hashmap_t* map, const void* key)
 {
     CLOG_RET_IF_NULL(map, NULL);
     CLOG_RET_IF_NULL(key, NULL);

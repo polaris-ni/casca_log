@@ -63,7 +63,7 @@ clog_res_e clog_hashmap_put(clog_hashmap_t* map, const void* key, const void* va
  * @param key key
  * @return the original value ptr of key, the caller should not free it, and there may be concurrent conflicts
  */
-const void* clog_hashmap_get(const clog_hashmap_t* map, const void* key);
+void* clog_hashmap_get(const clog_hashmap_t* map, const void* key);
 
 /**
  * get value by key, and the key-value will be removed
