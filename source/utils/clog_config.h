@@ -13,21 +13,22 @@
 extern "C" {
 #endif
 
-typedef enum clog_config_item_type {
-    CLOG_CONFIG_ITEM_TYPE_INT = 0,
-    CLOG_CONFIG_ITEM_TYPE_UINT,
-    CLOG_CONFIG_ITEM_TYPE_FLOAT,
-    CLOG_CONFIG_ITEM_TYPE_CHAR,
-    CLOG_CONFIG_ITEM_TYPE_STRING,
-    CLOG_CONFIG_ITEM_TYPE_BOOL,
-    CLOG_CONFIG_ITEM_TYPE_INVALID,
-} clog_config_item_type_e;
+typedef enum clog_config_type {
+    CLOG_CONFIG_TYPE_INT = 0,
+    CLOG_CONFIG_TYPE_UINT,
+    CLOG_CONFIG_TYPE_FLOAT,
+    CLOG_CONFIG_TYPE_CHAR,
+    CLOG_CONFIG_TYPE_STRING,
+    CLOG_CONFIG_TYPE_BOOL,
+    CLOG_CONFIG_TYPE_ARRAY,
+    CLOG_CONFIG_TYPE_INVALID,
+} clog_config_type_e;
 
 typedef struct clog_config_item clog_config_item_t;
 
 struct clog_config_item {
     const char* key;
-    clog_config_item_type_e type;
+    clog_config_type_e type;
     union {
         int sint;
         unsigned int uint;

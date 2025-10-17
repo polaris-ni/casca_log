@@ -3,9 +3,9 @@
  * @date  2025/9/3
  */
 #include "casca_log.h"
-#include <stdio.h>
 #include "clog_config.h"
 #include "clog_dispatcher_manager.h"
+#include "clog_error.h"
 #include "clog_formatter.h"
 #include "clog_hashmap.h"
 #include "clog_mem_pool.h"
@@ -50,8 +50,6 @@ typedef struct clog_context {
 } clog_context_t;
 
 static clog_context_t g_context = {0};
-
-static char g_err[CASCA_LOG_ERR_BUF_SIZE] = {0}; /* NOT thread-safe */
 
 static const clog_setup_f g_setup_funcs[] = {
     clog_formatter_setup,
@@ -286,60 +284,6 @@ void clog_destroy(const clog_cleanup_f* funcs, const size_t num)
             funcs[i]();
         }
     }
-}
-
-void clog_err_clear(void)
-{
-    g_err[0] = '\0';
-}
-
-void clog_err_set(const char* fmt, ...)
-{
-    CLOG_RET_VOID_IF_NULL(fmt);
-    va_list args;
-    va_start(args, fmt);
-    const int ret = vsnprintf(g_err, sizeof(g_err), fmt, args);
-    va_end(args);
-    if (ret <= 0) {
-        clog_err_clear();
-    }
-}
-
-void clog_err_append(const char* fmt, ...)
-{
-    CLOG_RET_VOID_IF_NULL(fmt);
-    const size_t len = strlen(g_err);
-    CLOG_RET_VOID_IF(len >= sizeof(g_err) - 1);
-    va_list args;
-    va_start(args, fmt);
-    const int ret = vsnprintf(g_err + len, sizeof(g_err) - len, fmt, args);
-    va_end(args);
-    if (ret <= 0) {
-        g_err[len - 1] = '\0';
-    }
-}
-
-void clog_err_append_line(const char* fmt, ...)
-{
-    CLOG_RET_VOID_IF_NULL(fmt);
-    const size_t len = strlen(g_err);
-    CLOG_RET_VOID_IF(len >= sizeof(g_err) - 1);
-    va_list args;
-    va_start(args, fmt);
-    const int ret = vsnprintf(g_err + len, sizeof(g_err) - len, fmt, args);
-    va_end(args);
-    if (ret <= 0) {
-        g_err[len - 1] = '\0';
-    } else {
-        CLOG_RET_VOID_IF(len + ret >= sizeof(g_err));
-        g_err[len + ret] = '\n';
-        g_err[len + ret + 1] = '\0';
-    }
-}
-
-const char* clog_err_get(void)
-{
-    return g_err;
 }
 
 static unsigned long long clog_get_thread_id(void)
