@@ -5,6 +5,7 @@
 #include "casca_log.h"
 #include <stdio.h>
 #include "clog_config.h"
+#include "clog_dispatcher.h"
 #include "clog_formatter.h"
 #include "clog_hashmap.h"
 #include "clog_mem_pool.h"
@@ -426,8 +427,5 @@ clog_res_e clog_log(const uint32_t* recorders, const size_t count, const char* m
         return CLOG_NOT_PERMITTED;
     }
 
-    (void)printf("[===>]: %s\n", buf);
-
-    /* TODO: pre-filter -> formatter -> post-filter -> dispatcher -> recorder */
-    return CLOG_SUCCESS;
+    return clog_dispatch(recorders, count, &item);
 }
