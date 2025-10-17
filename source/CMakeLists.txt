@@ -32,7 +32,6 @@ add_library(casca_log ${CASCA_LOG_SOURCES}
 target_include_directories(casca_log
         PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
-        PRIVATE
         ${CASCA_LOG_HOOKS_INCLUDE_DIR}
         ${CASCA_LOG_UTILS_INCLUDE_DIR}
         ${CASCA_LOG_FILTER_INCLUDE_DIR}

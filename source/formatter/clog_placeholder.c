@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <time.h>
 #include "casca_log.h"
+#include "clog_error.h"
 #include "clog_hooks.h"
 #include "clog_secure_func.h"
 

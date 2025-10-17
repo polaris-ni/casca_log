@@ -3,8 +3,10 @@
  * @date  2025/10/16
  */
 #include "clog_recorder_manager.h"
+
 #include "casca_log.h"
 #include "casca_log_keywords.h"
+#include "clog_error.h"
 #include "clog_hashmap.h"
 #include "clog_recorder_stdout.h"
 

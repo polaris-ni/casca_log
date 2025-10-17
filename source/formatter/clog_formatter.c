@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "casca_log.h"
 #include "clog_config.h"
+#include "clog_error.h"
 #include "clog_placeholder.h"
 #include "clog_secure_func.h"
 
@@ -19,7 +20,7 @@ static clog_res_e clog_format_init_tags(const clog_config_group_t* group)
     for (size_t i = 0; i < size; i++) {
         const clog_config_item_t* item = clog_config_find_item_in_group(group, tags[i]);
         CLOG_RET_IF_NULL_X(item, CLOG_TARGET_NOT_FOUND, "Formatter.Level.tag.%s not found", tags[i]);
-        CLOG_RET_IF_X(item->type != CLOG_CONFIG_ITEM_TYPE_STRING, CLOG_INVALID_PARAM,
+        CLOG_RET_IF_X(item->type != CLOG_CONFIG_TYPE_STRING, CLOG_INVALID_PARAM,
                       "Formatter.Level.tag.trace type %u error", item->type);
         const char* str = clog_strdup(item->value.str);
         CLOG_RET_IF_NULL_X(str, CLOG_NO_MEMORY, "clog_strdup tag str [%s] failed", item->value.str);
@@ -36,7 +37,7 @@ clog_res_e clog_formatter_setup(void)
     const char* groups[] = {"Formatter"};
     const clog_config_item_t* item = clog_config_find_item(root, groups, CLOG_ARRAY_SIZE(groups), "format");
     CLOG_RET_IF_NULL_X(item, CLOG_TARGET_NOT_FOUND, "item \"format\" of group [Formatter] not found");
-    CLOG_RET_IF_X(item->type != CLOG_CONFIG_ITEM_TYPE_STRING, CLOG_ERROR_FORMAT,
+    CLOG_RET_IF_X(item->type != CLOG_CONFIG_TYPE_STRING, CLOG_ERROR_FORMAT,
                   "format type error, CLOG_CONFIG_ITEM_TYPE_STRING expected, but %u found", item->type);
     CLOG_RET_IF_NULL_X(item->value.str, CLOG_ERROR_FORMAT, "format string is NULL");
 
