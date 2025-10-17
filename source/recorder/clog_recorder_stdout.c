@@ -18,12 +18,12 @@ const clog_recorder_t* clog_recorder_stdout(void)
 {
     static const clog_recorder_t tmp = {
         .id = CLOG_RECORDER_STDOUT_ID,
-        .setup = NULL,
-        .open = NULL,
+        .setup = clog_recorder_empty_setup,
+        .open = clog_recorder_empty_open,
         .write = clog_recorder_stdout_write,
-        .flush = NULL,
-        .close = NULL,
-        .cleanup = NULL,
+        .flush = clog_recorder_empty_flush,
+        .close = clog_recorder_empty_close,
+        .cleanup = clog_recorder_empty_cleanup,
         .extra = NULL,
     };
     return &tmp;

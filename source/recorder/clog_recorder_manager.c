@@ -25,13 +25,9 @@ clog_res_e clog_recoder_write(uint32_t id, const clog_item_t* item)
     if (ret != CLOG_REQUEST_FLUSH) {
         return ret;
     }
-    CLOG_RET_IF_NULL(recorder->flush, CLOG_SUCCESS);
     ret = recorder->flush(recorder);
     if (ret != CLOG_SUCCESS) {
-        if (recorder->close != NULL) {
-            recorder->close(recorder);
-        }
-        CLOG_RET_IF_NULL(recorder->open, CLOG_SUCCESS);
+        recorder->close(recorder);
         return recorder->open(recorder);
     }
     return CLOG_SUCCESS;
@@ -45,8 +41,12 @@ clog_res_e clog_recorder_register(const clog_recorder_t* recorders, size_t num)
         const uint32_t id = recorders[i].id;
         CLOG_RET_IF_X(id <= CLOG_RECORDER_ID_RESERVED, CLOG_INVALID_PARAM,
                       "customized recorders %zu id (%u) is invalid", i, id);
-        CLOG_RET_IF_NULL_X(recorders[i].write, CLOG_INVALID_PARAM, "customized recorder %zu write func is NULL",
-                           recorders[i].write);
+        CLOG_RET_IF_NULL_X(recorders[i].setup, CLOG_INVALID_PARAM, "customized recorder %zu setup func is NULL", i);
+        CLOG_RET_IF_NULL_X(recorders[i].open, CLOG_INVALID_PARAM, "customized recorder %zu open func is NULL", i);
+        CLOG_RET_IF_NULL_X(recorders[i].write, CLOG_INVALID_PARAM, "customized recorder %zu write func is NULL", i);
+        CLOG_RET_IF_NULL_X(recorders[i].flush, CLOG_INVALID_PARAM, "customized recorder %zu flush func is NULL", i);
+        CLOG_RET_IF_NULL_X(recorders[i].close, CLOG_INVALID_PARAM, "customized recorder %zu close func is NULL", i);
+        CLOG_RET_IF_NULL_X(recorders[i].cleanup, CLOG_INVALID_PARAM, "customized recorder %zu cleanup func is NULL", i);
     }
     clog_recorder_t* tmp = clog_malloc(sizeof(clog_recorder_t) * num);
     CLOG_RET_IF_NULL_X(tmp, CLOG_INVALID_PARAM, "clog_malloc failed");
@@ -78,12 +78,8 @@ static void* clog_recoder_dup(const void* ptr)
 static void clog_recoder_free(void* ptr)
 {
     clog_recorder_t* tmp = (clog_recorder_t*)ptr;
-    if (tmp->close != NULL) {
-        tmp->close(tmp);
-    }
-    if (tmp->cleanup != NULL) {
-        tmp->cleanup(NULL);
-    }
+    tmp->close(tmp);
+    tmp->cleanup(NULL);
     clog_free(tmp);
 }
 
@@ -137,17 +133,13 @@ clog_res_e clog_recorder_setup(void)
         const clog_recorder_t* recorder = clog_recorder_get_origin_by_id(item->name, id);
         CLOG_CLEAN_RET_IF_NULL(recorder, clog_recorder_cleanup(), CLOG_TARGET_NOT_FOUND);
         ret = clog_hashmap_put(g_recorders, &id, recorder);
-        CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_cleanup(), "add %s failed, ret = %d", item->name, ret);
+        CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_cleanup(), "add recorder %s failed, ret = %d", item->name, ret);
         clog_recorder_t* tmp = clog_hashmap_get(g_recorders, &id);
-        CLOG_CLEAN_RET_IF_NULL_X(tmp, clog_recorder_cleanup(), CLOG_FAIL, "get id of %s failed", item->name);
-        if (tmp->setup != NULL) {
-            ret = tmp->setup(tmp, item);
-            CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_cleanup(), "setup %s failed, ret = %d", item->name, ret);
-        }
-        if (tmp->open != NULL) {
-            ret = tmp->open(tmp);
-            CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_cleanup(), "open %s failed, ret = %d", item->name, ret);
-        }
+        CLOG_CLEAN_RET_IF_NULL_X(tmp, clog_recorder_cleanup(), CLOG_FAIL, "get recoder of %s by id failed", item->name);
+        ret = tmp->setup(tmp, item);
+        CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_cleanup(), "setup recorder %s failed, ret = %d", item->name, ret);
+        ret = tmp->open(tmp);
+        CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_cleanup(), "open recorder %s failed, ret = %d", item->name, ret);
         item = item->sibling;
     }
     if (g_customized_recorders != NULL) {
