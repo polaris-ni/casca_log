@@ -4,6 +4,7 @@
  */
 #include <gtest/gtest.h>
 #include "casca_log.h"
+#include "clog_error.h"
 #include "clog_hooks.h"
 #include "utils/clog_config.h"
 #include "utils/clog_secure_func.h"
@@ -24,6 +25,7 @@ TEST(CascaLogTest, CreateLog)
     clog_res_e ret = clog_init("casca_log_test", buf);
     if (ret != CLOG_SUCCESS) {
         printf("reason: \n\t%s\n", clog_err_get());
+        return;
     }
     ASSERT_EQ(ret, CLOG_SUCCESS);
     clog_free(buf);

@@ -3,7 +3,7 @@
  * @date  2025/10/17
  */
 #include "clog_dispatcher_direct.h"
-#include "casca_log.h"
+#include "clog_error.h"
 #include "clog_recorder_manager.h"
 
 static clog_res_e clog_dispatcher_direct_dispatch(clog_dispatcher_t* self, const uint32_t* recorders, size_t num,

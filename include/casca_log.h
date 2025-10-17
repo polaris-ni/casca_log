@@ -13,57 +13,6 @@
 extern "C" {
 #endif
 
-#define CLOG_RET_IF_X(cond, ret, msg, ...)            \
-    do {                                              \
-        if (cond) {                                   \
-            clog_err_append_line(msg, ##__VA_ARGS__); \
-            return ret;                               \
-        }                                             \
-    } while (0)
-
-#define CLOG_CLEAN_RET_IF_X(cond, clean, ret, msg, ...) \
-    do {                                                \
-        if (cond) {                                     \
-            (clean);                                    \
-            clog_err_append_line(msg, ##__VA_ARGS__);   \
-            return ret;                                 \
-        }                                               \
-    } while (0)
-
-#define CLOG_RET_IF_NULL_X(ptr, ret, msg, ...)        \
-    do {                                              \
-        if ((ptr) == NULL) {                          \
-            clog_err_append_line(msg, ##__VA_ARGS__); \
-            return ret;                               \
-        }                                             \
-    } while (0)
-
-#define CLOG_CLEAN_RET_IF_NULL_X(ptr, clean, ret, msg, ...) \
-    do {                                                    \
-        if ((ptr) == NULL) {                                \
-            (clean);                                        \
-            clog_err_append_line(msg, ##__VA_ARGS__);       \
-            return ret;                                     \
-        }                                                   \
-    } while (0)
-
-#define CLOG_RET_IF_FAILED_X(ret, msg, ...)           \
-    do {                                              \
-        if ((ret) != CLOG_SUCCESS) {                  \
-            clog_err_append_line(msg, ##__VA_ARGS__); \
-            return ret;                               \
-        }                                             \
-    } while (0)
-
-#define CLOG_CLEAN_RET_IF_FAILED_X(ret, clean, msg, ...) \
-    do {                                                 \
-        if ((ret) != CLOG_SUCCESS) {                     \
-            (clean);                                     \
-            clog_err_append_line(msg, ##__VA_ARGS__);    \
-            return ret;                                  \
-        }                                                \
-    } while (0)
-
 /**
  * setup function
  * @return #clog_res_e
@@ -161,38 +110,6 @@ const clog_module_t* clog_get_module_info(const char* module);
  * @param num number of funcs, 0 if there is no customized cleanup function
  */
 void clog_destroy(const clog_cleanup_f* funcs, size_t num);
-
-/**
- * clear error message
- */
-void clog_err_clear(void);
-
-/**
- * set err msg, will clear previous error message even if set failed
- * @param fmt message format, nonnull
- * @param ... var
- */
-void clog_err_set(const char* fmt, ...);
-
-/**
- * append error message
- * @param fmt message format, nonnull
- * @param ... var
- */
-void clog_err_append(const char* fmt, ...);
-
-/**
- * append error message with line
- * @param fmt message format, nonnull
- * @param ... var
- */
-void clog_err_append_line(const char* fmt, ...);
-
-/**
- * get error message, it will never return NULL, safe to print
- * @return error message, return string "NULL" if context is NULL
- */
-const char* clog_err_get(void);
 
 /**
  * record a log
