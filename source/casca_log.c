@@ -61,6 +61,7 @@ static const clog_setup_f g_setup_funcs[] = {
 static const clog_cleanup_f g_cleanup_funcs[] = {
     clog_formatter_cleanup,
     clog_filter_cleanup,
+    clog_recorder_cleanup,
 };
 
 static clog_res_e clog_init_process_attrs(const char* process, const clog_config_group_t* group)

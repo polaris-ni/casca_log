@@ -91,9 +91,9 @@ static const clog_recorder_t* clog_recorder_get_origin_by_id(const char* name, u
 
 clog_res_e clog_recorder_setup(void)
 {
-    clog_hashmap_t* map =
+    g_recorders =
         clog_hashmap_create(sizeof(uint32_t), 0, NULL, NULL, clog_recoder_dup, clog_recoder_free, NULL, NULL, 0);
-    CLOG_RET_IF_NULL_X(map, CLOG_NO_MEMORY, "clog_hashmap_create failed");
+    CLOG_RET_IF_NULL_X(g_recorders, CLOG_NO_MEMORY, "clog_hashmap_create failed");
     const char* groups[] = {CLOG_STR_RECORDERS};
     const clog_config_group_t* group = clog_config_find_group(clog_get_config_root(), groups, CLOG_ARRAY_SIZE(groups));
     CLOG_RET_IF_NULL_X(group, CLOG_INVALID_PARAM, CLOG_STR_RECORDERS " not found");
@@ -101,35 +101,45 @@ clog_res_e clog_recorder_setup(void)
     while (item != NULL) {
         uint32_t id = CLOG_RECORDER_ID_INVALID;
         clog_res_e ret = clog_config_find_item_in_group_uint(item, CLOG_STR_ID, &id);
-        CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_hashmap_destroy(&map), "get id of %s failed, ret = %d", item->name, ret);
+        CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_cleanup(), "get id of %s failed, ret = %d", item->name, ret);
         bool enabled = false;
         ret = clog_config_find_item_in_group_bool(item, CLOG_STR_ENABLED, &enabled);
         enabled = enabled || (ret == CLOG_TARGET_NOT_FOUND);
         if (!enabled) {
-            CLOG_CLEAN_RET_IF_X(ret != CLOG_TARGET_NOT_FOUND, clog_hashmap_destroy(&map), ret, "enabled of %s not found", item->name);
+            CLOG_CLEAN_RET_IF_X(ret != CLOG_TARGET_NOT_FOUND, clog_recorder_cleanup(), ret, "enabled of %s not found",
+                                item->name);
             continue;
         }
         const clog_recorder_t* recorder = clog_recorder_get_origin_by_id(item->name, id);
-        CLOG_CLEAN_RET_IF_NULL(recorder, clog_hashmap_destroy(&map), CLOG_TARGET_NOT_FOUND);
-        ret = clog_hashmap_put(map, &id, recorder);
-        CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_hashmap_destroy(&map), "add %s failed, ret = %d", item->name, ret);
-        recorder = clog_hashmap_get(map, &id);
-        CLOG_CLEAN_RET_IF_NULL_X(recorder, clog_hashmap_destroy(&map), CLOG_FAIL, "get id of %s failed", item->name);
+        CLOG_CLEAN_RET_IF_NULL(recorder, clog_recorder_cleanup(), CLOG_TARGET_NOT_FOUND);
+        ret = clog_hashmap_put(g_recorders, &id, recorder);
+        CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_cleanup(), "add %s failed, ret = %d", item->name, ret);
+        recorder = clog_hashmap_get(g_recorders, &id);
+        CLOG_CLEAN_RET_IF_NULL_X(recorder, clog_recorder_cleanup(), CLOG_FAIL, "get id of %s failed", item->name);
         if (recorder->setup != NULL) {
             ret = recorder->setup((clog_recorder_t*)recorder, item);
-            CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_hashmap_destroy(&map), "setup %s failed, ret = %d", item->name, ret);
+            CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_cleanup(), "setup %s failed, ret = %d", item->name, ret);
         }
         if (recorder->open != NULL) {
             ret = recorder->open((clog_recorder_t*)recorder);
-            CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_hashmap_destroy(&map), "open %s failed, ret = %d", item->name, ret);
+            CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_cleanup(), "open %s failed, ret = %d", item->name, ret);
         }
         item = item->sibling;
     }
-    g_recorders = map;
     if (g_customized_recorders != NULL) {
         clog_free(g_customized_recorders);
         g_customized_recorders = NULL;
     }
     g_customized_recorders_num = 0;
     return CLOG_SUCCESS;
+}
+
+void clog_recorder_cleanup(void)
+{
+    if (g_customized_recorders != NULL) {
+        clog_free(g_customized_recorders);
+        g_customized_recorders = NULL;
+    }
+    g_customized_recorders_num = 0;
+    clog_hashmap_destroy(&g_recorders);
 }
