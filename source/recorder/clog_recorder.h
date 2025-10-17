@@ -73,6 +73,30 @@ struct clog_recorder {
     void* extra;
 };
 
+static clog_res_e clog_recorder_empty_setup(clog_recorder_t* self, const clog_config_group_t* group)
+{
+    return CLOG_SUCCESS;
+}
+
+static clog_res_e clog_recorder_empty_open(clog_recorder_t* self)
+{
+    return CLOG_SUCCESS;
+}
+
+static clog_res_e clog_recorder_empty_write(clog_recorder_t* self, const clog_item_t* log)
+{
+    return CLOG_SUCCESS;
+}
+
+static clog_res_e clog_recorder_empty_flush(clog_recorder_t* self)
+{
+    return CLOG_SUCCESS;
+}
+
+static void clog_recorder_empty_close(clog_recorder_t* self) {}
+
+static void clog_recorder_empty_cleanup(clog_recorder_t* self) {}
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif
