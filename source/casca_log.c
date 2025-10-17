@@ -5,7 +5,7 @@
 #include "casca_log.h"
 #include <stdio.h>
 #include "clog_config.h"
-#include "clog_dispatcher.h"
+#include "clog_dispatcher_manager.h"
 #include "clog_formatter.h"
 #include "clog_hashmap.h"
 #include "clog_mem_pool.h"
