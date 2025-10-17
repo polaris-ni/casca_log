@@ -17,6 +17,8 @@ clog_res_e clog_recorder_register(const clog_recorder_t* recorders, size_t num);
 
 clog_res_e clog_recorder_setup(void);
 
+void clog_recorder_cleanup(void);
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif
