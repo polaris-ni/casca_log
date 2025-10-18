@@ -9,6 +9,11 @@
 extern "C" {
 #endif
 
+#ifndef __FILE_NAME__
+#define __FILE_NAME__ __FILE__
+#endif
+
+
 #define CLOG_RET_IF_X(cond, ret, msg, ...)            \
     do {                                              \
         if (cond) {                                   \

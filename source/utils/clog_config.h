@@ -36,6 +36,7 @@ struct clog_config_item {
         char* str;
         bool flag;
         double f;
+        clog_config_item_t* array;
     } value;
     clog_config_item_t* next;
 };
@@ -127,9 +128,10 @@ void clog_config_destroy_group(clog_config_group_t* group);
  * @param group group to be dumped, nonnull
  * @param buf buffer to save dumped string, nonnull
  * @param size buffer size
+ * @param indent indent string, no indentation if #indent is NULL and hierarchical information will be lost
  * @return true if success, false otherwise
  */
-bool clog_config_dump_group(const clog_config_group_t* group, char* buf, size_t size);
+bool clog_config_dump_group(const clog_config_group_t* group, char* buf, size_t size, const char* indent);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

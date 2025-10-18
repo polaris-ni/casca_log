@@ -24,8 +24,7 @@ TEST(CascaLogTest, CreateLog)
 
     clog_res_e ret = clog_init("casca_log_test", buf);
     if (ret != CLOG_SUCCESS) {
-        printf("reason: \n\t%s\n", clog_err_get());
-        return;
+        printf("reason: \n%s\n", clog_err_get());
     }
     ASSERT_EQ(ret, CLOG_SUCCESS);
     clog_free(buf);
@@ -39,7 +38,7 @@ TEST(CascaLogTest, CreateLog)
     const auto tmp = static_cast<char*>(clog_malloc(len));
     ASSERT_NE(buf, nullptr);
     const clog_config_group_t* root = clog_get_config_root();
-    clog_config_dump_group(root, tmp, len);
+    clog_config_dump_group(root, tmp, len, "  ");
     printf("config dump:\n%s\n==================================================\n", tmp);
 
     constexpr uint32_t recorder = 1;

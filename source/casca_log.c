@@ -139,13 +139,12 @@ clog_res_e clog_init(const char* process, const char* config)
     CLOG_RET_IF_NULL_X(g_context.process, CLOG_NO_MEMORY, "clog_strdup process failed");
 
     g_context.config.root = clog_config_parse(config);
-    clog_res_e ret = CLOG_ERROR_FORMAT;
     if (g_context.config.root == NULL) {
         clog_destroy(NULL, 0);
-        return ret;
+        return CLOG_ERROR_FORMAT;
     }
 
-    ret = clog_init_process(process, g_context.config.root, &g_context.modules);
+    clog_res_e ret = clog_init_process(process, g_context.config.root, &g_context.modules);
     if (g_context.modules == NULL) {
         clog_destroy(NULL, 0);
         return ret;
