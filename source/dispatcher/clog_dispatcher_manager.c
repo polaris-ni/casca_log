@@ -40,7 +40,7 @@ static const clog_dispatcher_t* clog_dispatcher_get_origin_by_id(const char* nam
                 return &g_customized_dispatchers[i];
             }
         }
-        clog_err_append_line("customized dispatcher %s not found, id = %u", name, id);
+        CLOG_ERR_APPEND_LINE("customized dispatcher %s not found, id = %u", name, id);
         return NULL;
     }
     const clog_dispatcher_provider_f providers[] = {clog_dispatcher_direct};
