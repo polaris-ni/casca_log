@@ -128,8 +128,8 @@ clog_res_e clog_recorder_setup(void)
         ret = clog_config_find_item_in_group_bool(item, CLOG_STR_ENABLED, &enabled);
         enabled = enabled || (ret == CLOG_TARGET_NOT_FOUND);
         if (!enabled) {
-            CLOG_CLEAN_RET_IF_X(ret != CLOG_TARGET_NOT_FOUND, clog_recorder_cleanup(), ret, "enabled of %s not found",
-                                item->name);
+            CLOG_CLEAN_RET_IF_X(ret != CLOG_TARGET_NOT_FOUND, clog_recorder_cleanup(), ret,
+                                "get \"enabled\" of %s failed, ret = %d ", item->name, ret);
             continue;
         }
         const clog_recorder_t* recorder = clog_recorder_get_origin_by_id(item->name, id);

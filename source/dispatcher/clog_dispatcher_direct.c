@@ -9,11 +9,13 @@
 static clog_res_e clog_dispatcher_direct_dispatch(clog_dispatcher_t* self, const uint32_t* recorders, size_t num,
                                                   const clog_item_t* item)
 {
+    CLOG_UNUSED_VAR(self);
     clog_res_e last = CLOG_SUCCESS;
     for (size_t i = 0; i < num; ++i) {
         const clog_res_e ret = clog_recoder_write(recorders[i], item);
         if (ret != CLOG_SUCCESS) {
-            clog_err_append_line("clog_recoder_write log %u to %u failed, ret = %d", item->seq, recorders[i], ret);
+            clog_err_append_line("direct dispatcher clog_recoder_write log %u to %u failed, ret = %d", item->seq,
+                                 recorders[i], ret);
             last = ret;
         }
     }
