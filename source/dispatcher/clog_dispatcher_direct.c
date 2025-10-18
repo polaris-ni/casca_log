@@ -14,7 +14,7 @@ static clog_res_e clog_dispatcher_direct_dispatch(clog_dispatcher_t* self, const
     for (size_t i = 0; i < num; ++i) {
         const clog_res_e ret = clog_recoder_write(recorders[i], item);
         if (ret != CLOG_SUCCESS) {
-            clog_err_append_line("direct dispatcher clog_recoder_write log %u to %u failed, ret = %d", item->seq,
+            CLOG_ERR_APPEND_LINE("direct dispatcher clog_recoder_write log %u to %u failed, ret = %d", item->seq,
                                  recorders[i], ret);
             last = ret;
         }

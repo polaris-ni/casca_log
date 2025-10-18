@@ -13,11 +13,14 @@ extern "C" {
 #define __FILE_NAME__ __FILE__
 #endif
 
+#define CLOG_STR_TMP(x) #x
+#define CLOG_STR(x) CLOG_STR_TMP(x)
+
 
 #define CLOG_RET_IF_X(cond, ret, msg, ...)            \
     do {                                              \
         if (cond) {                                   \
-            clog_err_append_line(msg, ##__VA_ARGS__); \
+            CLOG_ERR_APPEND_LINE(msg, ##__VA_ARGS__); \
             return ret;                               \
         }                                             \
     } while (0)
@@ -25,7 +28,7 @@ extern "C" {
 #define CLOG_CLEAN_RET_IF_X(cond, clean, ret, msg, ...) \
     do {                                                \
         if (cond) {                                     \
-            clog_err_append_line(msg, ##__VA_ARGS__);   \
+            CLOG_ERR_APPEND_LINE(msg, ##__VA_ARGS__);   \
             (clean);                                    \
             return ret;                                 \
         }                                               \
@@ -34,7 +37,7 @@ extern "C" {
 #define CLOG_RET_IF_NULL_X(ptr, ret, msg, ...)        \
     do {                                              \
         if ((ptr) == NULL) {                          \
-            clog_err_append_line(msg, ##__VA_ARGS__); \
+            CLOG_ERR_APPEND_LINE(msg, ##__VA_ARGS__); \
             return ret;                               \
         }                                             \
     } while (0)
@@ -42,7 +45,7 @@ extern "C" {
 #define CLOG_CLEAN_RET_IF_NULL_X(ptr, clean, ret, msg, ...) \
     do {                                                    \
         if ((ptr) == NULL) {                                \
-            clog_err_append_line(msg, ##__VA_ARGS__);       \
+            CLOG_ERR_APPEND_LINE(msg, ##__VA_ARGS__);       \
             (clean);                                        \
             return ret;                                     \
         }                                                   \
@@ -51,7 +54,7 @@ extern "C" {
 #define CLOG_RET_IF_FAILED_X(ret, msg, ...)           \
     do {                                              \
         if ((ret) != CLOG_SUCCESS) {                  \
-            clog_err_append_line(msg, ##__VA_ARGS__); \
+            CLOG_ERR_APPEND_LINE(msg, ##__VA_ARGS__); \
             return ret;                               \
         }                                             \
     } while (0)
@@ -59,11 +62,17 @@ extern "C" {
 #define CLOG_CLEAN_RET_IF_FAILED_X(ret, clean, msg, ...) \
     do {                                                 \
         if ((ret) != CLOG_SUCCESS) {                     \
-            clog_err_append_line(msg, ##__VA_ARGS__);    \
+            CLOG_ERR_APPEND_LINE(msg, ##__VA_ARGS__);    \
             (clean);                                     \
             return ret;                                  \
         }                                                \
     } while (0)
+
+#define CLOG_ERR_SET(msg, ...) clog_err_set(__FILE_NAME__ ":" CLOG_STR(__LINE__) " " msg, ##__VA_ARGS__)
+
+#define CLOG_ERR_APPEND(msg, ...) clog_err_append(__FILE_NAME__ ":" CLOG_STR(__LINE__) " " msg, ##__VA_ARGS__)
+
+#define CLOG_ERR_APPEND_LINE(msg, ...) clog_err_append_line(__FILE_NAME__ ":" CLOG_STR(__LINE__) " " msg, ##__VA_ARGS__)
 
 
 /**

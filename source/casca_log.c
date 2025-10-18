@@ -72,7 +72,7 @@ static clog_res_e clog_init_process_attrs(const char* process, const clog_config
     CLOG_RET_IF_X(ret != CLOG_SUCCESS, ret, "level not found or invalid in process[%s], ret = %d", process, ret);
     if (value > (CLOG_LEVEL_FETAL | CLOG_LEVEL_ERROR | CLOG_LEVEL_WARN | CLOG_LEVEL_INFO | CLOG_LEVEL_DEBUG |
                  CLOG_LEVEL_TRACE)) {
-        clog_err_set("the value of level is invalid, value = %u", value);
+        CLOG_ERR_SET("the value of level is invalid, value = %u", value);
         return CLOG_ERROR_FORMAT;
     }
     g_context.config.level = value;
@@ -93,7 +93,7 @@ static clog_res_e clog_init_process_module(const char* process, const clog_confi
     }
     if (value > (CLOG_LEVEL_FETAL | CLOG_LEVEL_ERROR | CLOG_LEVEL_WARN | CLOG_LEVEL_INFO | CLOG_LEVEL_DEBUG |
                  CLOG_LEVEL_TRACE)) {
-        clog_err_set("the value of level is invalid, value = %u", value);
+        CLOG_ERR_SET("the value of level is invalid, value = %u", value);
         return CLOG_ERROR_FORMAT;
     }
     const clog_module_t tmp = {
@@ -112,7 +112,7 @@ static clog_res_e clog_init_process(const char* process, const clog_config_group
     const clog_config_group_t* group = clog_config_find_group(root, groups, CLOG_ARRAY_SIZE(groups));
     if (group == NULL) {
         clog_hashmap_destroy(&map);
-        clog_err_set("process [%s] not found", process);
+        CLOG_ERR_SET("process [%s] not found", process);
         return CLOG_TARGET_NOT_FOUND;
     }
     clog_res_e ret = clog_init_process_attrs(process, group);
@@ -227,7 +227,7 @@ void clog_set_level_tag(const clog_level_e level, const char* tag)
             g_context.formatter.level.tag.fetal = tag;
             break;
         default:
-            clog_err_set("level %u is invalid", level);
+            CLOG_ERR_SET("level %u is invalid", level);
             break;
     }
 }
@@ -374,7 +374,7 @@ clog_res_e clog_log(const uint32_t* recorders, const size_t count, const char* m
 
     ret = clog_dispatch(recorders, count, &item);
     if (ret != CLOG_SUCCESS) {
-        clog_err_set("dispatch log failed");
+        CLOG_ERR_SET("dispatch log failed");
     }
     return ret;
 }
