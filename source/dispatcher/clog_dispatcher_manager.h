@@ -5,11 +5,31 @@
 #ifndef CASCA_LOG_CLOG_DISPATCHER_MANAGER_H
 #define CASCA_LOG_CLOG_DISPATCHER_MANAGER_H
 
-#include "casca_log_base.h"
+#include "clog_dispatcher.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
+
+/**
+ * register customized dispatchers
+ * @param dispatchers customized dispatchers
+ * @param num the num of customized dispatchers
+ * @return #clog_res_e
+ */
+clog_res_e clog_dispatcher_register(const clog_dispatcher_t* dispatchers, size_t num);
+
+/**
+ * setup dispatchers
+ * @return #clog_res_e
+ */
+clog_res_e clog_dispatcher_setup(void);
+
+/**
+ * cleanup dispatchers
+ * @return #clog_res_e
+ */
+void clog_dispatcher_cleanup(void);
 
 /**
  * dispatcher log item to #recorders

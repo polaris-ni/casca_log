@@ -54,12 +54,14 @@ static clog_context_t g_context = {0};
 static const clog_setup_f g_setup_funcs[] = {
     clog_formatter_setup,
     clog_filter_setup,
+    clog_dispatcher_setup,
     clog_recorder_setup,
 };
 
 static const clog_cleanup_f g_cleanup_funcs[] = {
     clog_formatter_cleanup,
     clog_filter_cleanup,
+    clog_dispatcher_cleanup,
     clog_recorder_cleanup,
 };
 
@@ -370,5 +372,9 @@ clog_res_e clog_log(const uint32_t* recorders, const size_t count, const char* m
         return CLOG_NOT_PERMITTED;
     }
 
-    return clog_dispatch(recorders, count, &item);
+    ret = clog_dispatch(recorders, count, &item);
+    if (ret != CLOG_SUCCESS) {
+        clog_err_set("dispatch log failed");
+    }
+    return ret;
 }

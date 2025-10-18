@@ -5,7 +5,7 @@
 #ifndef CASCA_LOG_CLOG_DISPATCHER_H
 #define CASCA_LOG_CLOG_DISPATCHER_H
 
-#include "casca_log_base.h"
+#include "clog_config.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -20,9 +20,10 @@ typedef struct clog_dispatcher clog_dispatcher_t;
 /**
  * open dispatcher, extra param should be initialized at this function
  * @param self clog_dispatcher_t itself
+ * @param group the parsed #clog_config_group_t from the Dispatchers.ClogXxx
  * @return clog_res_e
  */
-typedef clog_res_e (*clog_dispatcher_open_f)(clog_dispatcher_t* self);
+typedef clog_res_e (*clog_dispatcher_open_f)(clog_dispatcher_t* self, const clog_config_group_t* group);
 
 /**
  * dispatcher log item to target recorders
@@ -50,7 +51,14 @@ struct clog_dispatcher {
     void* extra;
 };
 
-static clog_res_e clog_dispatcher_empty_open(clog_dispatcher_t* self)
+
+/**
+ * dispatcher provider
+ * @return #clog_dispatcher_t, it should never be NULL
+ */
+typedef const clog_dispatcher_t* (*clog_dispatcher_provider_f)(void);
+
+static clog_res_e clog_dispatcher_empty_open(clog_dispatcher_t* self, const clog_config_group_t* group)
 {
     return CLOG_SUCCESS;
 }
