@@ -20,6 +20,8 @@ extern "C" {
 #define CLOG_STR_FILTERS "Filters"
 #define CLOG_STR_BASIC_FILTER "ClogBasicFilter"
 #define CLOG_STR_KEYWORDS_FILTER "ClogKeywordsFilter"
+#define CLOG_STR_DISPATCHERS "Dispatchers"
+#define CLOG_STR_DISPATCHER_DIRECT "ClogDirectDispatcher"
 #define CLOG_STR_RECORDERS "Recorders"
 #define CLOG_STR_RECORDER_STDOUT "ClogRecorderStdout"
 
