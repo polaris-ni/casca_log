@@ -4,8 +4,10 @@
  */
 #include <gtest/gtest.h>
 #include "casca_log.h"
+#include "casca_log_keywords.h"
 #include "clog_error.h"
 #include "clog_hooks.h"
+#include "clog_recorder_manager.h"
 #include "utils/clog_config.h"
 #include "utils/clog_secure_func.h"
 
@@ -41,23 +43,22 @@ TEST(CascaLogTest, CreateLog)
     clog_config_dump_group(root, tmp, len, "  ");
     printf("config dump:\n%s\n==================================================\n", tmp);
 
-    constexpr uint32_t recorder = 1;
-    ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_TRACE,
+    ret = clog_log("test", CLOG_RECORDER_STDOUT_ID, __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_TRACE,
                    "test log print process trace [%s]", clog_get_process());
     ASSERT_EQ(ret, CLOG_SUCCESS);
-    ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_DEBUG,
+    ret = clog_log("test", CLOG_RECORDER_STDOUT_ID, __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_DEBUG,
                    "test log print process debug [%s]", clog_get_process());
     ASSERT_EQ(ret, CLOG_SUCCESS);
-    ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_INFO,
+    ret = clog_log("test", CLOG_RECORDER_STDOUT_ID, __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_INFO,
                    "test log print process info [%s]", clog_get_process());
     ASSERT_EQ(ret, CLOG_SUCCESS);
-    ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_WARN,
+    ret = clog_log("test", CLOG_RECORDER_STDOUT_ID, __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_WARN,
                    "test log print process warn [%s]", clog_get_process());
     ASSERT_EQ(ret, CLOG_SUCCESS);
-    ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_ERROR,
+    ret = clog_log("test", CLOG_RECORDER_STDOUT_ID, __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_ERROR,
                    "test log print process error [%s]", clog_get_process());
     ASSERT_EQ(ret, CLOG_SUCCESS);
-    ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_FETAL,
+    ret = clog_log("test", CLOG_RECORDER_STDOUT_ID, __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_FETAL,
                    "test log print process fetal [%s]", clog_get_process());
     ASSERT_EQ(ret, CLOG_SUCCESS);
     clog_free(tmp);

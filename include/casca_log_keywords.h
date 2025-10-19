@@ -11,6 +11,7 @@ extern "C" {
 
 /* attributes */
 #define CLOG_STR_ID "id"
+#define CLOG_STR_LEVEL "level"
 #define CLOG_STR_TYPE "type"
 #define CLOG_STR_PRIORITY "priority"
 #define CLOG_STR_ENABLED "enabled"
@@ -22,6 +23,7 @@ extern "C" {
 #define CLOG_STR_WARN "warn"
 #define CLOG_STR_ERROR "error"
 #define CLOG_STR_FETAL "fetal"
+#define CLOG_STR_RECORDER "recorder"
 
 /* groups */
 #define CLOG_STR_FILTERS "Filters"
