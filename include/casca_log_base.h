@@ -9,11 +9,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "casca_log_config.h"
-#include "utils/clog_platform.h"
-
-#ifdef CLOG_COMPILER_MSVC
-#define _CRT_SECURE_NO_WARNINGS 1 /* suppress warning: warning C4996: 'x': This function or variable may be unsafe */
-#endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -89,13 +84,16 @@ typedef enum clog_res {
 
 typedef enum clog_level {
     CLOG_LEVEL_OFF = 0, /* log is not allowed to write */
-    CLOG_LEVEL_TRACE = 1, /* 1 << 0 */
-    CLOG_LEVEL_DEBUG = 2, /* 1 << 1 */
-    CLOG_LEVEL_INFO = 4, /* 1 << 2 */
-    CLOG_LEVEL_WARN = 8, /* 1 << 3 */
-    CLOG_LEVEL_ERROR = 16, /* 1 << 4 */
-    CLOG_LEVEL_FETAL = 32, /* 1 << 5 */
+    CLOG_LEVEL_TRACE = 1, /* value: 1(1 << 0) */
+    CLOG_LEVEL_DEBUG = 2, /* value: 2(1 << 1) */
+    CLOG_LEVEL_INFO = 3, /* value: 4(1 << 2) */
+    CLOG_LEVEL_WARN = 4, /* value: 8(1 << 3) */
+    CLOG_LEVEL_ERROR = 5, /* value: 16(1 << 4) */
+    CLOG_LEVEL_FETAL = 6, /* value: 32(1 << 5) */
 } clog_level_e;
+
+#define CLOG_LEVEL_NUM 6
+#define CLOG_LEVEL_ALL 63 /* 1 | 2 | 4 | 8 | 16 | 32 */
 
 typedef struct clog_item {
     uint32_t seq;

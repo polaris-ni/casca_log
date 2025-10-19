@@ -15,6 +15,13 @@ extern "C" {
 #define CLOG_STR_PRIORITY "priority"
 #define CLOG_STR_ENABLED "enabled"
 #define CLOG_STR_KEYWORDS "keywords"
+#define CLOG_STR_MODE "mode"
+#define CLOG_STR_TRACE "trace"
+#define CLOG_STR_DEBUG "debug"
+#define CLOG_STR_INFO "info"
+#define CLOG_STR_WARN "warn"
+#define CLOG_STR_ERROR "error"
+#define CLOG_STR_FETAL "fetal"
 
 /* groups */
 #define CLOG_STR_FILTERS "Filters"
@@ -24,6 +31,7 @@ extern "C" {
 #define CLOG_STR_DISPATCHER_DIRECT "ClogDirectDispatcher"
 #define CLOG_STR_RECORDERS "Recorders"
 #define CLOG_STR_RECORDER_STDOUT "ClogRecorderStdout"
+#define CLOG_STR_COLORS "Colors"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

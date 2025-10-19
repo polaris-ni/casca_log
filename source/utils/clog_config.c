@@ -298,7 +298,7 @@ static const char* clog_config_parse_uint_radix(const uint8_t radix, const char*
         number_end = tmp;
         tmp++;
     }
-    CLOG_RET_IF_X(base > UINT32_MAX || base == 0, NULL, "parsed result %" PRIu64 " overflow", base);
+    CLOG_RET_IF_X(base > UINT32_MAX, NULL, "parsed result %" PRIu64 " overflow", base);
     item->type = CLOG_CONFIG_TYPE_UINT;
     item->value.uint = base;
     return number_end + 1;
@@ -505,6 +505,7 @@ static const char* clog_config_parse_value(const char* start, const char* end, c
     }
     if (*tmp == '[') {
         item->type = CLOG_CONFIG_TYPE_ARRAY;
+        item->value.array = NULL;
         while (tmp < end) {
             tmp = clog_config_remove_leading_spaces(tmp + 1, end);
             CLOG_RET_IF_X(tmp == end, NULL, "value array enclose ']' not found");
@@ -553,42 +554,35 @@ static clog_config_item_t* clog_config_parse_property(const char* start, const c
     const char* tmp = start + 1;
     uint32_t phase = PARSE_KEY;
     while (tmp < end) {
-        switch (phase) {
-            case PARSE_KEY:
-                if (*tmp == ' ' || *tmp == '=' || *tmp == '\t') {
-                    item->key = clog_strndup(name_start, tmp - name_start);
-                    CLOG_CLEAN_RET_IF_NULL_X(item->key, clog_config_free_item(item), NULL, "strdup name failed");
-                    tmp--;
-                    phase = PARSE_EQUAL;
-                    break;
-                }
-                if (!clog_config_is_valid_name_char(*tmp)) {
-                    CLOG_ERR_APPEND_LINE("unexpected character '%c' found in property's name", *tmp);
-                    clog_config_free_item(item);
-                    return NULL;
-                }
-                /* valid name, continue to parse */
-                break;
-            case PARSE_EQUAL:
-                if (*tmp == '=') {
-                    phase = PARSE_VALUE;
-                } else if (*tmp == ' ' || *tmp == '\t') {
-                    /* continue to parse */
-                } else {
-                    CLOG_ERR_APPEND_LINE("unexpected character '%c' before '='", *tmp);
-                    clog_config_free_item(item);
-                    return NULL; /* invalid char */
-                }
-                break;
-            case PARSE_VALUE:
-                tmp = clog_config_parse_value(tmp, end, item);
-                CLOG_CLEAN_RET_IF_NULL_X(tmp, clog_config_free_item(item), NULL, "parse value of %s failed", item->key);
-                CLOG_CLEAN_RET_IF_X(!clog_config_check_inline_comment(tmp, end), clog_config_free_item(item), NULL,
-                                    "unexcepted character after property %s", item->key);
-                return item;
-            default:
+        if (phase == PARSE_KEY) {
+            if (*tmp == ' ' || *tmp == '=' || *tmp == '\t') {
+                item->key = clog_strndup(name_start, tmp - name_start);
+                CLOG_CLEAN_RET_IF_NULL_X(item->key, clog_config_free_item(item), NULL, "strdup name failed");
+                tmp--;
+                phase = PARSE_EQUAL;
+            }
+            if (!clog_config_is_valid_name_char(*tmp)) {
+                CLOG_ERR_APPEND_LINE("unexpected character '%c' found in property's name", *tmp);
                 clog_config_free_item(item);
-                return NULL; /* never should go here */
+                return NULL;
+            }
+            /* valid name, continue to parse */
+        } else if (phase == PARSE_EQUAL) {
+            if (*tmp == '=') {
+                phase = PARSE_VALUE;
+            } else if (*tmp == ' ' || *tmp == '\t') {
+                /* continue to parse */
+            } else {
+                CLOG_ERR_APPEND_LINE("unexpected character '%c' before '='", *tmp);
+                clog_config_free_item(item);
+                return NULL; /* invalid char */
+            }
+        } else {
+            tmp = clog_config_parse_value(tmp, end, item);
+            CLOG_CLEAN_RET_IF_NULL_X(tmp, clog_config_free_item(item), NULL, "parse value of %s failed", item->key);
+            CLOG_CLEAN_RET_IF_X(!clog_config_check_inline_comment(tmp, end), clog_config_free_item(item), NULL,
+                                "unexcepted character after property %s", item->key);
+            return item;
         }
         tmp++;
     }
@@ -609,7 +603,7 @@ static clog_config_group_t* clog_config_process_line(const char* start, const ch
         CLOG_RET_IF_NULL(tmp, NULL);
         if (!clog_config_check_inline_comment(tmp, end)) {
             return NULL; /* there is invalid char after ']', e.g. "[ test.x ] a" */
-        };
+        }
         return clog_config_find_or_create_group(root, group_start, group_end);
     }
     if (*tmp == '#') { /* comment line, no need to process */
@@ -733,7 +727,7 @@ static size_t clog_config_dump_item(const clog_config_item_t* item, char* buf, c
             CLOG_RET_IF(len <= 0, 0);
             offset += len;
             CLOG_RET_IF(offset >= size, 0);
-            clog_config_item_t* child = item->value.array;
+            const clog_config_item_t* child = item->value.array;
             if (child == NULL) {
                 buf[offset++] = ']';
                 return offset;

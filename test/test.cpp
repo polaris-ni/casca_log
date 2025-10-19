@@ -13,9 +13,9 @@ TEST(CascaLogTest, CreateLog)
 {
     FILE* fp = fopen("../../casca_log_config_template.toml", "r");
     ASSERT_NE(fp, nullptr);
-    fseek(fp, 0, SEEK_END);
+    CLOG_IGNORE_RES(fseek(fp, 0, SEEK_END));
     const long len = ftell(fp);
-    const auto buf = static_cast<char*>(clog_malloc(len));
+    const auto buf = static_cast<char*>(clog_malloc(len + 1));
     ASSERT_NE(buf, nullptr);
     CLOG_IGNORE_RES(clog_memset(buf, len + 1, 0, len + 1));
     CLOG_IGNORE_RES(fseek(fp, 0, SEEK_SET));
@@ -31,7 +31,7 @@ TEST(CascaLogTest, CreateLog)
 
     ret = clog_setup(nullptr, 0);
     if (ret != CLOG_SUCCESS) {
-        printf("reason: \n\t%s\n", clog_err_get());
+        printf("reason: \n%s\n", clog_err_get());
     }
     ASSERT_EQ(ret, CLOG_SUCCESS);
 
@@ -42,17 +42,23 @@ TEST(CascaLogTest, CreateLog)
     printf("config dump:\n%s\n==================================================\n", tmp);
 
     constexpr uint32_t recorder = 1;
-#ifdef __FILE_NAME__
+    ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_TRACE,
+                   "test log print process trace [%s]", clog_get_process());
+    ASSERT_EQ(ret, CLOG_SUCCESS);
+    ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_DEBUG,
+                   "test log print process debug [%s]", clog_get_process());
+    ASSERT_EQ(ret, CLOG_SUCCESS);
     ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_INFO,
-                   "test log print process > %s", clog_get_process());
-#elif defined(__FILE__)
-    ret = clog_log(&recorder, 1, "test", __FILE__, __FUNCTION__, __LINE__, CLOG_LEVEL_INFO,
-                   "test log print process > %s", clog_get_process());
-#else
-    ret = clog_log(&recorder, 1, "test", "test.cpp", __FUNCTION__, __LINE__, CLOG_LEVEL_INFO,
-                   "test log print process > %s", clog_get_process());
-#endif
-
+                   "test log print process info [%s]", clog_get_process());
+    ASSERT_EQ(ret, CLOG_SUCCESS);
+    ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_WARN,
+                   "test log print process warn [%s]", clog_get_process());
+    ASSERT_EQ(ret, CLOG_SUCCESS);
+    ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_ERROR,
+                   "test log print process error [%s]", clog_get_process());
+    ASSERT_EQ(ret, CLOG_SUCCESS);
+    ret = clog_log(&recorder, 1, "test", __FILE_NAME__, __FUNCTION__, __LINE__, CLOG_LEVEL_FETAL,
+                   "test log print process fetal [%s]", clog_get_process());
     ASSERT_EQ(ret, CLOG_SUCCESS);
     clog_free(tmp);
     clog_destroy(nullptr, 0);
