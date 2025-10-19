@@ -3,7 +3,6 @@
  * @date  2025/10/16
  */
 #include "clog_recorder_manager.h"
-
 #include "casca_log.h"
 #include "casca_log_keywords.h"
 #include "clog_error.h"
@@ -81,7 +80,7 @@ static void clog_recoder_free(void* ptr)
 {
     clog_recorder_t* tmp = (clog_recorder_t*)ptr;
     tmp->close(tmp);
-    tmp->cleanup(NULL);
+    tmp->cleanup(tmp);
     clog_free(tmp);
 }
 
