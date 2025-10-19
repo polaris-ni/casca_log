@@ -70,8 +70,7 @@ static clog_res_e clog_init_process_attrs(const char* process, const clog_config
     uint32_t value = 0;
     const clog_res_e ret = clog_config_find_item_in_group_uint(group, "level", &value);
     CLOG_RET_IF_X(ret != CLOG_SUCCESS, ret, "level not found or invalid in process[%s], ret = %d", process, ret);
-    if (value > (CLOG_LEVEL_FETAL | CLOG_LEVEL_ERROR | CLOG_LEVEL_WARN | CLOG_LEVEL_INFO | CLOG_LEVEL_DEBUG |
-                 CLOG_LEVEL_TRACE)) {
+    if (value > CLOG_LEVEL_ALL) {
         CLOG_ERR_SET("the value of level is invalid, value = %u", value);
         return CLOG_ERROR_FORMAT;
     }
@@ -91,8 +90,7 @@ static clog_res_e clog_init_process_module(const char* process, const clog_confi
     } else {
         CLOG_RET_IF_X(ret != CLOG_SUCCESS, ret, "level invalid in[%s.%s], ret = %d", process, module->name, ret);
     }
-    if (value > (CLOG_LEVEL_FETAL | CLOG_LEVEL_ERROR | CLOG_LEVEL_WARN | CLOG_LEVEL_INFO | CLOG_LEVEL_DEBUG |
-                 CLOG_LEVEL_TRACE)) {
+    if (value > CLOG_LEVEL_ALL) {
         CLOG_ERR_SET("the value of level is invalid, value = %u", value);
         return CLOG_ERROR_FORMAT;
     }
@@ -146,7 +144,7 @@ clog_res_e clog_init(const char* process, const char* config)
         return CLOG_ERROR_FORMAT;
     }
 
-    clog_res_e ret = clog_init_process(process, g_context.config.root, &g_context.modules);
+    const clog_res_e ret = clog_init_process(process, g_context.config.root, &g_context.modules);
     if (g_context.modules == NULL) {
         clog_destroy(NULL, 0);
         return ret;

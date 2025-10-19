@@ -5,7 +5,6 @@
 #include "clog_error.h"
 #include <stdio.h>
 #include <string.h>
-
 #include "clog_config.h"
 
 static char g_err[CASCA_LOG_ERR_BUF_SIZE] = {0}; /* NOT thread-safe */

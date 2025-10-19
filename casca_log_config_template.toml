@@ -17,9 +17,9 @@ fetal = "F"
 # CLOG_LEVEL_WARN = 8, /* 1 << 3 */
 # CLOG_LEVEL_ERROR = 16, /* 1 << 4 */
 # CLOG_LEVEL_FETAL = 32, /* 1 << 5 */
-level = 15 # CLOG_LEVEL_TRACE | CLOG_LEVEL_DEBUG | CLOG_LEVEL_INFO | CLOG_LEVEL_WARN | CLOG_LEVEL_ERROR | CLOG_LEVEL_FETAL
+level = 62 # CLOG_LEVEL_DEBUG | CLOG_LEVEL_INFO | CLOG_LEVEL_WARN | CLOG_LEVEL_ERROR | CLOG_LEVEL_FETAL
 [Process.casca_log_test.test]
-level = 31 # override process level
+level = 63 # override process level
 [Process.casca_log_test.main]
 # level inherited from process
 enabled = false # main is not allowed to output log, if not set, default value is true
@@ -33,13 +33,64 @@ priority = 1
 type = 1 # 0 - prefilter, 1 - postfilter
 keywords = "pw,password,ip\\,,dns" # if a keyword contains ',', use escape char '\\'
 
+[Dispatchers]
+[Dispatchers.ClogDirectDispatcher]
+id = 1
+enabled = true
+
 [Recorders]
 [Recorders.ClogRecorderStdout]
 id = 1
 enabled = true
 dispatcher = 1
-
-[Dispatchers]
-[Dispatchers.ClogDirectDispatcher]
-id = 1
+[Recorders.ClogRecorderStdout.Colors]
 enabled = true
+# color modes:
+#   0 - disabled color
+#   1 - basic color
+#   2 - enhanced basic color, with high intensity color support
+#   3 - 256 colors
+#   4 - true color
+mode = 4
+# colors: [foreground, background], color will be disabled if foreground or background color of a log level is not set
+#       e.g.    trace = [[32], []], background color of trace is disabled
+#               trace = [[], [32]], foreground color of trace is disabled
+#               trace = [[], []] or "trace" not specified, foreground and background color of trace are all disabled
+#   colors format:
+#       # mode 1 & mode 2: [color_value], just one value to set basic color， the value of colors are as follows:
+#               color           forground_value background_value    support
+#               black           30              40                  mode 1 & 2
+#               red             31              41                  mode 1 & 2
+#               green           32              42                  mode 1 & 2
+#               yellow          33              43                  mode 1 & 2
+#               blue            34              44                  mode 1 & 2
+#               magenta         35              45                  mode 1 & 2
+#               cyan            36              46                  mode 1 & 2
+#               white           37              47                  mode 1 & 2
+#               bright black    90              100                 mode 2 only
+#               bright red      91              101                 mode 2 only
+#               bright green    92              102                 mode 2 only
+#               bright yellow   93              103                 mode 2 only
+#               bright blue     94              104                 mode 2 only
+#               bright magenta  95              105                 mode 2 only
+#               bright cyan     96              106                 mode 2 only
+#               bright white    97              107                 mode 2 only
+#           e.g. If you want to set the foreground color of TRACE level logs to green and the background color to
+#                   bright white, your configuration should be written as follows: trace=[[32], [107]]
+#       # mode 3: [color_value], use precise 256 color values, please refer to Wikipedia
+#       # mode 4: [r, g, b], use three values(R, G, B primary colors) to combine the final color
+#           e.g. if you want apply R 10 G 10 B 10 as foreground color and R 200 G 200 B 200 as background color, your
+#                   configuration should be written as follows: trace=[[10, 10, 10], [200, 200, 200]]
+#trace = [[90], []]
+#debug = [[96], []]
+#info = [[32], []]
+#warn = [[33], []]
+#error = [[31], []]
+#fetal = [[97], [107]]
+
+trace = [[128, 128, 128], []]
+debug = [[160, 160, 192], []]
+info = [[255, 255, 255], []]
+warn = [[255, 255, 0], []]
+error = [[255, 0, 0], []]
+fetal = [[255, 255, 255], [139, 0, 0]]

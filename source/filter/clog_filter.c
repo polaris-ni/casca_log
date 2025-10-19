@@ -312,7 +312,7 @@ static clog_filter_res_e clog_filter_basic(const clog_item_t* item)
     CLOG_RET_IF_NULL(item, CLOG_FILTER_REJECT);
     const clog_module_t* info = clog_get_module_info(item->module);
     CLOG_RET_IF_NULL(info, CLOG_FILTER_REJECT);
-    if ((item->level & info->level) != 0) {
+    if (((1 < (info->level - 1)) & info->level) != 0) {
         return CLOG_FILTER_CONTINUE;
     }
     return CLOG_FILTER_REJECT;

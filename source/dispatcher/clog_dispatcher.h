@@ -51,7 +51,6 @@ struct clog_dispatcher {
     void* extra;
 };
 
-
 /**
  * dispatcher provider
  * @return #clog_dispatcher_t, it should never be NULL
@@ -60,16 +59,25 @@ typedef const clog_dispatcher_t* (*clog_dispatcher_provider_f)(void);
 
 static clog_res_e clog_dispatcher_empty_open(clog_dispatcher_t* self, const clog_config_group_t* group)
 {
+    CLOG_UNUSED_VAR(self);
+    CLOG_UNUSED_VAR(group);
     return CLOG_SUCCESS;
 }
 
 static clog_res_e clog_dispatcher_empty_dispatch(clog_dispatcher_t* self, const uint32_t* recorders, size_t num,
                                                  const clog_item_t* item)
 {
+    CLOG_UNUSED_VAR(self);
+    CLOG_UNUSED_VAR(recorders);
+    CLOG_UNUSED_VAR(num);
+    CLOG_UNUSED_VAR(item);
     return CLOG_SUCCESS;
 }
 
-static void clog_dispatcher_empty_close(clog_dispatcher_t* self) {}
+static void clog_dispatcher_empty_close(clog_dispatcher_t* self)
+{
+    CLOG_UNUSED_VAR(self);
+}
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
