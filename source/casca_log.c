@@ -3,7 +3,9 @@
  * @date  2025/9/3
  */
 #include "casca_log.h"
+#include "casca_log_keywords.h"
 #include "clog_config.h"
+#include "clog_config_ext.h"
 #include "clog_dispatcher_manager.h"
 #include "clog_error.h"
 #include "clog_formatter.h"
@@ -81,22 +83,36 @@ static clog_res_e clog_init_process_attrs(const char* process, const clog_config
 static clog_res_e clog_init_process_module(const char* process, const clog_config_group_t* module, clog_hashmap_t* map)
 {
     bool enabled = true;
-    CLOG_IGNORE_RES(clog_config_find_item_in_group_bool(module, "enabled", &enabled));
+    clog_res_e ret = clog_config_item_get_enabled(module, &enabled);
+    CLOG_RET_IF_FAILED(ret);
     CLOG_RET_IF(!enabled, CLOG_SUCCESS); /* module is not enabled, skip parse */
     uint32_t value = 0;
-    const clog_res_e ret = clog_config_find_item_in_group_uint(module, "level", &value);
+    ret = clog_config_find_item_in_group_uint(module, CLOG_STR_LEVEL, &value);
     if (ret == CLOG_TARGET_NOT_FOUND) {
         value = g_context.config.level;
     } else {
-        CLOG_RET_IF_X(ret != CLOG_SUCCESS, ret, "level invalid in[%s.%s], ret = %d", process, module->name, ret);
+        CLOG_RET_IF_X(ret != CLOG_SUCCESS, ret, "level invalid in [%s.%s], ret = %d", process, module->name, ret);
     }
     if (value > CLOG_LEVEL_ALL) {
-        CLOG_ERR_SET("the value of level is invalid, value = %u", value);
+        CLOG_ERR_APPEND_LINE("the value of level is invalid, value = %u", value);
         return CLOG_ERROR_FORMAT;
     }
-    const clog_module_t tmp = {
-        .level = value,
-    };
+    clog_module_t tmp = {.level = value, .num = 0, .recorders = {0}};
+    const clog_config_item_t* recorders = clog_config_find_item_in_group(module, CLOG_STR_RECORDER);
+    if (recorders != NULL) {
+        CLOG_RET_IF_X(recorders->type != CLOG_CONFIG_TYPE_ARRAY, CLOG_ERROR_FORMAT,
+                      "\"recoder\" of module %s should be array", module->name);
+        clog_config_item_t* data = recorders->value.array;
+        while (data != NULL) {
+            CLOG_RET_IF_X(data->type != CLOG_CONFIG_TYPE_UINT, CLOG_ERROR_FORMAT,
+                          "\"recoder\" of module %s should be unsigned int", module->name);
+            CLOG_RET_IF_X(tmp.num > CLOG_ARRAY_SIZE(tmp.recorders), CLOG_OVERSIZE,
+                          "recoder num of %s oversize, max num is %zu", module->name, CLOG_ARRAY_SIZE(tmp.recorders));
+            tmp.recorders[tmp.num] = data->value.uint;
+            tmp.num++;
+            data = data->next;
+        }
+    }
     return clog_hashmap_put(map, module->name, &tmp);
 }
 
@@ -337,10 +353,48 @@ static void clog_item_init_datetime(clog_item_t* item)
 #endif
 }
 
-clog_res_e clog_log(const uint32_t* recorders, const size_t count, const char* module, const char* file,
-                    const char* function, const int line, const clog_level_e level, const char* fmt, ...)
+static bool clog_module_check(const clog_module_t* info, clog_level_e level, uint32_t recorder)
 {
+    CLOG_RET_IF(((1 << (level - 1)) & info->level) == 0, false);
+    for (size_t i = 0; i < info->num; ++i) {
+        if (info->recorders[i] == recorder) {
+            return true;
+        }
+    }
+    return false;
+}
 
+static clog_res_e clog_log_internal(const uint32_t* recorders, size_t num, clog_item_t* item)
+{
+    /* prefilter */
+    bool pass = clog_filter_log(clog_get_filters(CLOG_FILTER_PRE), item);
+    CLOG_RET_IF(!pass, CLOG_NOT_PERMITTED);
+    char* buf = clog_malloc(CASCA_LOG_SINGLE_LOG_MAX_SIZE);
+    CLOG_RET_IF_NULL_X(buf, CLOG_NO_MEMORY, "malloc log content buf failed, size = %d", CASCA_LOG_SINGLE_LOG_MAX_SIZE);
+    /* formatter */
+    const clog_res_e ret =
+        clog_format_log(g_context.formatter.placeholder.next, item, buf, CASCA_LOG_SINGLE_LOG_MAX_SIZE);
+    if (ret != CLOG_SUCCESS) {
+        clog_free(buf);
+        return ret;
+    }
+    item->content = buf;
+    /* postfilter */
+    pass = clog_filter_log(clog_get_filters(CLOG_FILTER_POST), item);
+    if (!pass) {
+        clog_free(buf);
+        return CLOG_NOT_PERMITTED;
+    }
+    return clog_dispatch(recorders, num, item);
+}
+
+clog_res_e clog_log(const char* module, uint32_t recorder, const char* file, const char* function, const int line,
+                    const clog_level_e level, const char* fmt, ...)
+{
+    clog_err_clear();
+    const clog_module_t* info = clog_get_module_info(module);
+    CLOG_RET_IF_NULL_X(info, CLOG_TARGET_NOT_FOUND, "module info %s not found", module);
+    CLOG_RET_IF(!clog_module_check(info, level, recorder), CLOG_NOT_PERMITTED);
     clog_item_t item = {.filename = file,
                         .function = function,
                         .module = module,
@@ -349,30 +403,30 @@ clog_res_e clog_log(const uint32_t* recorders, const size_t count, const char* m
                         .level = level,
                         .fmt = fmt};
     clog_item_init_datetime(&item);
-    /* prefilter */
-    bool pass = clog_filter_log(clog_get_filters(CLOG_FILTER_PRE), &item);
-    CLOG_RET_IF(!pass, CLOG_NOT_PERMITTED);
-    char* buf = clog_malloc(CASCA_LOG_SINGLE_LOG_MAX_SIZE);
-    CLOG_RET_IF_NULL_X(buf, CLOG_NO_MEMORY, "malloc log content buf failed, size = %d", CASCA_LOG_SINGLE_LOG_MAX_SIZE);
-    /* formatter */
     va_start(item.args, fmt);
-    clog_res_e ret = clog_format_log(g_context.formatter.placeholder.next, &item, buf, CASCA_LOG_SINGLE_LOG_MAX_SIZE);
+    const clog_res_e ret = clog_log_internal(&recorder, 1, &item);
     va_end(item.args);
-    if (ret != CLOG_SUCCESS) {
-        clog_free(buf);
-        return ret;
-    }
-    item.content = buf;
-    /* postfilter */
-    pass = clog_filter_log(clog_get_filters(CLOG_FILTER_POST), &item);
-    if (!pass) {
-        clog_free(buf);
-        return CLOG_NOT_PERMITTED;
-    }
+    return ret;
+}
 
-    ret = clog_dispatch(recorders, count, &item);
-    if (ret != CLOG_SUCCESS) {
-        CLOG_ERR_SET("dispatch log failed");
-    }
+clog_res_e clog_module_log(const char* module, const char* file, const char* function, int line, clog_level_e level,
+                           const char* fmt, ...)
+{
+    clog_err_clear();
+    const clog_module_t* info = clog_get_module_info(module);
+    CLOG_RET_IF_NULL_X(info, CLOG_TARGET_NOT_FOUND, "module info %s not found", module);
+    CLOG_RET_IF(((1 << (level - 1)) & info->level) == 0, CLOG_NOT_PERMITTED);
+    CLOG_RET_IF(info->num == 0, CLOG_TARGET_NOT_FOUND);
+    clog_item_t item = {.filename = file,
+                        .function = function,
+                        .module = module,
+                        .tid = clog_get_thread_id(),
+                        .line = line,
+                        .level = level,
+                        .fmt = fmt};
+    clog_item_init_datetime(&item);
+    va_start(item.args, fmt);
+    const clog_res_e ret = clog_log_internal(info->recorders, info->num, &item);
+    va_end(item.args);
     return ret;
 }

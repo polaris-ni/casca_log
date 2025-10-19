@@ -18,8 +18,8 @@ extern "C" {
 #ifndef CASCA_LOG_SINGLE_LOG_MAX_SIZE
 #define CASCA_LOG_SINGLE_LOG_MAX_SIZE 256
 #endif
-#ifndef CASCA_LOG_TARGET_RECORDER_COUNT
-#define CASCA_LOG_TARGET_RECORDER_COUNT 10
+#ifndef CASCA_LOG_TARGET_RECORDER_MAX_NUM
+#define CASCA_LOG_TARGET_RECORDER_MAX_NUM 8
 #endif
 
 #if defined(__cplusplus) || defined(c_plusplus)

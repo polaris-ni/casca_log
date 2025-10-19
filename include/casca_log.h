@@ -27,6 +27,8 @@ typedef void (*clog_cleanup_f)(void);
 
 typedef struct clog_module {
     clog_level_e level;
+    uint32_t num;
+    uint32_t recorders[CASCA_LOG_TARGET_RECORDER_MAX_NUM]; /*  */
 } clog_module_t;
 
 /**
@@ -113,8 +115,21 @@ void clog_destroy(const clog_cleanup_f* funcs, size_t num);
 
 /**
  * record a log
- * @param recorders where the log will be recorded
- * @param count num of recorders, should not more than CASCA_LOG_TARGET_RECORDER_COUNT
+ * @param module module of current process
+ * @param recorder where the log will be recorded
+ * @param file current file name
+ * @param function current function name
+ * @param line current line number
+ * @param level log level
+ * @param fmt message format
+ * @param ... var args
+ * @return #clog_res_e
+ */
+clog_res_e clog_log(const char* module, uint32_t recorder, const char* file, const char* function, int line,
+                    clog_level_e level, const char* fmt, ...);
+
+/**
+ * record a log using recoders that configured
  * @param module module of current process
  * @param file current file name
  * @param function current function name
@@ -124,8 +139,8 @@ void clog_destroy(const clog_cleanup_f* funcs, size_t num);
  * @param ... var args
  * @return #clog_res_e
  */
-clog_res_e clog_log(const uint32_t* recorders, size_t count, const char* module, const char* file, const char* function,
-                    int line, clog_level_e level, const char* fmt, ...);
+clog_res_e clog_module_log(const char* module, const char* file, const char* function, int line, clog_level_e level,
+                           const char* fmt, ...);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
