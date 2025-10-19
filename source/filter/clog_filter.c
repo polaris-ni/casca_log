@@ -8,15 +8,9 @@
 #include "clog_hooks.h"
 #include "clog_secure_func.h"
 
-/**
- * basic filter, if module is not registered or level is not allowed, false will be returned
- */
-static clog_filter_res_e clog_filter_basic(const clog_item_t* item);
-
 static clog_filter_res_e clog_filter_keywords(const clog_item_t* item);
 
-static clog_filter_t g_filters[] = {{CLOG_STR_BASIC_FILTER, 0, CLOG_FILTER_PRE, clog_filter_basic, &g_filters[1]},
-                                    {CLOG_STR_KEYWORDS_FILTER, 0, CLOG_FILTER_POST, clog_filter_keywords, NULL}};
+static clog_filter_t g_filters[] = {{CLOG_STR_KEYWORDS_FILTER, 0, CLOG_FILTER_POST, clog_filter_keywords, NULL}};
 
 static char** g_keywords = NULL;
 static uint32_t g_keywords_count = 0;
@@ -251,16 +245,7 @@ clog_res_e clog_filter_setup(void)
     clog_res_e ret = clog_filter_keywords_init(filters);
     CLOG_RET_IF_FAILED(ret);
 
-    /* set default filter: ClogBasicFilter */
-    clog_filter_t* tmp = clog_malloc(sizeof(clog_filter_t));
-    CLOG_RET_IF_NULL(tmp, CLOG_NO_MEMORY);
-    tmp->name = clog_strdup(g_filters[0].name);
-    CLOG_CLEAN_RET_IF_NULL(tmp, clog_free(tmp), CLOG_NO_MEMORY);
-    tmp->priority = g_filters[0].priority;
-    tmp->type = g_filters[0].type;
-    tmp->filter = g_filters[0].filter;
-    tmp->next = NULL;
-    clog_filter_t pre = {NULL, 0, CLOG_FILTER_PRE, NULL, tmp};
+    clog_filter_t pre = {NULL, 0, CLOG_FILTER_PRE, NULL, NULL};
     clog_filter_t post = {NULL, 0, CLOG_FILTER_PRE, NULL, NULL};
 
     const clog_config_group_t* child = filters->child;
@@ -295,7 +280,7 @@ void clog_filter_cleanup(void)
 
 bool clog_filter_log(const clog_filter_t* filters, const clog_item_t* item)
 {
-    CLOG_RET_IF_NULL(item, false);
+    CLOG_RET_IF_NULL(item, true); /* no filters, pass */
     const clog_filter_t* filter = filters;
     while (filter != NULL) {
         CLOG_RET_IF_NULL(filter->filter, false);
@@ -305,17 +290,6 @@ bool clog_filter_log(const clog_filter_t* filters, const clog_item_t* item)
         filter = filter->next;
     }
     return true;
-}
-
-static clog_filter_res_e clog_filter_basic(const clog_item_t* item)
-{
-    CLOG_RET_IF_NULL(item, CLOG_FILTER_REJECT);
-    const clog_module_t* info = clog_get_module_info(item->module);
-    CLOG_RET_IF_NULL(info, CLOG_FILTER_REJECT);
-    if (((1 < (info->level - 1)) & info->level) != 0) {
-        return CLOG_FILTER_CONTINUE;
-    }
-    return CLOG_FILTER_REJECT;
 }
 
 static clog_filter_res_e clog_filter_keywords(const clog_item_t* item)
