@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#ifndef CLOG_FLIENAME
+#ifndef CLOG_FILENAME
 #ifndef __FILE_NAME__
 static const char* clog_get_filename(const char* fullname, int len)
 {
@@ -25,9 +25,9 @@ static const char* clog_get_filename(const char* fullname, int len)
     }
     return fullname;
 }
-#define CLOG_FLIENAME clog_get_filename(__FILE__, (int)sizeof(__FILE__))
+#define CLOG_FILENAME clog_get_filename(__FILE__, (int)sizeof(__FILE__))
 #else
-#define CLOG_FLIENAME __FILE_NAME__
+#define CLOG_FILENAME __FILE_NAME__
 #endif
 #endif
 
@@ -86,7 +86,7 @@ static const char* clog_get_filename(const char* fullname, int len)
         }                                                \
     } while (0)
 
-#define CLOG_ERR_ADD(msg, ...) clog_err_put(CLOG_FLIENAME, __LINE__, msg, ##__VA_ARGS__)
+#define CLOG_ERR_ADD(msg, ...) clog_err_put(CLOG_FILENAME, __LINE__, msg, ##__VA_ARGS__)
 
 /**
  * init err msg
