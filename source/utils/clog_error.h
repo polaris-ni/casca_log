@@ -86,7 +86,7 @@ static const char* clog_get_filename(const char* fullname, int len)
         }                                                \
     } while (0)
 
-#define CLOG_ERR_ADD(msg, ...) clog_err_put(__FILE_NAME__, __LINE__, msg, ##__VA_ARGS__)
+#define CLOG_ERR_ADD(msg, ...) clog_err_put(CLOG_FLIENAME, __LINE__, msg, ##__VA_ARGS__)
 
 /**
  * init err msg
