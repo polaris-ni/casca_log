@@ -204,7 +204,7 @@ static const char* clog_config_get_valid_group_name(const char* start, const cha
             tmp++;
             continue;
         }
-        CLOG_ERR_APPEND_LINE("invalid char '%c' in group name", *tmp);
+        CLOG_ERR_ADD("invalid char '%c' in group name", *tmp);
         return NULL; /* invalid char */
     }
     return NULL; /* ']' not found */
@@ -470,7 +470,7 @@ static const char* clog_config_parse_bool(const char* start, const char* end, cl
         item->type = CLOG_CONFIG_TYPE_BOOL;
         return tmp + 5;
     }
-    CLOG_ERR_APPEND_LINE("value bool is invalid");
+    CLOG_ERR_ADD("value bool is invalid");
     return NULL;
 }
 
@@ -521,7 +521,7 @@ static const char* clog_config_parse_value(const char* start, const char* end, c
             CLOG_RET_IF_X(*tmp != ',', NULL, "invalid char %c in array", *tmp);
             tmp++;
         }
-        CLOG_ERR_APPEND_LINE("value array enclose ']' not found");
+        CLOG_ERR_ADD("value array enclose ']' not found");
     }
     return NULL;
 }
@@ -562,7 +562,7 @@ static clog_config_item_t* clog_config_parse_property(const char* start, const c
                 phase = PARSE_EQUAL;
             }
             if (!clog_config_is_valid_name_char(*tmp)) {
-                CLOG_ERR_APPEND_LINE("unexpected character '%c' found in property's name", *tmp);
+                CLOG_ERR_ADD("unexpected character '%c' found in property's name", *tmp);
                 clog_config_free_item(item);
                 return NULL;
             }
@@ -573,7 +573,7 @@ static clog_config_item_t* clog_config_parse_property(const char* start, const c
             } else if (*tmp == ' ' || *tmp == '\t') {
                 /* continue to parse */
             } else {
-                CLOG_ERR_APPEND_LINE("unexpected character '%c' before '='", *tmp);
+                CLOG_ERR_ADD("unexpected character '%c' before '='", *tmp);
                 clog_config_free_item(item);
                 return NULL; /* invalid char */
             }
@@ -586,7 +586,7 @@ static clog_config_item_t* clog_config_parse_property(const char* start, const c
         }
         tmp++;
     }
-    CLOG_ERR_APPEND_LINE("invalid property line");
+    CLOG_ERR_ADD("invalid property line");
     clog_config_free_item(item);
     return NULL;
 }
@@ -616,7 +616,7 @@ static clog_config_group_t* clog_config_process_line(const char* start, const ch
         clog_config_free_item(item);
         return NULL;
     }
-    CLOG_ERR_APPEND_LINE("invalid line");
+    CLOG_ERR_ADD("invalid line");
     return NULL;
 }
 
@@ -638,7 +638,7 @@ clog_config_group_t* clog_config_parse(const char* data)
             current = clog_config_process_line(start, end, root, current);
             if (current == NULL) {
                 char* line = clog_strndup(start, end - start + 1);
-                CLOG_ERR_APPEND_LINE("process line error: %s", line == NULL ? "NULL" : line);
+                CLOG_ERR_ADD("process line error: %s", line == NULL ? "NULL" : line);
                 clog_free(line);
                 clog_config_destroy_group(root);
                 return NULL;

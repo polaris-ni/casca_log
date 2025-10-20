@@ -9,71 +9,115 @@
 extern "C" {
 #endif
 
+#ifndef CLOG_FLIENAME
 #ifndef __FILE_NAME__
-#define __FILE_NAME__ __FILE__
+static const char* clog_get_filename(const char* fullname, int len)
+{
+    if (len <= 1) {
+        return fullname;
+    }
+    int i = len - 2;
+    while (i >= 0) {
+        if (fullname[i] == '/' || fullname[i] == '\\') {
+            return fullname + i + 1;
+        }
+        --i;
+    }
+    return fullname;
+}
+#define CLOG_FLIENAME clog_get_filename(__FILE__, (int)sizeof(__FILE__))
+#else
+#define CLOG_FLIENAME __FILE_NAME__
+#endif
 #endif
 
 #define CLOG_STR_TMP(x) #x
 #define CLOG_STR(x) CLOG_STR_TMP(x)
 
 
-#define CLOG_RET_IF_X(cond, ret, msg, ...)            \
-    do {                                              \
-        if (cond) {                                   \
-            CLOG_ERR_APPEND_LINE(msg, ##__VA_ARGS__); \
-            return ret;                               \
-        }                                             \
+#define CLOG_RET_IF_X(cond, ret, msg, ...)    \
+    do {                                      \
+        if (cond) {                           \
+            CLOG_ERR_ADD(msg, ##__VA_ARGS__); \
+            return ret;                       \
+        }                                     \
     } while (0)
 
 #define CLOG_CLEAN_RET_IF_X(cond, clean, ret, msg, ...) \
     do {                                                \
         if (cond) {                                     \
-            CLOG_ERR_APPEND_LINE(msg, ##__VA_ARGS__);   \
+            CLOG_ERR_ADD(msg, ##__VA_ARGS__);           \
             (clean);                                    \
             return ret;                                 \
         }                                               \
     } while (0)
 
-#define CLOG_RET_IF_NULL_X(ptr, ret, msg, ...)        \
-    do {                                              \
-        if ((ptr) == NULL) {                          \
-            CLOG_ERR_APPEND_LINE(msg, ##__VA_ARGS__); \
-            return ret;                               \
-        }                                             \
+#define CLOG_RET_IF_NULL_X(ptr, ret, msg, ...) \
+    do {                                       \
+        if ((ptr) == NULL) {                   \
+            CLOG_ERR_ADD(msg, ##__VA_ARGS__);  \
+            return ret;                        \
+        }                                      \
     } while (0)
 
 #define CLOG_CLEAN_RET_IF_NULL_X(ptr, clean, ret, msg, ...) \
     do {                                                    \
         if ((ptr) == NULL) {                                \
-            CLOG_ERR_APPEND_LINE(msg, ##__VA_ARGS__);       \
+            CLOG_ERR_ADD(msg, ##__VA_ARGS__);               \
             (clean);                                        \
             return ret;                                     \
         }                                                   \
     } while (0)
 
-#define CLOG_RET_IF_FAILED_X(ret, msg, ...)           \
-    do {                                              \
-        if ((ret) != CLOG_SUCCESS) {                  \
-            CLOG_ERR_APPEND_LINE(msg, ##__VA_ARGS__); \
-            return ret;                               \
-        }                                             \
+#define CLOG_RET_IF_FAILED_X(ret, msg, ...)   \
+    do {                                      \
+        if ((ret) != CLOG_SUCCESS) {          \
+            CLOG_ERR_ADD(msg, ##__VA_ARGS__); \
+            return ret;                       \
+        }                                     \
     } while (0)
 
 #define CLOG_CLEAN_RET_IF_FAILED_X(ret, clean, msg, ...) \
     do {                                                 \
         if ((ret) != CLOG_SUCCESS) {                     \
-            CLOG_ERR_APPEND_LINE(msg, ##__VA_ARGS__);    \
+            CLOG_ERR_ADD(msg, ##__VA_ARGS__);            \
             (clean);                                     \
             return ret;                                  \
         }                                                \
     } while (0)
 
-#define CLOG_ERR_SET(msg, ...) clog_err_set(__FILE_NAME__ ":" CLOG_STR(__LINE__) " " msg, ##__VA_ARGS__)
+#define CLOG_ERR_ADD(msg, ...) clog_err_put(__FILE_NAME__, __LINE__, msg, ##__VA_ARGS__)
 
-#define CLOG_ERR_APPEND(msg, ...) clog_err_append(__FILE_NAME__ ":" CLOG_STR(__LINE__) " " msg, ##__VA_ARGS__)
+/**
+ * init err msg
+ * @param num max num of saved logs
+ * @param size each buffer size of log
+ */
+void clog_err_setup(unsigned short num, unsigned short size);
 
-#define CLOG_ERR_APPEND_LINE(msg, ...) clog_err_append_line(__FILE_NAME__ ":" CLOG_STR(__LINE__) " " msg, ##__VA_ARGS__)
+/**
+ * record a log
+ * @param file file name
+ * @param line line
+ * @param fmt msg format
+ * @param ... vararg
+ */
+void clog_err_put(const char* file, int line, const char* fmt, ...);
 
+/**
+ * get raw error message
+ * @param num the num of message
+ * @return error message
+ */
+const char** clog_err_get(unsigned int* num);
+
+/**
+ * print log to buf
+ * @param buf buffer
+ * @param size size of buffer
+ * @param separator separator of line, using new line if separator is NULL
+ */
+void clog_err_print(char* buf, unsigned int size, const char* separator);
 
 /**
  * clear error message
@@ -81,32 +125,9 @@ extern "C" {
 void clog_err_clear(void);
 
 /**
- * set err msg, will clear previous error message even if set failed
- * @param fmt message format, nonnull
- * @param ... var
+ * release log buffer that malloc in #clog_err_setup
  */
-void clog_err_set(const char* fmt, ...);
-
-/**
- * append error message
- * @param fmt message format, nonnull
- * @param ... var
- */
-void clog_err_append(const char* fmt, ...);
-
-/**
- * append error message with line
- * @param fmt message format, nonnull
- * @param ... var
- */
-void clog_err_append_line(const char* fmt, ...);
-
-/**
- * get error message, it will never return NULL, safe to print
- * @return error message, return string "NULL" if context is NULL
- */
-const char* clog_err_get(void);
-
+void clog_err_cleanup();
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

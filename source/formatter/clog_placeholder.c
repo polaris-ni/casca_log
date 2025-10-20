@@ -156,7 +156,7 @@ clog_res_e clog_placeholder_register(const char* name, const clog_placeholder_f 
     CLOG_RET_IF_NULL(func, CLOG_INVALID_PARAM);
     /* customize placeholder should not start with '_' */
     if (!clog_placeholder_is_name_valid(name[0]) || name[0] == '_') {
-        CLOG_ERR_SET("placeholder name [%s] not start with [a-z, A-Z, 0-9]", name);
+        CLOG_ERR_ADD("placeholder name [%s] not start with [a-z, A-Z, 0-9]", name);
         return CLOG_INVALID_PARAM;
     }
 
@@ -193,7 +193,7 @@ static clog_placeholder_t* clog_placeholder_create(const char* name, const bool 
         }
         tmp = tmp->next;
     }
-    CLOG_ERR_APPEND_LINE("process function of placeholder {%s} not found", name);
+    CLOG_ERR_ADD("process function of placeholder {%s} not found", name);
     clog_free(placeholder);
     return NULL;
 }
@@ -203,7 +203,7 @@ static const char* clog_placeholder_parse_name(const char* format)
 {
     const char* tmp = format + 1;
     if (*tmp == '}') {
-        CLOG_ERR_APPEND_LINE("placeholder name empty {}");
+        CLOG_ERR_ADD("placeholder name empty {}");
         return NULL;
     }
 
@@ -212,12 +212,12 @@ static const char* clog_placeholder_parse_name(const char* format)
             return tmp - 1;
         }
         if (!clog_placeholder_is_name_valid(*tmp)) {
-            CLOG_ERR_APPEND_LINE("placeholder contains invalid char [%c]", *tmp);
+            CLOG_ERR_ADD("placeholder contains invalid char [%c]", *tmp);
             return NULL;
         }
         tmp++;
     }
-    CLOG_ERR_APPEND_LINE("placeholder does not contain '}'");
+    CLOG_ERR_ADD("placeholder does not contain '}'");
     return NULL;
 }
 
@@ -247,7 +247,7 @@ static clog_res_e clog_placeholder_parse_format(const char* format, clog_placeho
         }
         if (*tmp == '}') {
             if (!is_escape) {
-                CLOG_ERR_APPEND_LINE("there is no corresponding '{' for '}'");
+                CLOG_ERR_ADD("there is no corresponding '{' for '}'");
                 return false;
             }
         }
@@ -287,7 +287,8 @@ clog_res_e clog_placeholder_parse(const char* format, clog_placeholder_t* root)
     const clog_res_e ret = clog_placeholder_parse_format(format, root);
     if (ret != CLOG_SUCCESS) {
         clog_placeholder_clear(root);
-        CLOG_ERR_APPEND_LINE("parse format [%s] failed", format);
+        CLOG_ERR_ADD("parse format [%s] failed", format);
+        return ret;
     }
     /* preload tag str */
     g_tags[0] = clog_get_level_tag(CLOG_LEVEL_TRACE);
@@ -296,7 +297,7 @@ clog_res_e clog_placeholder_parse(const char* format, clog_placeholder_t* root)
     g_tags[3] = clog_get_level_tag(CLOG_LEVEL_WARN);
     g_tags[4] = clog_get_level_tag(CLOG_LEVEL_ERROR);
     g_tags[5] = clog_get_level_tag(CLOG_LEVEL_FETAL);
-    return ret;
+    return CLOG_SUCCESS;
 }
 
 void clog_placeholder_clear(clog_placeholder_t* root)
