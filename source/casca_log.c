@@ -73,7 +73,7 @@ static clog_res_e clog_init_process_attrs(const char* process, const clog_config
     const clog_res_e ret = clog_config_find_item_in_group_uint(group, "level", &value);
     CLOG_RET_IF_X(ret != CLOG_SUCCESS, ret, "level not found or invalid in process[%s], ret = %d", process, ret);
     if (value > CLOG_LEVEL_ALL) {
-        CLOG_ERR_SET("the value of level is invalid, value = %u", value);
+        CLOG_ERR_ADD("the value of level is invalid, value = %u", value);
         return CLOG_ERROR_FORMAT;
     }
     g_context.config.level = value;
@@ -94,7 +94,7 @@ static clog_res_e clog_init_process_module(const char* process, const clog_confi
         CLOG_RET_IF_X(ret != CLOG_SUCCESS, ret, "level invalid in [%s.%s], ret = %d", process, module->name, ret);
     }
     if (value > CLOG_LEVEL_ALL) {
-        CLOG_ERR_APPEND_LINE("the value of level is invalid, value = %u", value);
+        CLOG_ERR_ADD("the value of level is invalid, value = %u", value);
         return CLOG_ERROR_FORMAT;
     }
     clog_module_t tmp = {.level = value, .num = 0, .recorders = {0}};
@@ -126,7 +126,7 @@ static clog_res_e clog_init_process(const char* process, const clog_config_group
     const clog_config_group_t* group = clog_config_find_group(root, groups, CLOG_ARRAY_SIZE(groups));
     if (group == NULL) {
         clog_hashmap_destroy(&map);
-        CLOG_ERR_SET("process [%s] not found", process);
+        CLOG_ERR_ADD("process [%s] not found", process);
         return CLOG_TARGET_NOT_FOUND;
     }
     clog_res_e ret = clog_init_process_attrs(process, group);
@@ -241,7 +241,7 @@ void clog_set_level_tag(const clog_level_e level, const char* tag)
             g_context.formatter.level.tag.fetal = tag;
             break;
         default:
-            CLOG_ERR_SET("level %u is invalid", level);
+            CLOG_ERR_ADD("level %u is invalid", level);
             break;
     }
 }
