@@ -27,7 +27,6 @@ void clog_err_setup(unsigned short num, unsigned short size)
             CLOG_SAFE_FREE(g_err_msg);
             return;
         }
-        printf("g_err_msg[%d] = %p\n", i, g_err_msg[i]);
     }
     g_err_num = num;
     g_err_line_size = size;
@@ -40,15 +39,17 @@ static uint32_t clog_err_get_index(void)
     uint32_t old_index = 0;
     do {
         old_index = (uint32_t)atomic_load(&g_err_count) & UINT32_MAX;
+        CLOG_RET_IF(old_index >= g_err_num, g_err_num);
         new_index = old_index + 1;
     } while (!atomic_compare_exchange_strong(&g_err_count, &old_index, new_index));
-    return old_index % g_err_num;
+    return old_index;
 }
 
 void clog_err_put(const char* file, int line, const char* fmt, ...)
 {
     CLOG_RET_VOID_IF(g_err_num == 0);
     const uint32_t index = clog_err_get_index();
+    CLOG_RET_VOID_IF(index >= g_err_num);
     char* log = g_err_msg[index];
     int ret = snprintf(log, g_err_line_size, "[%u %s:%d] ", index, file, line);
     if (ret < 0) {
