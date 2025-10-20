@@ -40,7 +40,7 @@ static const clog_dispatcher_t* clog_dispatcher_get_origin_by_id(const char* nam
                 return &g_customized_dispatchers[i];
             }
         }
-        CLOG_ERR_APPEND_LINE("customized dispatcher %s not found, id = %u", name, id);
+        CLOG_ERR_ADD("customized dispatcher %s not found, id = %u", name, id);
         return NULL;
     }
     const clog_dispatcher_provider_f providers[] = {clog_dispatcher_direct};
@@ -69,7 +69,7 @@ clog_res_e clog_dispatcher_setup(void)
             continue;
         }
         if (g_dispatcher != NULL) {
-            clog_err_append_line("%s is enabled whiled dispatcher %u has been enabled", g_dispatcher->id, name);
+            CLOG_ERR_ADD("%s is enabled whiled dispatcher %u has been enabled", g_dispatcher->id, name);
             clog_dispatcher_cleanup();
             return CLOG_ALREADY_EXISTED;
         }

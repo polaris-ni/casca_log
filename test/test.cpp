@@ -14,6 +14,7 @@
 TEST(CascaLogTest, CreateLog)
 {
     FILE* fp = fopen("../../casca_log_config_template.toml", "r");
+    char buffer[1024] = {0};
     ASSERT_NE(fp, nullptr);
     CLOG_IGNORE_RES(fseek(fp, 0, SEEK_END));
     const long len = ftell(fp);
@@ -24,16 +25,19 @@ TEST(CascaLogTest, CreateLog)
     CLOG_IGNORE_RES(fread(buf, 1, len, fp));
     CLOG_IGNORE_RES(fclose(fp));
 
+    clog_err_setup(16, 128);
     clog_res_e ret = clog_init("casca_log_test", buf);
     if (ret != CLOG_SUCCESS) {
-        printf("reason: \n%s\n", clog_err_get());
+        clog_err_print(buffer, sizeof(buffer), nullptr);
+        printf("reason: \n%s\n", buffer);
     }
     ASSERT_EQ(ret, CLOG_SUCCESS);
     clog_free(buf);
 
     ret = clog_setup(nullptr, 0);
     if (ret != CLOG_SUCCESS) {
-        printf("reason: \n%s\n", clog_err_get());
+        clog_err_print(buffer, sizeof(buffer), nullptr);
+        printf("reason: \n%s\n", buffer);
     }
     ASSERT_EQ(ret, CLOG_SUCCESS);
 
@@ -63,5 +67,5 @@ TEST(CascaLogTest, CreateLog)
     ASSERT_EQ(ret, CLOG_SUCCESS);
     clog_free(tmp);
     clog_destroy(nullptr, 0);
-    clog_err_clear();
+    clog_err_cleanup();
 }

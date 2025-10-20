@@ -13,7 +13,7 @@ clog_res_e clog_config_item_get_enabled(const clog_config_group_t* group, bool* 
         return CLOG_SUCCESS;
     }
     if (ret != CLOG_SUCCESS) {
-        CLOG_ERR_APPEND_LINE("get \"enabled\" of %s failed, ret = %d", group == NULL ? "NULL" : group->name, ret);
+        CLOG_ERR_ADD("get \"enabled\" of %s failed, ret = %d", group == NULL ? "NULL" : group->name, ret);
     }
     return ret;
 }

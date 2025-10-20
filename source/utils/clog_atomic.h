@@ -11,6 +11,7 @@ extern "C" {
 
 #ifdef __has_include
 #if __has_include(<stdatomic.h>) && !defined(_MSC_VER)
+#include <stdatomic.h>
 #define CLOG_USE_NATIVE_STD_ATOMIC
 #endif
 #else
