@@ -88,3 +88,6 @@ info = [[255, 255, 255], []]
 warn = [[255, 255, 0], []]
 error = [[255, 0, 0], []]
 fetal = [[255, 255, 255], [139, 0, 0]]
+
+[Performance.BufferPool]
+capacity = 32
