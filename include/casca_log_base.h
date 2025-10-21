@@ -117,6 +117,32 @@ typedef struct clog_item {
     const char* content;
 } clog_item_t;
 
+typedef struct clog_entry {
+    char process[64];
+    char module[64];
+    unsigned long long timestamp;
+    char content[CASCA_LOG_SINGLE_LOG_MAX_SIZE];
+} clog_entry_t;
+
+typedef struct clog_item_wrapper {
+    const char* filename;
+    const char* function;
+    uint64_t tid;
+    uint32_t line;
+    struct {
+        uint16_t year;
+        uint8_t month;
+        uint8_t day;
+        uint8_t hour;
+        uint8_t minute;
+        uint8_t second;
+        uint16_t millisecond;
+    };
+    const char* fmt;
+    va_list args;
+    clog_entry_t* log;
+} clog_item_wrapper_t;
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

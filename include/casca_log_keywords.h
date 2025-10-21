@@ -34,6 +34,8 @@ extern "C" {
 #define CLOG_STR_RECORDERS "Recorders"
 #define CLOG_STR_RECORDER_STDOUT "ClogRecorderStdout"
 #define CLOG_STR_COLORS "Colors"
+#define CLOG_STR_PERFORMANCE "Performance"
+#define CLOG_STR_BUFFER_POOL "BufferPool"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
