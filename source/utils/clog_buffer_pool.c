@@ -3,7 +3,8 @@
  * @date  2025/10/21
  */
 #include "clog_buffer_pool.h"
-#include "clog_atomic.h"
+#include "clog_atomic_types.h"
+#include "clog_error.h"
 #include "clog_hooks.h"
 
 #define CLOG_BUFFER_TYPE_POOL 1 /* block allocated from buffer pool, will be put back to buffer pool  */
@@ -22,22 +23,20 @@ struct clog_buffer {
     clog_entry_t entry;
 };
 
-#define CLOG_CACHELINE_SIZE 64
-
 typedef struct clog_buffer_pool {
-    atomic_uintptr_t head;
-    char pad0[CLOG_CACHELINE_SIZE - sizeof(atomic_uintptr_t)];
+    clog_atomic_type_t head;
+    char pad0[CLOG_CACHE_LINE_SIZE - sizeof(clog_atomic_type_t)];
 
-    atomic_int state;
-    char pad1[CLOG_CACHELINE_SIZE - sizeof(atomic_int)];
+    clog_atomic_type_t state;
+    char pad1[CLOG_CACHE_LINE_SIZE - sizeof(clog_atomic_type_t)];
 
-    atomic_uint free_count;
-    atomic_uint capacity;
-    char pad2[CLOG_CACHELINE_SIZE - 2 * sizeof(atomic_uint)];
+    clog_atomic_type_t free_count;
+    clog_atomic_type_t capacity;
+    char pad2[CLOG_CACHE_LINE_SIZE - 2 * sizeof(clog_atomic_type_t)];
 
-    size_t init_capacity;
+    clog_atomic_basic_t init_capacity;
+    clog_atomic_basic_t threshold;
     bool auto_manager;
-    double threshold;
 } clog_buffer_pool_t;
 
 static clog_buffer_pool_t g_buffer_pool;
@@ -69,24 +68,28 @@ static clog_buffer_t* clog_buffer_pool_malloc(size_t num, int type)
     return head;
 }
 
-clog_res_e clog_buffer_pool_initialize(size_t init_capacity, bool auto_manager, double threshold)
+clog_res_e clog_buffer_pool_initialize(size_t init_capacity, bool auto_manager, uint8_t threshold)
 {
-    atomic_init(&g_buffer_pool.head, 0);
-    atomic_init(&g_buffer_pool.state, CLOG_STATE_NORMAL);
-    atomic_init(&g_buffer_pool.free_count, init_capacity);
-    atomic_init(&g_buffer_pool.capacity, init_capacity);
-    g_buffer_pool.init_capacity = init_capacity;
+    if (auto_manager && (threshold == 0) || (threshold >= 100)) {
+        CLOG_ERR_ADD("buffer pool is auto-manager, but threshold is %u, it should be (0, 100)", threshold);
+        return CLOG_INVALID_PARAM;
+    }
+    clog_atomic_set(&g_buffer_pool.head, 0);
+    clog_atomic_set(&g_buffer_pool.state, CLOG_STATE_NORMAL);
+    clog_atomic_set(&g_buffer_pool.free_count, (clog_atomic_basic_t)init_capacity);
+    clog_atomic_set(&g_buffer_pool.capacity, (clog_atomic_basic_t)init_capacity);
+    g_buffer_pool.init_capacity = (clog_atomic_basic_t)init_capacity;
     g_buffer_pool.auto_manager = auto_manager;
     g_buffer_pool.threshold = threshold;
     clog_buffer_t* buffer = clog_buffer_pool_malloc(init_capacity, CLOG_BUFFER_TYPE_POOL);
     CLOG_CLEAN_RET_IF_NULL(buffer, clog_buffer_pool_finalize(), CLOG_NO_MEMORY);
-    atomic_init(&g_buffer_pool.head, (uintptr_t)buffer);
+    clog_atomic_set(&g_buffer_pool.head, (clog_atomic_basic_t)buffer);
     return CLOG_SUCCESS;
 }
 
 clog_entry_t* clog_buffer_pool_acquire(void)
 {
-    if (atomic_load_explicit(&g_buffer_pool.state, memory_order_acquire) != CLOG_STATE_NORMAL) {
+    if (clog_atomic_get(&g_buffer_pool.state) != CLOG_STATE_NORMAL) {
         clog_buffer_t* buffer = clog_malloc(sizeof(clog_buffer_t));
         CLOG_RET_IF_NULL(buffer, NULL);
         buffer->type = CLOG_BUFFER_TYPE_TMP;
@@ -94,15 +97,15 @@ clog_entry_t* clog_buffer_pool_acquire(void)
         return &buffer->entry;
     }
 
-    uintptr_t old_head = atomic_load_explicit(&g_buffer_pool.head, memory_order_acquire);
+    clog_atomic_basic_t old_head = clog_atomic_get(&g_buffer_pool.head);
     while (old_head != 0) {
         clog_buffer_t* buffer = (clog_buffer_t*)old_head;
-        uintptr_t new_head = (uintptr_t)buffer->next;
-        if (atomic_compare_exchange_strong(&g_buffer_pool.head, &old_head, new_head)) {
-            atomic_fetch_sub_explicit(&g_buffer_pool.free_count, 1, memory_order_relaxed);
+        clog_atomic_basic_t new_head = (clog_atomic_basic_t)buffer->next;
+        if (clog_atomic_cas(&g_buffer_pool.head, &old_head, new_head)) {
+            clog_atomic_fetch_sub(&g_buffer_pool.free_count, 1);
             return &buffer->entry;
         }
-        old_head = atomic_load_explicit(&g_buffer_pool.head, memory_order_acquire);
+        old_head = clog_atomic_get(&g_buffer_pool.head);
     }
 
     if (!g_buffer_pool.auto_manager) {
@@ -110,24 +113,24 @@ clog_entry_t* clog_buffer_pool_acquire(void)
         return &clog_buffer_pool_malloc(1, CLOG_BUFFER_TYPE_TMP)->entry;
     }
 
-    int normal_state = CLOG_STATE_NORMAL;
-    if (atomic_compare_exchange_strong(&g_buffer_pool.state, &normal_state, CLOG_STATE_EXPANDING)) {
+    clog_atomic_basic_t normal_state = CLOG_STATE_NORMAL;
+    if (clog_atomic_cas(&g_buffer_pool.state, &normal_state, CLOG_STATE_EXPANDING)) {
         clog_buffer_t* buffer = clog_buffer_pool_malloc(g_buffer_pool.init_capacity, CLOG_BUFFER_TYPE_POOL);
         CLOG_RET_IF_NULL(buffer, NULL);
         clog_buffer_t* tail = buffer;
         while (tail->next != NULL) {
             tail = tail->next;
         }
-        const uintptr_t new_head = (uintptr_t)buffer;
-        uintptr_t current_head;
+        const clog_atomic_basic_t new_head = (clog_atomic_basic_t)buffer;
+        clog_atomic_basic_t current_head;
         do {
-            current_head = atomic_load_explicit(&g_buffer_pool.head, memory_order_relaxed);
+            current_head = clog_atomic_get(&g_buffer_pool.head);
             tail->next = (clog_buffer_t*)current_head;
-        } while (!atomic_compare_exchange_strong(&g_buffer_pool.head, &current_head, new_head));
+        } while (!clog_atomic_cas(&g_buffer_pool.head, &current_head, new_head));
 
-        atomic_fetch_add(&g_buffer_pool.capacity, g_buffer_pool.init_capacity);
-        atomic_fetch_add(&g_buffer_pool.free_count, g_buffer_pool.init_capacity);
-        atomic_store_explicit(&g_buffer_pool.state, CLOG_STATE_NORMAL, memory_order_release);
+        clog_atomic_fetch_add(&g_buffer_pool.capacity, g_buffer_pool.init_capacity);
+        clog_atomic_fetch_add(&g_buffer_pool.free_count, g_buffer_pool.init_capacity);
+        clog_atomic_set(&g_buffer_pool.state, CLOG_STATE_NORMAL);
         return clog_buffer_pool_acquire();
     }
 
@@ -145,37 +148,37 @@ void clog_buffer_pool_release(clog_entry_t* entry)
     }
 
     if (!g_buffer_pool.auto_manager) {
-        uintptr_t old_head;
-        const uintptr_t new_head = (uintptr_t)buffer;
+        clog_atomic_basic_t old_head;
+        const clog_atomic_basic_t new_head = (clog_atomic_basic_t)buffer;
         do {
-            old_head = atomic_load_explicit(&g_buffer_pool.head, memory_order_relaxed);
+            old_head = clog_atomic_get(&g_buffer_pool.head);
             buffer->next = (clog_buffer_t*)old_head;
-        } while (!atomic_compare_exchange_strong(&g_buffer_pool.head, &old_head, new_head));
-        atomic_fetch_add(&g_buffer_pool.free_count, 1);
+        } while (!clog_atomic_cas(&g_buffer_pool.head, &old_head, new_head));
+        clog_atomic_fetch_add(&g_buffer_pool.free_count, 1);
         return;
     }
 
-    uint32_t capacity;
-    uint32_t new_capacity;
-    uint32_t free_count;
+    clog_atomic_basic_t capacity;
+    clog_atomic_basic_t new_capacity;
     do {
-        capacity = atomic_load(&g_buffer_pool.capacity);
-        free_count = atomic_load(&g_buffer_pool.free_count);
-        if ((free_count < capacity * g_buffer_pool.threshold) || (capacity == g_buffer_pool.init_capacity)) {
+        capacity = clog_atomic_get(&g_buffer_pool.capacity);
+        const clog_atomic_basic_t free_count = clog_atomic_get(&g_buffer_pool.free_count);
+        const clog_atomic_basic_t rate = free_count * 100 / capacity;
+        if ((rate > g_buffer_pool.threshold) || (capacity == g_buffer_pool.init_capacity)) {
             return;
         }
         new_capacity = capacity - 1;
-    } while (!atomic_compare_exchange_strong(&g_buffer_pool.capacity, &capacity, new_capacity));
+    } while (!clog_atomic_cas(&g_buffer_pool.capacity, &capacity, new_capacity));
     clog_free(buffer);
 }
 
 void clog_buffer_pool_finalize(void)
 {
-    int state = CLOG_STATE_NORMAL;
-    while (!atomic_compare_exchange_strong(&g_buffer_pool.state, &state, CLOG_STATE_DISABLED)) {}
-    uintptr_t addr = atomic_load(&g_buffer_pool.head);
-    while (!atomic_compare_exchange_strong(&g_buffer_pool.head, &addr, 0)) {
-        addr = atomic_load(&g_buffer_pool.head);
+    clog_atomic_basic_t state = CLOG_STATE_NORMAL;
+    while (!clog_atomic_cas(&g_buffer_pool.state, &state, CLOG_STATE_DISABLED)) {}
+    clog_atomic_basic_t addr = clog_atomic_get(&g_buffer_pool.head);
+    while (!clog_atomic_cas(&g_buffer_pool.head, &addr, 0)) {
+        addr = clog_atomic_get(&g_buffer_pool.head);
     }
     clog_buffer_t* buffer = (clog_buffer_t*)addr;
     while (buffer != NULL) {
@@ -183,8 +186,8 @@ void clog_buffer_pool_finalize(void)
         clog_free(buffer);
         buffer = next;
     }
-    atomic_init(&g_buffer_pool.free_count, 0);
-    atomic_init(&g_buffer_pool.capacity, 0);
+    clog_atomic_set(&g_buffer_pool.free_count, 0);
+    clog_atomic_set(&g_buffer_pool.capacity, 0);
     g_buffer_pool.init_capacity = 0;
     g_buffer_pool.auto_manager = false;
 }

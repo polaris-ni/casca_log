@@ -4,14 +4,14 @@
  */
 #include "clog_error.h"
 #include <stdio.h>
-#include "clog_atomic.h"
+#include "clog_atomic_types.h"
 #include "clog_config.h"
 #include "clog_hooks.h"
 
 static char** g_err_msg = NULL;
 static uint16_t g_err_num = 0;
 static uint16_t g_err_line_size = 0;
-static atomic_uint g_err_count;
+static clog_atomic_type_t g_err_count;
 
 void clog_err_setup(unsigned short num, unsigned short size)
 {
@@ -30,18 +30,18 @@ void clog_err_setup(unsigned short num, unsigned short size)
     }
     g_err_num = num;
     g_err_line_size = size;
-    atomic_init(&g_err_count, 0);
+    clog_atomic_set(&g_err_count, 0);
 }
 
 static uint32_t clog_err_get_index(void)
 {
     uint32_t new_index = 0;
-    uint32_t old_index = 0;
+    clog_atomic_basic_t old_index = 0;
     do {
-        old_index = (uint32_t)atomic_load(&g_err_count) & UINT32_MAX;
+        old_index = (uint32_t)clog_atomic_get(&g_err_count) & UINT32_MAX;
         CLOG_RET_IF(old_index >= g_err_num, g_err_num);
         new_index = old_index + 1;
-    } while (!atomic_compare_exchange_strong(&g_err_count, &old_index, new_index));
+    } while (!clog_atomic_cas(&g_err_count, &old_index, new_index));
     return old_index;
 }
 
@@ -67,7 +67,7 @@ const char** clog_err_get(unsigned int* num)
     CLOG_RET_IF_NULL(num, NULL);
     *num = 0;
     CLOG_RET_IF(g_err_num == 0, NULL);
-    *num = atomic_load(&g_err_count);
+    *num = clog_atomic_get(&g_err_count);
     CLOG_RET_IF(*num == 0, NULL);
     return (const char**)g_err_msg;
 }
@@ -103,7 +103,7 @@ void clog_err_print(char* buf, unsigned int size, const char* separator)
 
 void clog_err_clear(void)
 {
-    atomic_store(&g_err_count, 0);
+    clog_atomic_set(&g_err_count, 0);
 }
 
 void clog_err_cleanup(void)
@@ -114,5 +114,5 @@ void clog_err_cleanup(void)
     CLOG_SAFE_FREE(g_err_msg);
     g_err_num = 0;
     g_err_line_size = 0;
-    atomic_init(&g_err_count, 0);
+    clog_atomic_set(&g_err_count, 0);
 }

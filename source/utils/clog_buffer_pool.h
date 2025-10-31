@@ -20,10 +20,10 @@ extern "C" {
  * if auto_manager is false, buffer will malloc from system when buffer pool is full
  * @param init_capacity initial capacity
  * @param auto_manager auto expanding and shrinking
- * @param threshold auto shrinking threshold, 0.0 - 1.0
+ * @param threshold auto shrinking threshold, 0 ~ 100
  * @return #clog_res_e
  */
-clog_res_e clog_buffer_pool_initialize(size_t init_capacity, bool auto_manager, double threshold);
+clog_res_e clog_buffer_pool_initialize(size_t init_capacity, bool auto_manager, uint8_t threshold);
 
 /**
  * acquire buffer from pool
