@@ -12,6 +12,7 @@
 #include <intrin.h>
 #else
 #include <stdatomic.h>
+#include <stdint.h>
 #endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
