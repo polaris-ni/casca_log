@@ -12,6 +12,10 @@
 extern "C" {
 #endif
 
+#define CLOG_BUFFER_POOL_STATE_DISABLED 0 /* buffer pool is not active */
+#define CLOG_BUFFER_POOL_STATE_RUNNING 1 /* normal state */
+#define CLOG_BUFFER_POOL_STATE_EXPANDING 2 /* expand buffer num */
+
 /**
  * init buffer pool
  * if auto_manager is true, buffer pool will expand and shrink automatically
@@ -44,6 +48,24 @@ void clog_buffer_pool_release(clog_entry_t* entry);
  * shutdown buffer pool
  */
 void clog_buffer_pool_finalize(void);
+
+/**
+ * get current buffer pool state
+ * @return #CLOG_STATE_DISABLED #CLOG_STATE_RUNNING #CLOG_STATE_EXPANDING
+ */
+int32_t clog_buffer_pool_get_state(void);
+
+/**
+ * get current buffer pool capacity
+ * @return
+ */
+size_t clog_buffer_pool_get_current_capacity(void);
+
+/**
+ * check whether buffer pool is auto manager
+ * @return true if auto manager, false otherwise
+ */
+bool clog_buffer_pool_is_auto_manager(void);
 
 
 #if defined(__cplusplus) || defined(c_plusplus)
