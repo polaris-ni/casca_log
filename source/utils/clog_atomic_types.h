@@ -118,9 +118,9 @@ static inline clog_atomic_basic_t clog_atomic_fetch_add(clog_atomic_type_t* obj,
 static inline clog_atomic_basic_t clog_atomic_fetch_sub(clog_atomic_type_t* obj, const clog_atomic_basic_t value)
 {
 #ifdef CLOG_COMPILER_MSVC
-    return atomic_fetch_add(obj, value);
+    return atomic_fetch_add(obj, value * (-1));
 #else
-    const clog_atomic_type_t tmp = atomic_fetch_add(obj, -value);
+    const clog_atomic_type_t tmp = atomic_fetch_add(obj, value * (-1));
     return tmp;
 #endif
 }
