@@ -10,11 +10,6 @@
 #define CLOG_BUFFER_TYPE_POOL 1 /* block allocated from buffer pool, will be put back to buffer pool  */
 #define CLOG_BUFFER_TYPE_TMP 2 /* block allocated from system, will be free  */
 
-#define CLOG_STATE_DISABLED 0 /* buffer pool is not active */
-#define CLOG_STATE_EXPANDING 1 /* expand buffer num */
-#define CLOG_STATE_SHRINK 2 /* shrink buffer num */
-#define CLOG_STATE_NORMAL 3 /* normal state */
-
 typedef struct clog_buffer clog_buffer_t;
 
 struct clog_buffer {
@@ -75,7 +70,7 @@ clog_res_e clog_buffer_pool_initialize(size_t init_capacity, bool auto_manager, 
         return CLOG_INVALID_PARAM;
     }
     clog_atomic_set(&g_buffer_pool.head, 0);
-    clog_atomic_set(&g_buffer_pool.state, CLOG_STATE_NORMAL);
+    clog_atomic_set(&g_buffer_pool.state, CLOG_BUFFER_POOL_STATE_RUNNING);
     clog_atomic_set(&g_buffer_pool.free_count, (clog_atomic_basic_t)init_capacity);
     clog_atomic_set(&g_buffer_pool.capacity, (clog_atomic_basic_t)init_capacity);
     g_buffer_pool.init_capacity = (clog_atomic_basic_t)init_capacity;
@@ -89,7 +84,7 @@ clog_res_e clog_buffer_pool_initialize(size_t init_capacity, bool auto_manager, 
 
 clog_entry_t* clog_buffer_pool_acquire(void)
 {
-    if (clog_atomic_get(&g_buffer_pool.state) != CLOG_STATE_NORMAL) {
+    if (clog_atomic_get(&g_buffer_pool.state) != CLOG_BUFFER_POOL_STATE_RUNNING) {
         clog_buffer_t* buffer = clog_malloc(sizeof(clog_buffer_t));
         CLOG_RET_IF_NULL(buffer, NULL);
         buffer->type = CLOG_BUFFER_TYPE_TMP;
@@ -113,8 +108,8 @@ clog_entry_t* clog_buffer_pool_acquire(void)
         return &clog_buffer_pool_malloc(1, CLOG_BUFFER_TYPE_TMP)->entry;
     }
 
-    clog_atomic_basic_t normal_state = CLOG_STATE_NORMAL;
-    if (clog_atomic_cas(&g_buffer_pool.state, &normal_state, CLOG_STATE_EXPANDING)) {
+    clog_atomic_basic_t normal_state = CLOG_BUFFER_POOL_STATE_RUNNING;
+    if (clog_atomic_cas(&g_buffer_pool.state, &normal_state, CLOG_BUFFER_POOL_STATE_EXPANDING)) {
         clog_buffer_t* buffer = clog_buffer_pool_malloc(g_buffer_pool.init_capacity, CLOG_BUFFER_TYPE_POOL);
         CLOG_RET_IF_NULL(buffer, NULL);
         clog_buffer_t* tail = buffer;
@@ -130,7 +125,7 @@ clog_entry_t* clog_buffer_pool_acquire(void)
 
         clog_atomic_fetch_add(&g_buffer_pool.capacity, g_buffer_pool.init_capacity);
         clog_atomic_fetch_add(&g_buffer_pool.free_count, g_buffer_pool.init_capacity);
-        clog_atomic_set(&g_buffer_pool.state, CLOG_STATE_NORMAL);
+        clog_atomic_set(&g_buffer_pool.state, CLOG_BUFFER_POOL_STATE_RUNNING);
         return clog_buffer_pool_acquire();
     }
 
@@ -163,8 +158,15 @@ void clog_buffer_pool_release(clog_entry_t* entry)
     do {
         capacity = clog_atomic_get(&g_buffer_pool.capacity);
         const clog_atomic_basic_t free_count = clog_atomic_get(&g_buffer_pool.free_count);
-        const clog_atomic_basic_t rate = free_count * 100 / capacity;
+        const clog_atomic_basic_t rate = 100 - free_count * 100 / capacity;
         if ((rate > g_buffer_pool.threshold) || (capacity == g_buffer_pool.init_capacity)) {
+            clog_atomic_basic_t old_head;
+            const clog_atomic_basic_t new_head = (clog_atomic_basic_t)buffer;
+            do {
+                old_head = clog_atomic_get(&g_buffer_pool.head);
+                buffer->next = (clog_buffer_t*)old_head;
+            } while (!clog_atomic_cas(&g_buffer_pool.head, &old_head, new_head));
+            clog_atomic_fetch_add(&g_buffer_pool.free_count, 1);
             return;
         }
         new_capacity = capacity - 1;
@@ -174,8 +176,8 @@ void clog_buffer_pool_release(clog_entry_t* entry)
 
 void clog_buffer_pool_finalize(void)
 {
-    clog_atomic_basic_t state = CLOG_STATE_NORMAL;
-    while (!clog_atomic_cas(&g_buffer_pool.state, &state, CLOG_STATE_DISABLED)) {}
+    clog_atomic_basic_t state = CLOG_BUFFER_POOL_STATE_RUNNING;
+    while (!clog_atomic_cas(&g_buffer_pool.state, &state, CLOG_BUFFER_POOL_STATE_DISABLED)) {}
     clog_atomic_basic_t addr = clog_atomic_get(&g_buffer_pool.head);
     while (!clog_atomic_cas(&g_buffer_pool.head, &addr, 0)) {
         addr = clog_atomic_get(&g_buffer_pool.head);
@@ -190,4 +192,35 @@ void clog_buffer_pool_finalize(void)
     clog_atomic_set(&g_buffer_pool.capacity, 0);
     g_buffer_pool.init_capacity = 0;
     g_buffer_pool.auto_manager = false;
+}
+
+int32_t clog_buffer_pool_get_state(void)
+{
+    const clog_atomic_basic_t tmp = clog_atomic_get(&g_buffer_pool.state);
+    if ((tmp < CLOG_BUFFER_POOL_STATE_DISABLED) || (tmp > CLOG_BUFFER_POOL_STATE_EXPANDING)) {
+        return CLOG_BUFFER_POOL_STATE_DISABLED;
+    }
+    return (int32_t)tmp;
+}
+
+/**
+ * get current buffer pool capacity
+ * @return
+ */
+size_t clog_buffer_pool_get_current_capacity(void)
+{
+    const clog_atomic_basic_t tmp = clog_atomic_get(&g_buffer_pool.capacity);
+    if (tmp <= 0) {
+        return 0;
+    }
+    return tmp;
+}
+
+/**
+ * check whether buffer pool is auto manager
+ * @return true if auto manager, false otherwise
+ */
+bool clog_buffer_pool_is_auto_manager(void)
+{
+    return g_buffer_pool.auto_manager;
 }
