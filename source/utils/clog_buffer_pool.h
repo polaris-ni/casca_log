@@ -57,7 +57,7 @@ int32_t clog_buffer_pool_get_state(void);
 
 /**
  * get current buffer pool capacity
- * @return
+ * @return current buffer pool capacity
  */
 size_t clog_buffer_pool_get_current_capacity(void);
 
