@@ -80,6 +80,7 @@ typedef enum clog_res {
     CLOG_NOT_PERMITTED = 8, /* operation not permitted */
     CLOG_REQUEST_FLUSH = 9, /* request flush */
     CLOG_ALREADY_EXISTED = 10, /* something already existed */
+    CLOG_NOT_COMPLETED = 11, /* operation not completed */
 } clog_res_e;
 
 typedef enum clog_level {
