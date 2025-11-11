@@ -56,12 +56,12 @@ TEST_F(ClogBufferPoolTest, AcquireAndReleaseWithoutAutoManager)
 
     EXPECT_EQ(clog_buffer_pool_get_current_capacity(pool), 5);
 
-    clog_buffer_pool_release(pool, entry1);
-    clog_buffer_pool_release(pool, entry2);
-    clog_buffer_pool_release(pool, entry3);
-    clog_buffer_pool_release(pool, entry4);
-    clog_buffer_pool_release(pool, entry5);
-    clog_buffer_pool_release(pool, entry6);
+    EXPECT_EQ(clog_buffer_pool_release(pool, entry1), pool);
+    EXPECT_EQ(clog_buffer_pool_release(pool, entry2), pool);
+    EXPECT_EQ(clog_buffer_pool_release(pool, entry3), pool);
+    EXPECT_EQ(clog_buffer_pool_release(pool, entry4), pool);
+    EXPECT_EQ(clog_buffer_pool_release(pool, entry5), pool);
+    EXPECT_EQ(clog_buffer_pool_release(pool, entry6), pool);
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
 }
 
@@ -79,7 +79,7 @@ TEST_F(ClogBufferPoolTest, AutoExpandWhenFull)
     EXPECT_GE(clog_buffer_pool_get_current_capacity(pool), 3);
 
     for (auto& entry : entries) {
-        clog_buffer_pool_release(pool, entry);
+        EXPECT_EQ(clog_buffer_pool_release(pool, entry), pool);
     }
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
 }
@@ -103,7 +103,7 @@ TEST_F(ClogBufferPoolTest, AutoShrinkWhenBelowThreshold)
     constexpr size_t release_num = init_capacity * 2 * 0.4 - 1;
 
     for (size_t i = 0; i < release_num; i++) {
-        clog_buffer_pool_release(pool, entries.front());
+        EXPECT_EQ(clog_buffer_pool_release(pool, entries.front()), pool);
         entries.pop();
     }
 
@@ -111,7 +111,7 @@ TEST_F(ClogBufferPoolTest, AutoShrinkWhenBelowThreshold)
     ASSERT_EQ(capacity_before_release, init_capacity * 2);
 
     for (size_t i = 0; i < 2; i++) {
-        clog_buffer_pool_release(pool, entries.front());
+        EXPECT_EQ(clog_buffer_pool_release(pool, entries.front()), pool);
         entries.pop();
     }
 
@@ -119,7 +119,7 @@ TEST_F(ClogBufferPoolTest, AutoShrinkWhenBelowThreshold)
     ASSERT_LT(capacity_before_release, init_capacity * 2);
 
     while (!entries.empty()) {
-        clog_buffer_pool_release(pool, entries.front());
+        EXPECT_EQ(clog_buffer_pool_release(pool, entries.front()), pool);
         entries.pop();
     }
     capacity_before_release = clog_buffer_pool_get_current_capacity(pool);
@@ -127,24 +127,21 @@ TEST_F(ClogBufferPoolTest, AutoShrinkWhenBelowThreshold)
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
 }
 
-TEST_F(ClogBufferPoolTest, AcquireWhenDisabled)
+TEST_F(ClogBufferPoolTest, ReleaseWhenFinalized)
 {
     clog_buffer_pool_t* pool = nullptr;
-    clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 5, false, 0);
-    clog_buffer_pool_finalize(pool);
-
+    EXPECT_EQ(clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 5, false, 0), CLOG_SUCCESS);
     void* entry = clog_buffer_pool_acquire(pool);
     ASSERT_NE(entry, nullptr);
-
-    clog_buffer_pool_release(pool, entry);
-    EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
+    EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_NOT_COMPLETED);
+    EXPECT_EQ(clog_buffer_pool_release(pool, entry), nullptr);
 }
 
 TEST_F(ClogBufferPoolTest, GetState)
 {
     clog_buffer_pool_t* pool = nullptr;
     EXPECT_EQ(clog_buffer_pool_get_state(pool), CLOG_BUFFER_POOL_STATE_DISABLED);
-    clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 5, false, 0);
+    EXPECT_EQ(clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 5, false, 0), CLOG_SUCCESS);
     EXPECT_EQ(clog_buffer_pool_get_state(pool), CLOG_BUFFER_POOL_STATE_RUNNING);
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
     EXPECT_EQ(clog_buffer_pool_get_state(pool), CLOG_BUFFER_POOL_STATE_DISABLED);
@@ -154,7 +151,7 @@ TEST_F(ClogBufferPoolTest, GetCurrentCapacity)
 {
     clog_buffer_pool_t* pool = nullptr;
     EXPECT_EQ(clog_buffer_pool_get_current_capacity(pool), 0);
-    clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 7, false, 0);
+    EXPECT_EQ(clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 7, false, 0), CLOG_SUCCESS);
     EXPECT_EQ(clog_buffer_pool_get_current_capacity(pool), 7);
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
     EXPECT_EQ(clog_buffer_pool_get_current_capacity(pool), 0);
@@ -163,7 +160,7 @@ TEST_F(ClogBufferPoolTest, GetCurrentCapacity)
 TEST_F(ClogBufferPoolTest, IsAutoManager)
 {
     clog_buffer_pool_t* pool = nullptr;
-    clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 5, false, 0);
+    EXPECT_EQ(clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 5, false, 0), CLOG_SUCCESS);
     EXPECT_FALSE(clog_buffer_pool_is_auto_manager(pool));
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
     EXPECT_EQ(clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 5, true, 50), CLOG_SUCCESS);
@@ -179,7 +176,7 @@ TEST_F(ClogBufferPoolTest, MultiThreadAcquireAndRelease)
     constexpr int thread_count = 8;
     constexpr int operations_per_thread = 100;
 
-    clog_buffer_pool_initialize(&pool, sizeof(uint32_t), init_capacity, true, threshold);
+    EXPECT_EQ(clog_buffer_pool_initialize(&pool, sizeof(uint32_t), init_capacity, true, threshold), CLOG_SUCCESS);
 
     std::vector<std::vector<void*>> thread_entries(thread_count);
 
@@ -195,13 +192,13 @@ TEST_F(ClogBufferPoolTest, MultiThreadAcquireAndRelease)
         }
 
         for (void* entry : thread_entries[thread_id]) {
-            clog_buffer_pool_release(pool, entry);
+            EXPECT_EQ(clog_buffer_pool_release(pool, entry), pool);
         }
     };
 
     std::vector<std::thread> threads;
     threads.reserve(thread_count);
-for (int i = 0; i < thread_count; ++i) {
+    for (int i = 0; i < thread_count; ++i) {
         threads.emplace_back(worker, i);
     }
 
@@ -222,7 +219,7 @@ TEST_F(ClogBufferPoolTest, MultiThreadAutoExpandAndShrink)
     constexpr int thread_count = 4;
     constexpr int operations_per_thread = 50;
 
-    clog_buffer_pool_initialize(&pool, sizeof(uint32_t), init_capacity, true, threshold);
+    EXPECT_EQ(clog_buffer_pool_initialize(&pool, sizeof(uint32_t), init_capacity, true, threshold), CLOG_SUCCESS);
 
     std::atomic<int> total_acquired{0};
     std::vector<std::vector<void*>> thread_entries(thread_count);
@@ -240,7 +237,7 @@ TEST_F(ClogBufferPoolTest, MultiThreadAutoExpandAndShrink)
 
     std::vector<std::thread> threads;
     threads.reserve(thread_count);
-for (int i = 0; i < thread_count; ++i) {
+    for (int i = 0; i < thread_count; ++i) {
         threads.emplace_back(worker, i);
     }
 
@@ -253,7 +250,7 @@ for (int i = 0; i < thread_count; ++i) {
 
     for (auto& entries : thread_entries) {
         for (void* entry : entries) {
-            clog_buffer_pool_release(pool, entry);
+            EXPECT_EQ(clog_buffer_pool_release(pool, entry), pool);
         }
     }
 
@@ -270,7 +267,7 @@ TEST_F(ClogBufferPoolTest, MultiThreadUniqueEntryCheck)
     constexpr int thread_count = 8;
     constexpr int operations_per_thread = 50;
 
-    clog_buffer_pool_initialize(&pool, sizeof(uint32_t), init_capacity, true, 50);
+    EXPECT_EQ(clog_buffer_pool_initialize(&pool, sizeof(uint32_t), init_capacity, true, 50), CLOG_SUCCESS);
     std::unordered_map<void*, std::thread::id> entry_thread_map;
     std::mutex map_mutex;
     std::atomic<bool> duplicate_detected{false};
@@ -313,13 +310,13 @@ TEST_F(ClogBufferPoolTest, MultiThreadUniqueEntryCheck)
                 }
             }
 
-            clog_buffer_pool_release(pool, entry);
+            EXPECT_EQ(clog_buffer_pool_release(pool, entry), pool);
         }
     };
 
     std::vector<std::thread> threads;
     threads.reserve(thread_count);
-for (int i = 0; i < thread_count; ++i) {
+    for (int i = 0; i < thread_count; ++i) {
         threads.emplace_back(worker, i);
     }
 

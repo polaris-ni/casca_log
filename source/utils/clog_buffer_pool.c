@@ -150,23 +150,24 @@ void* clog_buffer_pool_acquire(clog_buffer_pool_t* pool)
     return buffer->entry;
 }
 
-void clog_buffer_pool_release(clog_buffer_pool_t* pool, void* entry)
+clog_buffer_pool_t* clog_buffer_pool_release(clog_buffer_pool_t* pool, void* entry)
 {
-    CLOG_RET_VOID_IF_NULL(pool);
-    CLOG_RET_VOID_IF_NULL(entry);
+    CLOG_RET_IF_NULL_X(entry, NULL, "entry is NULL");
     clog_buffer_t* buffer = (clog_buffer_t*)((uintptr_t)entry - offsetof(clog_buffer_t, entry));
     if (buffer->type == CLOG_BUFFER_TYPE_TMP) {
         clog_free(buffer);
-        return;
+        return pool;
     }
-
+    CLOG_RET_IF_NULL_X(pool, NULL, "buffer pool is NULL");
     if (clog_buffer_pool_get_state(pool) == CLOG_BUFFER_POOL_STATE_FINALIZING) {
         clog_free(buffer);
         clog_atomic_fetch_sub(&pool->capacity, 1);
         if (clog_buffer_pool_get_current_capacity(pool) == 0) {
             clog_atomic_set(&pool->state, CLOG_BUFFER_POOL_STATE_DISABLED);
+            clog_free(pool);
+            return NULL;
         }
-        return;
+        return pool;
     }
 
     if (!pool->auto_manager) {
@@ -177,7 +178,7 @@ void clog_buffer_pool_release(clog_buffer_pool_t* pool, void* entry)
             buffer->next = (clog_buffer_t*)old_head;
         } while (!clog_atomic_cas(&pool->head, &old_head, new_head));
         clog_atomic_fetch_add(&pool->free_count, 1);
-        return;
+        return pool;
     }
 
     clog_atomic_basic_t capacity;
@@ -194,11 +195,12 @@ void clog_buffer_pool_release(clog_buffer_pool_t* pool, void* entry)
                 buffer->next = (clog_buffer_t*)old_head;
             } while (!clog_atomic_cas(&pool->head, &old_head, new_head));
             clog_atomic_fetch_add(&pool->free_count, 1);
-            return;
+            return pool;
         }
         new_capacity = capacity - 1;
     } while (!clog_atomic_cas(&pool->capacity, &capacity, new_capacity));
     clog_free(buffer);
+    return pool;
 }
 
 clog_res_e clog_buffer_pool_finalize(clog_buffer_pool_t* pool)
@@ -223,6 +225,7 @@ clog_res_e clog_buffer_pool_finalize(clog_buffer_pool_t* pool)
     pool->item_size = 0;
     if (clog_buffer_pool_get_current_capacity(pool) == 0) {
         clog_atomic_set(&pool->state, CLOG_BUFFER_POOL_STATE_DISABLED);
+        clog_free(pool);
         return CLOG_SUCCESS;
     }
     return CLOG_NOT_COMPLETED;
