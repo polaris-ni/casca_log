@@ -49,9 +49,9 @@ void* clog_buffer_pool_acquire(clog_buffer_pool_t* pool);
  * this buffer will be shrunk and released to system
  * @param pool buffer pool
  * @param entry buffer to be released
- * @return buffer
+ * @return NULL if buffer pool is finalizing and last buffer is released, otherwise #pool itself
  */
-void clog_buffer_pool_release(clog_buffer_pool_t* pool, void* entry);
+clog_buffer_pool_t* clog_buffer_pool_release(clog_buffer_pool_t* pool, void* entry);
 
 /**
  * shutdown buffer pool
