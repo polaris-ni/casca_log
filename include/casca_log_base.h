@@ -81,6 +81,7 @@ typedef enum clog_res {
     CLOG_REQUEST_FLUSH = 9, /* request flush */
     CLOG_ALREADY_EXISTED = 10, /* something already existed */
     CLOG_NOT_COMPLETED = 11, /* operation not completed */
+    CLOG_ABNORMAL_STATE = 12, /* abnormal state */
 } clog_res_e;
 
 typedef enum clog_level {
