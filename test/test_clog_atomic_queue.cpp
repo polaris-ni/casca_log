@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 #include "clog_atomic_queue.h"
 
-class AtomicQueueTest : public ::testing::Test
+class ClogAtomicQueueTest : public ::testing::Test
 {
 protected:
     clog_atomic_queue_t* queue = nullptr;
@@ -24,7 +24,7 @@ protected:
     }
 };
 
-TEST_F(AtomicQueueTest, CreateAndDestroy)
+TEST_F(ClogAtomicQueueTest, CreateAndDestroy)
 {
     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
 
@@ -33,12 +33,12 @@ TEST_F(AtomicQueueTest, CreateAndDestroy)
     queue = nullptr;
 }
 
-TEST_F(AtomicQueueTest, CreateWithNullPointer)
+TEST_F(ClogAtomicQueueTest, CreateWithNullPointer)
 {
     EXPECT_EQ(CLOG_INVALID_PARAM, clog_atomic_queue_create(nullptr, 32, 50));
 }
 
-TEST_F(AtomicQueueTest, EnqueueNormal)
+TEST_F(ClogAtomicQueueTest, EnqueueNormal)
 {
     ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 64, 50));
 
@@ -46,19 +46,19 @@ TEST_F(AtomicQueueTest, EnqueueNormal)
     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(queue, &data, sizeof(data)));
 }
 
-TEST_F(AtomicQueueTest, EnqueueWithNullQueue)
+TEST_F(ClogAtomicQueueTest, EnqueueWithNullQueue)
 {
     constexpr int data = 12345;
     EXPECT_EQ(CLOG_INVALID_PARAM, clog_atomic_queue_enqueue(nullptr, &data, sizeof(data)));
 }
 
-TEST_F(AtomicQueueTest, EnqueueWithNullData)
+TEST_F(ClogAtomicQueueTest, EnqueueWithNullData)
 {
     ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 64, 50));
     EXPECT_EQ(CLOG_INVALID_PARAM, clog_atomic_queue_enqueue(queue, nullptr, sizeof(int)));
 }
 
-TEST_F(AtomicQueueTest, MultipleEnqueue)
+TEST_F(ClogAtomicQueueTest, MultipleEnqueue)
 {
     ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
 
@@ -67,7 +67,7 @@ TEST_F(AtomicQueueTest, MultipleEnqueue)
     }
 }
 
-TEST_F(AtomicQueueTest, DequeueFromEmptyQueue)
+TEST_F(ClogAtomicQueueTest, DequeueFromEmptyQueue)
 {
     ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
 
@@ -76,7 +76,7 @@ TEST_F(AtomicQueueTest, DequeueFromEmptyQueue)
     EXPECT_EQ(CLOG_TARGET_NOT_FOUND, clog_atomic_queue_dequeue(queue, &data, sizeof(data), &len));
 }
 
-TEST_F(AtomicQueueTest, EnqueueAndDequeue)
+TEST_F(ClogAtomicQueueTest, EnqueueAndDequeue)
 {
     ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
 
@@ -90,7 +90,7 @@ TEST_F(AtomicQueueTest, EnqueueAndDequeue)
     EXPECT_EQ(sizeof(data_in), len);
 }
 
-TEST_F(AtomicQueueTest, DequeueWithSmallBuffer)
+TEST_F(ClogAtomicQueueTest, DequeueWithSmallBuffer)
 {
     ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 40, 50));
 
@@ -103,7 +103,7 @@ TEST_F(AtomicQueueTest, DequeueWithSmallBuffer)
     EXPECT_EQ(sizeof(data_out), len);
 }
 
-TEST_F(AtomicQueueTest, DequeueWithoutLength)
+TEST_F(ClogAtomicQueueTest, DequeueWithoutLength)
 {
     ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
 
@@ -115,7 +115,7 @@ TEST_F(AtomicQueueTest, DequeueWithoutLength)
     EXPECT_EQ(data_in, data_out);
 }
 
-TEST_F(AtomicQueueTest, DequeueToNullBuffer)
+TEST_F(ClogAtomicQueueTest, DequeueToNullBuffer)
 {
     ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
 
@@ -127,7 +127,7 @@ TEST_F(AtomicQueueTest, DequeueToNullBuffer)
     EXPECT_EQ(sizeof(data_in), len);
 }
 
-TEST_F(AtomicQueueTest, IsEmpty)
+TEST_F(ClogAtomicQueueTest, IsEmpty)
 {
     EXPECT_TRUE(clog_atomic_queue_is_empty(nullptr));
 
@@ -142,12 +142,12 @@ TEST_F(AtomicQueueTest, IsEmpty)
     EXPECT_TRUE(clog_atomic_queue_is_empty(queue));
 }
 
-TEST_F(AtomicQueueTest, DestroyNullQueue)
+TEST_F(ClogAtomicQueueTest, DestroyNullQueue)
 {
     EXPECT_EQ(CLOG_INVALID_PARAM, clog_atomic_queue_destroy(nullptr));
 }
 
-TEST_F(AtomicQueueTest, LargeDataOperations)
+TEST_F(ClogAtomicQueueTest, LargeDataOperations)
 {
     ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 1024, 50));
 
