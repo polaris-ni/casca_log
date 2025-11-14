@@ -29,9 +29,11 @@ extern "C" {
 
 /* Microsoft Visual C++ */
 #if defined(_MSC_VER)
+#ifndef __clang__
 #define CLOG_COMPILER_MSVC 1
 #define CLOG_COMPILER_NAME "Microsoft Visual C++"
 #define CLOG_COMPILER_VERSION _MSC_VER
+#endif
 #endif
 
 /* GCC (GNU Compiler Collection) */
