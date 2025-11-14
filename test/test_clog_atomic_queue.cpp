@@ -17,7 +17,7 @@ protected:
 
     void TearDown() override
     {
-        if (queue) {
+        if (queue != nullptr) {
             clog_atomic_queue_destroy(queue);
             queue = nullptr;
         }

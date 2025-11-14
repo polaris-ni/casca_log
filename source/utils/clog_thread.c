@@ -3,21 +3,21 @@
  * @date  2025/11/14
  */
 #include "clog_thread.h"
-
-#ifdef CLOG_PLATFORM_WINDOWS
-#include <process.h>
 #include "clog_error.h"
 #include "clog_hooks.h"
-typedef struct {
-    clog_thread_routine_f routine;
-    void* arg;
-    void* res;
-} thread_wrapper_data_t;
+#ifdef CLOG_PLATFORM_WINDOWS
+#include <process.h>
 #else
 #include <errno.h>
 #include <time.h>
 #include <unistd.h>
 #endif
+
+typedef struct {
+    clog_thread_routine_f routine;
+    void* arg;
+    size_t size;
+} clog_thread_data_wrapper_t;
 
 struct clog_thread_attr {
     size_t stack_size;
@@ -58,34 +58,38 @@ clog_thread_id_t clog_thread_self(void)
 #ifdef CLOG_PLATFORM_WINDOWS
 static DWORD WINAPI thread_wrapper(LPVOID param)
 {
-    thread_wrapper_data_t* data = param;
-    CLOG_IGNORE_RES(data->routine(data->arg));
+    clog_thread_data_wrapper_t* data = param;
+    data->routine(data->arg, data->size);
     clog_free(data);
     return CLOG_SUCCESS;
+}
+#else
+static void* thread_wrapper(void* args)
+{
+    clog_thread_data_wrapper_t* data = args;
+    data->routine(data->arg, data->size);
+    clog_free(data);
+    return NULL;
 }
 #endif
 
 clog_res_e clog_thread_create(clog_thread_t* thread, const clog_thread_attr_t* attr, clog_thread_routine_f routine,
-                              void* arg)
+                              void* arg, size_t size)
 {
     CLOG_RET_IF_NULL(thread, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(routine, CLOG_INVALID_PARAM);
-
+    clog_thread_data_wrapper_t* wrapper = clog_malloc(sizeof(clog_thread_data_wrapper_t));
+    CLOG_RET_IF_NULL_X(wrapper, CLOG_NO_MEMORY, "malloc clog_thread_data_wrapper_t failed");
+    wrapper->routine = routine;
+    wrapper->arg = arg;
+    wrapper->size = size;
 #ifdef CLOG_PLATFORM_WINDOWS
-    thread_wrapper_data_t* wrapper_data = clog_malloc(sizeof(thread_wrapper_data_t));
-    CLOG_RET_IF_NULL_X(wrapper_data, CLOG_NO_MEMORY, "malloc thread_wrapper_data_t failed");
-
-    wrapper_data->routine = routine;
-    wrapper_data->arg = arg;
-
     DWORD thread_id;
-    *thread = CreateThread(NULL, attr ? attr->stack_size : 0, thread_wrapper, wrapper_data, 0, &thread_id);
-
+    *thread = CreateThread(NULL, attr ? attr->stack_size : 0, thread_wrapper, wrapper, 0, &thread_id);
     if (*thread == NULL) {
-        clog_free(wrapper_data);
+        clog_free(wrapper);
         return CLOG_FAIL;
     }
-
     return CLOG_SUCCESS;
 #else
     pthread_attr_t pthread_attr;
@@ -94,8 +98,11 @@ clog_res_e clog_thread_create(clog_thread_t* thread, const clog_thread_attr_t* a
     if (attr && attr->stack_size > 0) {
         CLOG_IGNORE_RES(pthread_attr_setstacksize(&pthread_attr, attr->stack_size));
     }
-    const int result = pthread_create(thread, attr ? &pthread_attr : NULL, routine, arg);
+    const int result = pthread_create(thread, attr ? &pthread_attr : NULL, thread_wrapper, wrapper);
     CLOG_IGNORE_RES(pthread_attr_destroy(&pthread_attr));
+    if (result != 0) {
+        clog_free(wrapper);
+    }
     switch (result) {
         case 0:
             return CLOG_SUCCESS;

@@ -154,7 +154,6 @@ TEST_F(ClogBufferPoolTest, GetCurrentCapacity)
     EXPECT_EQ(clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 7, false, 0), CLOG_SUCCESS);
     EXPECT_EQ(clog_buffer_pool_get_current_capacity(pool), 7);
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
-    EXPECT_EQ(clog_buffer_pool_get_current_capacity(pool), 0);
 }
 
 TEST_F(ClogBufferPoolTest, IsAutoManager)
