@@ -31,7 +31,7 @@ typedef pthread_t clog_thread_id_t;
 /**
  * work function
  */
-typedef void* (*clog_thread_routine_f)(void* arg);
+typedef void (*clog_thread_routine_f)(void* arg, size_t size);
 
 typedef struct clog_thread_attr clog_thread_attr_t;
 
@@ -68,10 +68,11 @@ clog_thread_id_t clog_thread_self(void);
  * @param attr #clog_thread_attr_t
  * @param routine work function
  * @param arg param of work function
+ * @param size size of args
  * @return #clog_res_e
  */
 clog_res_e clog_thread_create(clog_thread_t* thread, const clog_thread_attr_t* attr, clog_thread_routine_f routine,
-                              void* arg);
+                              void* arg, size_t size);
 
 /**
  * wait thread shutdown
@@ -92,7 +93,7 @@ clog_res_e clog_thread_detach(clog_thread_t thread);
  * exit thread
  * @param ret_val return value
  */
-void clog_thread_exit(void *ret_val);
+void clog_thread_exit(void* ret_val);
 
 /**
  * yield thread
