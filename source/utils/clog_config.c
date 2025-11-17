@@ -300,7 +300,7 @@ static const char* clog_config_parse_uint_radix(const uint8_t radix, const char*
     }
     CLOG_RET_IF_X(base > UINT32_MAX, NULL, "parsed result %" PRIu64 " overflow", base);
     item->type = CLOG_CONFIG_TYPE_UINT;
-    item->value.uint = base;
+    item->value.uint = (uint32_t)base;
     return number_end + 1;
 }
 
