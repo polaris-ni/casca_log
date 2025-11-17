@@ -9,7 +9,7 @@
 #include <process.h>
 #else
 #include <errno.h>
-#include <time.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 #endif
 
@@ -50,8 +50,16 @@ clog_thread_id_t clog_thread_self(void)
 {
 #ifdef CLOG_PLATFORM_WINDOWS
     return GetCurrentThreadId();
-#else
+#elif defined(CLOG_PLATFORM_LINUX)
+    return syscall(SYS_gettid);
+#elif defined(CLOG_PLATFORM_MACOS)
+    uint64_t tid;
+    (void)pthread_threadid_np(NULL, &tid);
+    return tid;
+#elif defined(CLOG_PLATFORM_UNIX)
     return pthread_self();
+#else
+    return 0;
 #endif
 }
 

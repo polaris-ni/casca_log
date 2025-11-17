@@ -9,28 +9,6 @@
 extern "C" {
 #endif
 
-#ifndef CLOG_FILENAME
-#ifndef __FILE_NAME__
-static const char* clog_get_filename(const char* fullname, int len)
-{
-    if (len <= 1) {
-        return fullname;
-    }
-    int i = len - 2;
-    while (i >= 0) {
-        if (fullname[i] == '/' || fullname[i] == '\\') {
-            return fullname + i + 1;
-        }
-        --i;
-    }
-    return fullname;
-}
-#define CLOG_FILENAME clog_get_filename(__FILE__, (int)sizeof(__FILE__))
-#else
-#define CLOG_FILENAME __FILE_NAME__
-#endif
-#endif
-
 #define CLOG_STR_TMP(x) #x
 #define CLOG_STR(x) CLOG_STR_TMP(x)
 
