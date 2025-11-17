@@ -5,7 +5,7 @@
 #include <cstring>
 #include <gtest/gtest.h>
 #include <string>
-#include "utils/clog_hashmap.h"
+#include "clog_hashmap.h"
 
 class ClogHashMapTest : public testing::Test
 {
