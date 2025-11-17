@@ -14,18 +14,10 @@
 #include "clog_platform.h"
 #include "clog_recorder_manager.h"
 #include "clog_secure_func.h"
-#ifdef CLOG_PLATFORM_WINDOWS
-#include <windows.h>
-#elif defined(CLOG_PLATFORM_MACOS) || defined(CLOG_PLATFORM_LINUX) || defined(CLOG_PLATFORM_UNIX)
-#include <pthread.h>
-#include <sys/time.h>
-#include <time.h>
-#endif
+#include "clog_thread.h"
 #ifdef CLOG_PLATFORM_LINUX
-#include <sys/syscall.h>
+#include <sys/time.h>
 #include <unistd.h>
-#elif defined(CLOG_PLATFORM_MACOS) || defined(CLOG_PLATFORM_UNIX)
-#include <pthread.h>
 #endif
 
 typedef struct clog_context {
@@ -301,23 +293,6 @@ void clog_destroy(const clog_cleanup_f* funcs, const size_t num)
     }
 }
 
-static unsigned long long clog_get_thread_id(void)
-{
-#ifdef CLOG_PLATFORM_WINDOWS
-    return GetCurrentThreadId();
-#elif defined(CLOG_PLATFORM_LINUX)
-    return syscall(SYS_gettid);
-#elif defined(CLOG_PLATFORM_MACOS)
-    uint64_t tid;
-    (void)pthread_threadid_np(NULL, &tid);
-    return tid;
-#elif defined(CLOG_PLATFORM_UNIX)
-    return pthread_self() & 0xFFFFFFFF; /* ignore highest 4 bytes on 64Bit system */
-#else
-    return 0;
-#endif
-}
-
 static void clog_item_init_datetime(clog_item_t* item)
 {
 #ifdef CLOG_PLATFORM_WINDOWS
@@ -398,7 +373,7 @@ clog_res_e clog_log(const char* module, uint32_t recorder, const char* file, con
     clog_item_t item = {.filename = file,
                         .function = function,
                         .module = module,
-                        .tid = clog_get_thread_id(),
+                        .tid = clog_thread_self(),
                         .line = line,
                         .level = level,
                         .fmt = fmt};
@@ -420,7 +395,7 @@ clog_res_e clog_module_log(const char* module, const char* file, const char* fun
     clog_item_t item = {.filename = file,
                         .function = function,
                         .module = module,
-                        .tid = clog_get_thread_id(),
+                        .tid = clog_thread_self(),
                         .line = line,
                         .level = level,
                         .fmt = fmt};
