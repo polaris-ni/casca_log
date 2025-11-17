@@ -7,8 +7,8 @@
 #include "clog_error.h"
 #include "clog_hooks.h"
 #include "clog_recorder_manager.h"
-#include "utils/clog_config.h"
-#include "utils/clog_secure_func.h"
+#include "clog_config.h"
+#include "clog_secure_func.h"
 
 TEST(CascaLogTest, CreateLog)
 {

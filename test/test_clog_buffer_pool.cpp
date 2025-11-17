@@ -100,7 +100,7 @@ TEST_F(ClogBufferPoolTest, AutoShrinkWhenBelowThreshold)
     size_t capacity_before_release = clog_buffer_pool_get_current_capacity(pool);
     ASSERT_EQ(capacity_before_release, init_capacity * 2);
 
-    constexpr size_t release_num = init_capacity * 2 * 0.4 - 1;
+    constexpr size_t release_num = static_cast<size_t>(init_capacity * 2 * 0.4) - 1;
 
     for (size_t i = 0; i < release_num; i++) {
         EXPECT_EQ(clog_buffer_pool_release(pool, entries.front()), pool);

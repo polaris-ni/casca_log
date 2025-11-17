@@ -20,3 +20,8 @@ set(CASCA_LOG_TEST_SOURCES ${CASCA_LOG_TEST_SOURCES} PARENT_SCOPE)
 add_executable(casca_log_test ${CASCA_LOG_TEST_SOURCES})
 target_link_libraries(casca_log_test GTest::gtest_main casca_log)
 add_test(NAME CascaLogTest COMMAND casca_log_test)
+
+if (MSVC)
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+    message(STATUS "_CRT_SECURE_NO_WARNINGS is defined to suppress CRT SECURE WARNINGS")
+endif ()

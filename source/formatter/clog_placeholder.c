@@ -5,7 +5,6 @@
 #include "clog_placeholder.h"
 #include <stdbool.h>
 #include <stdio.h>
-#include <time.h>
 #include "casca_log.h"
 #include "clog_error.h"
 #include "clog_hooks.h"
@@ -15,12 +14,12 @@ static const char* g_tags[] = {NULL, NULL, NULL, NULL, NULL, NULL};
 
 /* << default placeholder implementation start */
 
-static size_t clog_num_to_str(uint32_t value, const uint32_t num, char* buf, const size_t size, const bool is_padding)
+static size_t clog_num_to_str(uint32_t value, const size_t num, char* buf, const size_t size, const bool is_padding)
 {
     CLOG_UNUSED_VAR(size);
     static const char digits[] = "0123456789";
     if (is_padding) {
-        unsigned int tmp = num;
+        size_t tmp = num;
         while (tmp-- > 0) {
             buf[tmp] = digits[value % 10];
             value /= 10;
