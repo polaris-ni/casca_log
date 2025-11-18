@@ -6,6 +6,7 @@
 #include "test_util.h"
 
 std::unordered_map<void*, CLogMemoryInfo> CLogMemLeakDetect::memory;
+std::mutex CLogMemLeakDetect::mutex;
 
 std::shared_ptr<std::string> CLogMemoryInfo::info() const
 {
@@ -23,6 +24,7 @@ void CLogMemLeakDetect::clog_allocate_callback(uintptr_t trace, const char* file
         return;
     }
     const CLogMemoryInfo info(ptr, size, file, line, function, std::this_thread::get_id());
+    std::lock_guard lock(mutex);
     const auto tmp = memory.find(ptr);
     ASSERT_EQ(tmp, memory.end()) << "Memory info is already existed, current is " << info.info()->c_str()
                                  << ", previous info is " << tmp->second.info()->c_str();
@@ -36,6 +38,7 @@ void CLogMemLeakDetect::clog_deallocate_callback(uintptr_t trace, const char* fi
     if (ptr == nullptr) {
         return;
     }
+    std::lock_guard lock(mutex);
     const auto tmp = memory.find(ptr);
     ASSERT_NE(tmp, memory.end()) << "Memory info not found, ptr: " << ptr << ", file: " << file << ", line: " << line
                                  << ", func: " << function;

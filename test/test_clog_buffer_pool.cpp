@@ -7,16 +7,23 @@
 #include <queue>
 #include <thread>
 #include "clog_buffer_pool.h"
+#include "test_util.h"
 
-class ClogBufferPoolTest : public ::testing::Test
+class CLogBufferPoolTest : public ::testing::Test
 {
 protected:
-    void SetUp() override {}
+    void SetUp() override
+    {
+        CLogMemLeakDetect::start(nullptr, nullptr);
+    }
 
-    void TearDown() override {}
+    void TearDown() override
+    {
+        CLogMemLeakDetect::end();
+    }
 };
 
-TEST_F(ClogBufferPoolTest, InitializeSuccess)
+TEST_F(CLogBufferPoolTest, InitializeSuccess)
 {
     clog_buffer_pool_t* pool = nullptr;
     const clog_res_e result = clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 10, true, 50);
@@ -27,7 +34,7 @@ TEST_F(ClogBufferPoolTest, InitializeSuccess)
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
 }
 
-TEST_F(ClogBufferPoolTest, InitializeWithInvalidThreshold)
+TEST_F(CLogBufferPoolTest, InitializeWithInvalidThreshold)
 {
     clog_buffer_pool_t* pool = nullptr;
     clog_res_e result = clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 10, true, 0);
@@ -36,7 +43,7 @@ TEST_F(ClogBufferPoolTest, InitializeWithInvalidThreshold)
     EXPECT_EQ(result, CLOG_INVALID_PARAM);
 }
 
-TEST_F(ClogBufferPoolTest, AcquireAndReleaseWithoutAutoManager)
+TEST_F(CLogBufferPoolTest, AcquireAndReleaseWithoutAutoManager)
 {
     clog_buffer_pool_t* pool = nullptr;
     clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 5, false, 0);
@@ -65,7 +72,7 @@ TEST_F(ClogBufferPoolTest, AcquireAndReleaseWithoutAutoManager)
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
 }
 
-TEST_F(ClogBufferPoolTest, AutoExpandWhenFull)
+TEST_F(CLogBufferPoolTest, AutoExpandWhenFull)
 {
     clog_buffer_pool_t* pool = nullptr;
     clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 3, true, 50);
@@ -84,7 +91,7 @@ TEST_F(ClogBufferPoolTest, AutoExpandWhenFull)
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
 }
 
-TEST_F(ClogBufferPoolTest, AutoShrinkWhenBelowThreshold)
+TEST_F(CLogBufferPoolTest, AutoShrinkWhenBelowThreshold)
 {
     clog_buffer_pool_t* pool = nullptr;
     constexpr size_t init_capacity = 10;
@@ -127,7 +134,7 @@ TEST_F(ClogBufferPoolTest, AutoShrinkWhenBelowThreshold)
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
 }
 
-TEST_F(ClogBufferPoolTest, ReleaseWhenFinalized)
+TEST_F(CLogBufferPoolTest, ReleaseWhenFinalized)
 {
     clog_buffer_pool_t* pool = nullptr;
     EXPECT_EQ(clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 5, false, 0), CLOG_SUCCESS);
@@ -137,7 +144,7 @@ TEST_F(ClogBufferPoolTest, ReleaseWhenFinalized)
     EXPECT_EQ(clog_buffer_pool_release(pool, entry), nullptr);
 }
 
-TEST_F(ClogBufferPoolTest, GetState)
+TEST_F(CLogBufferPoolTest, GetState)
 {
     clog_buffer_pool_t* pool = nullptr;
     EXPECT_EQ(clog_buffer_pool_get_state(pool), CLOG_BUFFER_POOL_STATE_DISABLED);
@@ -146,7 +153,7 @@ TEST_F(ClogBufferPoolTest, GetState)
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
 }
 
-TEST_F(ClogBufferPoolTest, GetCurrentCapacity)
+TEST_F(CLogBufferPoolTest, GetCurrentCapacity)
 {
     clog_buffer_pool_t* pool = nullptr;
     EXPECT_EQ(clog_buffer_pool_get_current_capacity(pool), 0);
@@ -155,7 +162,7 @@ TEST_F(ClogBufferPoolTest, GetCurrentCapacity)
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
 }
 
-TEST_F(ClogBufferPoolTest, IsAutoManager)
+TEST_F(CLogBufferPoolTest, IsAutoManager)
 {
     clog_buffer_pool_t* pool = nullptr;
     EXPECT_EQ(clog_buffer_pool_initialize(&pool, sizeof(uint32_t), 5, false, 0), CLOG_SUCCESS);
@@ -166,7 +173,7 @@ TEST_F(ClogBufferPoolTest, IsAutoManager)
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
 }
 
-TEST_F(ClogBufferPoolTest, MultiThreadAcquireAndRelease)
+TEST_F(CLogBufferPoolTest, MultiThreadAcquireAndRelease)
 {
     clog_buffer_pool_t* pool = nullptr;
     constexpr size_t init_capacity = 20;
@@ -209,7 +216,7 @@ TEST_F(ClogBufferPoolTest, MultiThreadAcquireAndRelease)
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
 }
 
-TEST_F(ClogBufferPoolTest, MultiThreadAutoExpandAndShrink)
+TEST_F(CLogBufferPoolTest, MultiThreadAutoExpandAndShrink)
 {
     clog_buffer_pool_t* pool = nullptr;
     constexpr size_t init_capacity = 5;
@@ -258,7 +265,7 @@ TEST_F(ClogBufferPoolTest, MultiThreadAutoExpandAndShrink)
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
 }
 
-TEST_F(ClogBufferPoolTest, MultiThreadUniqueEntryCheck)
+TEST_F(CLogBufferPoolTest, MultiThreadUniqueEntryCheck)
 {
     clog_buffer_pool_t* pool = nullptr;
     constexpr size_t init_capacity = 10;

@@ -8,7 +8,7 @@
 #include "clog_hashmap.h"
 #include "test_util.h"
 
-class ClogHashMapTest : public testing::Test
+class CLogHashMapTest : public testing::Test
 {
 protected:
     clog_hashmap_t* map = nullptr;
@@ -28,12 +28,12 @@ protected:
     }
 };
 
-TEST_F(ClogHashMapTest, CreateAndDestroy)
+TEST_F(CLogHashMapTest, CreateAndDestroy)
 {
     /* tested in SetUp/TearDown */
 }
 
-TEST_F(ClogHashMapTest, PutAndGet)
+TEST_F(CLogHashMapTest, PutAndGet)
 {
     const auto key = "test_key";
     const auto value = "test_value";
@@ -45,7 +45,7 @@ TEST_F(ClogHashMapTest, PutAndGet)
     EXPECT_STREQ(value, retrieved);
 }
 
-TEST_F(ClogHashMapTest, GetNonExistentKey)
+TEST_F(CLogHashMapTest, GetNonExistentKey)
 {
     const auto key = "non_existent";
 
@@ -53,7 +53,7 @@ TEST_F(ClogHashMapTest, GetNonExistentKey)
     EXPECT_EQ(nullptr, retrieved);
 }
 
-TEST_F(ClogHashMapTest, ReplaceValue)
+TEST_F(CLogHashMapTest, ReplaceValue)
 {
     const auto key = "test_key";
     const auto value1 = "value1";
@@ -67,7 +67,7 @@ TEST_F(ClogHashMapTest, ReplaceValue)
     EXPECT_STREQ(value2, retrieved);
 }
 
-TEST_F(ClogHashMapTest, RemoveKey)
+TEST_F(CLogHashMapTest, RemoveKey)
 {
     const auto key = "test_key";
     const auto value = "test_value";
@@ -79,13 +79,13 @@ TEST_F(ClogHashMapTest, RemoveKey)
     EXPECT_EQ(nullptr, retrieved);
 }
 
-TEST_F(ClogHashMapTest, RemoveNonExistentKey)
+TEST_F(CLogHashMapTest, RemoveNonExistentKey)
 {
     const auto key = "non_existent";
     EXPECT_FALSE(clog_hashmap_remove(map, key));
 }
 
-TEST_F(ClogHashMapTest, ExistsCheck)
+TEST_F(CLogHashMapTest, ExistsCheck)
 {
     const auto key = "test_key";
     const auto value = "test_value";
@@ -95,7 +95,7 @@ TEST_F(ClogHashMapTest, ExistsCheck)
     EXPECT_TRUE(clog_hashmap_is_exists(map, key));
 }
 
-TEST_F(ClogHashMapTest, TakeValue)
+TEST_F(CLogHashMapTest, TakeValue)
 {
     const auto key = "test_key";
     const auto value = "test_value";
@@ -110,7 +110,7 @@ TEST_F(ClogHashMapTest, TakeValue)
     EXPECT_FALSE(clog_hashmap_is_exists(map, key));
 }
 
-TEST_F(ClogHashMapTest, ClearMap)
+TEST_F(CLogHashMapTest, ClearMap)
 {
     EXPECT_EQ(CLOG_SUCCESS, clog_hashmap_put(map, "key1", "value1"));
     EXPECT_EQ(CLOG_SUCCESS, clog_hashmap_put(map, "key2", "value2"));
@@ -122,7 +122,7 @@ TEST_F(ClogHashMapTest, ClearMap)
     EXPECT_FALSE(clog_hashmap_is_exists(map, "key2"));
 }
 
-TEST_F(ClogHashMapTest, ResizeAutomatically)
+TEST_F(CLogHashMapTest, ResizeAutomatically)
 {
     for (int i = 0; i < 32; ++i) {
         std::string key = "key" + std::to_string(i);
@@ -147,7 +147,7 @@ TEST_F(ClogHashMapTest, ResizeAutomatically)
     }
 }
 
-TEST_F(ClogHashMapTest, NullParametersHandling)
+TEST_F(CLogHashMapTest, NullParametersHandling)
 {
     EXPECT_EQ(CLOG_INVALID_PARAM, clog_hashmap_put(nullptr, "key", "value"));
     EXPECT_EQ(nullptr, clog_hashmap_get(nullptr, "key"));
