@@ -4,6 +4,7 @@
  */
 #include <gtest/gtest.h>
 #include "clog_atomic_queue.h"
+#include "test_util.h"
 
 class ClogAtomicQueueTest : public ::testing::Test
 {
@@ -13,6 +14,7 @@ protected:
     void SetUp() override
     {
         queue = nullptr;
+        CLogMemLeakDetect::start(nullptr, nullptr);
     }
 
     void TearDown() override
@@ -21,6 +23,7 @@ protected:
             clog_atomic_queue_destroy(queue);
             queue = nullptr;
         }
+        CLogMemLeakDetect::end();
     }
 };
 

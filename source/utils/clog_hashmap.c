@@ -263,7 +263,7 @@ static clog_res_e clog_hashmap_resize(clog_hashmap_t* map, const size_t new_size
     map->data_size = 0;
     /* put old buckets into new buckets */
     for (size_t i = 0; i < old_size; ++i) {
-        const clog_hashmap_entry_t* entry = old_entries[i].next;
+        clog_hashmap_entry_t* entry = old_entries[i].next;
         if (entry == NULL) {
             continue;
         }
@@ -279,6 +279,14 @@ static clog_res_e clog_hashmap_resize(clog_hashmap_t* map, const size_t new_size
                 map->buckets = old_entries;
                 map->buckets_size = old_size;
                 map->data_size = old_data_size;
+                for (size_t j = 0; j < new_size; ++j) {
+                    clog_hashmap_entry_t* tmp = new_entries[j].next;
+                    while (tmp != NULL) {
+                        clog_hashmap_entry_t* next = tmp->next;
+                        clog_free(tmp);
+                        tmp = next;
+                    }
+                }
                 clog_free(new_entries);
                 return CLOG_FAIL;
             }
@@ -287,6 +295,14 @@ static clog_res_e clog_hashmap_resize(clog_hashmap_t* map, const size_t new_size
     }
 
     /* the entries of old buckets have been moved to new buckets, so just free old_entries */
+    for (size_t j = 0; j < old_size; ++j) {
+        clog_hashmap_entry_t* tmp = old_entries[j].next;
+        while (tmp != NULL) {
+            clog_hashmap_entry_t* next = tmp->next;
+            clog_free(tmp);
+            tmp = next;
+        }
+    }
     clog_free(old_entries);
     return CLOG_SUCCESS;
 }

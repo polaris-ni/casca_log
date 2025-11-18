@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 #include <string>
 #include "clog_hashmap.h"
+#include "test_util.h"
 
 class ClogHashMapTest : public testing::Test
 {
@@ -14,6 +15,7 @@ protected:
 
     void SetUp() override
     {
+        CLogMemLeakDetect::start(nullptr, nullptr);
         map = clog_hashmap_create(0, 0, clog_hashmap_string_dup, clog_hashmap_string_free, clog_hashmap_string_dup,
                                   clog_hashmap_string_free, clog_hashmap_string_cmp, clog_hashmap_string_size, 0);
         ASSERT_NE(nullptr, map);
@@ -22,6 +24,7 @@ protected:
     void TearDown() override
     {
         clog_hashmap_destroy(&map);
+        CLogMemLeakDetect::end();
     }
 };
 
@@ -102,7 +105,7 @@ TEST_F(ClogHashMapTest, TakeValue)
     const auto taken = static_cast<char*>(clog_hashmap_take(map, key));
     ASSERT_NE(nullptr, taken);
     EXPECT_STREQ(value, taken);
-    free(taken);
+    clog_free(taken);
 
     EXPECT_FALSE(clog_hashmap_is_exists(map, key));
 }
@@ -125,6 +128,14 @@ TEST_F(ClogHashMapTest, ResizeAutomatically)
         std::string key = "key" + std::to_string(i);
         std::string value = "value" + std::to_string(i);
         EXPECT_EQ(CLOG_SUCCESS, clog_hashmap_put(map, key.c_str(), value.c_str()));
+    }
+
+    for (int i = 0; i < 32; ++i) {
+        std::string key = "key" + std::to_string(i);
+        const auto retrieved = static_cast<const char*>(clog_hashmap_get(map, key.c_str()));
+        ASSERT_NE(nullptr, retrieved);
+        std::string expected = "value" + std::to_string(i);
+        EXPECT_STREQ(expected.c_str(), retrieved);
     }
 
     for (int i = 0; i < 32; ++i) {

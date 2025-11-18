@@ -24,13 +24,6 @@ typedef struct clog_atomic_queue clog_atomic_queue_t;
 clog_res_e clog_atomic_queue_create(clog_atomic_queue_t** queue, size_t item_size, uint8_t threshold);
 
 /**
- * destroy atomic queue
- * @param queue atomic queue to be destroyed
- * @return CLOG_SUCCESS if all nodes are released successfully, CLOG_NOT_COMPLETED if not
- */
-clog_res_e clog_atomic_queue_destroy(clog_atomic_queue_t* queue);
-
-/**
  * enqueue data
  * @param queue atomic queue
  * @param data data
@@ -56,6 +49,13 @@ clog_res_e clog_atomic_queue_dequeue(clog_atomic_queue_t* queue, void* data, siz
  * @return true if queue is NULL or empty, false otherwise
  */
 bool clog_atomic_queue_is_empty(const clog_atomic_queue_t* queue);
+
+/**
+ * destroy atomic queue
+ * @param queue atomic queue to be destroyed
+ * @return CLOG_SUCCESS if all nodes are released successfully, CLOG_NOT_COMPLETED if not
+ */
+clog_res_e clog_atomic_queue_destroy(clog_atomic_queue_t* queue);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
