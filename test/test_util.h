@@ -12,6 +12,8 @@
 #include "casca_log_base.h"
 #include "clog_hooks.h"
 
+namespace CLogTest {
+
 class CLogMemoryInfo
 {
     void* ptr;
@@ -40,13 +42,14 @@ public:
         func = nullptr;
     }
 
-    [[nodiscard]] std::shared_ptr<std::string> info() const;
+    [[nodiscard]] std::shared_ptr<std::string> info(const std::string_view &prefix) const;
 };
 
 class CLogMemLeakDetect
 {
     static std::unordered_map<void*, CLogMemoryInfo> memory;
     static std::mutex mutex;
+    static std::vector<std::shared_ptr<std::string>> logs;
 
 public:
     static void clog_allocate_callback(uintptr_t trace, const char* file, const char* function, int line, size_t size,
@@ -59,4 +62,7 @@ public:
     static void end();
 };
 
+int clog_test_gen_random(int min, int max);
+
+}
 #endif /* CASCA_LOG_BUILD_TEST_UTIL_H */

@@ -14,7 +14,7 @@ protected:
     void SetUp() override
     {
         queue = nullptr;
-        CLogMemLeakDetect::start(nullptr, nullptr);
+        CLogTest::CLogMemLeakDetect::start(nullptr, nullptr);
     }
 
     void TearDown() override
@@ -23,7 +23,7 @@ protected:
             clog_atomic_queue_destroy(queue);
             queue = nullptr;
         }
-        CLogMemLeakDetect::end();
+        CLogTest::CLogMemLeakDetect::end();
     }
 };
 

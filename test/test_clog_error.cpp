@@ -11,14 +11,14 @@ class CLogErrorTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        CLogMemLeakDetect::start(nullptr, nullptr);
+        CLogTest::CLogMemLeakDetect::start(nullptr, nullptr);
         clog_err_setup(10, 256);
     }
 
     void TearDown() override
     {
         clog_err_cleanup();
-        CLogMemLeakDetect::end();
+        CLogTest::CLogMemLeakDetect::end();
     }
 };
 

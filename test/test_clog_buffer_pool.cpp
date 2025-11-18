@@ -14,12 +14,12 @@ class CLogBufferPoolTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        CLogMemLeakDetect::start(nullptr, nullptr);
+        CLogTest::CLogMemLeakDetect::start(nullptr, nullptr);
     }
 
     void TearDown() override
     {
-        CLogMemLeakDetect::end();
+        CLogTest::CLogMemLeakDetect::end();
     }
 };
 
@@ -178,7 +178,7 @@ TEST_F(CLogBufferPoolTest, MultiThreadAcquireAndRelease)
     clog_buffer_pool_t* pool = nullptr;
     constexpr size_t init_capacity = 20;
     constexpr uint8_t threshold = 50;
-    constexpr int thread_count = 8;
+    constexpr int thread_count = 16;
     constexpr int operations_per_thread = 100;
 
     EXPECT_EQ(clog_buffer_pool_initialize(&pool, sizeof(uint32_t), init_capacity, true, threshold), CLOG_SUCCESS);
@@ -193,7 +193,7 @@ TEST_F(CLogBufferPoolTest, MultiThreadAcquireAndRelease)
 
             thread_entries[thread_id].push_back(entry);
 
-            std::this_thread::sleep_for(std::chrono::microseconds(10));
+            std::this_thread::sleep_for(std::chrono::microseconds(CLogTest::clog_test_gen_random(0, 16)));
         }
 
         for (void* entry : thread_entries[thread_id]) {
@@ -221,12 +221,12 @@ TEST_F(CLogBufferPoolTest, MultiThreadAutoExpandAndShrink)
     clog_buffer_pool_t* pool = nullptr;
     constexpr size_t init_capacity = 5;
     constexpr uint8_t threshold = 60;
-    constexpr int thread_count = 4;
-    constexpr int operations_per_thread = 50;
+    constexpr int thread_count = 16;
+    constexpr int operations_per_thread = 100;
 
     EXPECT_EQ(clog_buffer_pool_initialize(&pool, sizeof(uint32_t), init_capacity, true, threshold), CLOG_SUCCESS);
 
-    std::atomic<int> total_acquired{0};
+    std::atomic total_acquired{0};
     std::vector<std::vector<void*>> thread_entries(thread_count);
 
     auto worker = [&](const int index)
@@ -236,7 +236,7 @@ TEST_F(CLogBufferPoolTest, MultiThreadAutoExpandAndShrink)
             ASSERT_NE(entry, nullptr);
             thread_entries[index].push_back(entry);
             ++total_acquired;
-            std::this_thread::sleep_for(std::chrono::microseconds(5));
+            std::this_thread::sleep_for(std::chrono::microseconds(CLogTest::clog_test_gen_random(0, 16)));
         }
     };
 
@@ -260,7 +260,7 @@ TEST_F(CLogBufferPoolTest, MultiThreadAutoExpandAndShrink)
     }
 
     current_capacity = clog_buffer_pool_get_current_capacity(pool);
-    EXPECT_LE(current_capacity, 80); /* 4 * 50 * (1 - 0.6) */
+    EXPECT_LE(current_capacity, thread_count * operations_per_thread * (100 - threshold) / 100);
     EXPECT_GT(current_capacity, init_capacity);
     EXPECT_EQ(clog_buffer_pool_finalize(pool), CLOG_SUCCESS);
 }
@@ -269,14 +269,14 @@ TEST_F(CLogBufferPoolTest, MultiThreadUniqueEntryCheck)
 {
     clog_buffer_pool_t* pool = nullptr;
     constexpr size_t init_capacity = 10;
-    constexpr int thread_count = 8;
-    constexpr int operations_per_thread = 50;
+    constexpr int thread_count = 16;
+    constexpr int operations_per_thread = 100;
 
     EXPECT_EQ(clog_buffer_pool_initialize(&pool, sizeof(uint32_t), init_capacity, true, 50), CLOG_SUCCESS);
     std::unordered_map<void*, std::thread::id> entry_thread_map;
     std::mutex map_mutex;
-    std::atomic<bool> duplicate_detected{false};
-    std::atomic<int> total_acquired{0};
+    std::atomic duplicate_detected{false};
+    std::atomic total_acquired{0};
 
     auto worker = [&](int)
     {
@@ -303,7 +303,7 @@ TEST_F(CLogBufferPoolTest, MultiThreadUniqueEntryCheck)
             local_entries.push_back(entry);
             total_acquired.fetch_add(1);
 
-            std::this_thread::sleep_for(std::chrono::microseconds(1));
+            std::this_thread::sleep_for(std::chrono::microseconds(CLogTest::clog_test_gen_random(0, 16)));
         }
 
         for (void* entry : local_entries) {

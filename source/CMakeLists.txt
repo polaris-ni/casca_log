@@ -18,7 +18,7 @@ set(CASCA_LOG_SOURCES
         ${CASCA_LOG_RECORDER_SOURCES}
 )
 
-add_library(casca_log ${CASCA_LOG_SOURCES}
+add_library(casca_log STATIC ${CASCA_LOG_SOURCES}
         ${CASCA_LOG_HOOKS_HEADERS}
         ${CASCA_LOG_UTILS_HEADERS}
         ${CASCA_LOG_FILTER_HEADERS}
@@ -59,3 +59,5 @@ else ()
     # avoid passing "-std=c11" to MSVC
     set(CMAKE_C_STANDARD 11)
 endif ()
+
+clog_enable_asan_for_target(casca_log)
