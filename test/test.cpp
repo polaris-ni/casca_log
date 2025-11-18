@@ -11,21 +11,21 @@
 #include "clog_secure_func.h"
 #include "test_util.h"
 
-class CLogTest : public ::testing::Test
+class CLogMainTest : public ::testing::Test
 {
 protected:
     void SetUp() override
     {
-        CLogMemLeakDetect::start(nullptr, nullptr);
+        CLogTest::CLogMemLeakDetect::start(nullptr, nullptr);
     }
 
     void TearDown() override
     {
-        CLogMemLeakDetect::end();
+        CLogTest::CLogMemLeakDetect::end();
     }
 };
 
-TEST_F(CLogTest, CreateLog)
+TEST_F(CLogMainTest, CreateLog)
 {
     FILE* fp = fopen("../../casca_log_config_template.toml", "r");
     char buffer[1024] = {0};

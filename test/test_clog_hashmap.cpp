@@ -15,7 +15,7 @@ protected:
 
     void SetUp() override
     {
-        CLogMemLeakDetect::start(nullptr, nullptr);
+        CLogTest::CLogMemLeakDetect::start(nullptr, nullptr);
         map = clog_hashmap_create(0, 0, clog_hashmap_string_dup, clog_hashmap_string_free, clog_hashmap_string_dup,
                                   clog_hashmap_string_free, clog_hashmap_string_cmp, clog_hashmap_string_size, 0);
         ASSERT_NE(nullptr, map);
@@ -24,7 +24,7 @@ protected:
     void TearDown() override
     {
         clog_hashmap_destroy(&map);
-        CLogMemLeakDetect::end();
+        CLogTest::CLogMemLeakDetect::end();
     }
 };
 
