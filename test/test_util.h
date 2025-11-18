@@ -46,6 +46,7 @@ public:
 class CLogMemLeakDetect
 {
     static std::unordered_map<void*, CLogMemoryInfo> memory;
+    static std::mutex mutex;
 
 public:
     static void clog_allocate_callback(uintptr_t trace, const char* file, const char* function, int line, size_t size,

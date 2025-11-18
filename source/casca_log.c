@@ -347,8 +347,7 @@ static clog_res_e clog_log_internal(const uint32_t* recorders, size_t num, clog_
     char* buf = clog_malloc(CASCA_LOG_SINGLE_LOG_MAX_SIZE);
     CLOG_RET_IF_NULL_X(buf, CLOG_NO_MEMORY, "malloc log content buf failed, size = %d", CASCA_LOG_SINGLE_LOG_MAX_SIZE);
     /* formatter */
-    const clog_res_e ret =
-        clog_format_log(g_context.formatter.placeholder.next, item, buf, CASCA_LOG_SINGLE_LOG_MAX_SIZE);
+    clog_res_e ret = clog_format_log(g_context.formatter.placeholder.next, item, buf, CASCA_LOG_SINGLE_LOG_MAX_SIZE);
     if (ret != CLOG_SUCCESS) {
         clog_free(buf);
         return ret;
@@ -360,7 +359,9 @@ static clog_res_e clog_log_internal(const uint32_t* recorders, size_t num, clog_
         clog_free(buf);
         return CLOG_NOT_PERMITTED;
     }
-    return clog_dispatch(recorders, num, item);
+    ret = clog_dispatch(recorders, num, item);
+    clog_free(buf);
+    return ret;
 }
 
 clog_res_e clog_log(const char* module, uint32_t recorder, const char* file, const char* function, const int line,
