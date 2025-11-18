@@ -4,13 +4,28 @@
  */
 #include <gtest/gtest.h>
 #include "casca_log.h"
+#include "clog_config.h"
 #include "clog_error.h"
 #include "clog_hooks.h"
 #include "clog_recorder_manager.h"
-#include "clog_config.h"
 #include "clog_secure_func.h"
+#include "test_util.h"
 
-TEST(CascaLogTest, CreateLog)
+class CLogTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        CLogMemLeakDetect::start(nullptr, nullptr);
+    }
+
+    void TearDown() override
+    {
+        CLogMemLeakDetect::end();
+    }
+};
+
+TEST_F(CLogTest, CreateLog)
 {
     FILE* fp = fopen("../../casca_log_config_template.toml", "r");
     char buffer[1024] = {0};
