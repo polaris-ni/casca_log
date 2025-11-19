@@ -48,6 +48,18 @@ extern "C" {
 
 #define CLOG_CLEAN_RET_IF_FAILED(ret, clean) CLOG_CLEAN_RET_IF((ret) != CLOG_SUCCESS, (clean), (ret))
 
+#define CLOG_CLEAN_RET_VOID_IF(cond, clean) \
+    do {                                    \
+        if (cond) {                         \
+            (clean);                        \
+            return;                         \
+        }                                   \
+    } while (0)
+
+#define CLOG_CLEAN_RET_VOID_IF_NULL(ptr, clean) CLOG_CLEAN_RET_VOID_IF((ptr) == NULL, clean)
+
+#define CLOG_CLEAN_RET_VOID_IF_FAILED(ret, clean) CLOG_CLEAN_RET_VOID_IF((ret) != CLOG_SUCCESS, (clean))
+
 #define CLOG_SAFE_FREE(mem)          \
     do {                             \
         if ((mem) != NULL) {         \
