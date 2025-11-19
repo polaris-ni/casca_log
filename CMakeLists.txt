@@ -7,16 +7,22 @@ option(BUILD_CASCA_LOG_TEST_ASAN "Enable AddressSanitizer for casca-log and test
 function(clog_enable_asan_for_target TARGET_NAME)
     if (BUILD_CASCA_LOG_TEST_ASAN)
         if (CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
-            target_compile_options(${TARGET_NAME} PRIVATE
-                    -fsanitize=address
-                    -fno-omit-frame-pointer
-                    -g
-                    -O1
-            )
-            target_link_options(${TARGET_NAME} PRIVATE
-                    -fsanitize=address
-            )
-            message(STATUS "AddressSanitizer is enabled")
+            include(CheckCCompilerFlag)
+            CHECK_C_COMPILER_FLAG("-fsanitize=address" COMPILER_SUPPORT_ASAN)
+            if (COMPILER_SUPPORT_ASAN)
+                target_compile_options(${TARGET_NAME} PRIVATE
+                        -fsanitize=address
+                        -fno-omit-frame-pointer
+                        -g
+                        -O1
+                )
+                target_link_options(${TARGET_NAME} PRIVATE
+                        -fsanitize=address
+                )
+                message(STATUS "AddressSanitizer is enabled")
+            else ()
+                message(WARNING "AddressSanitizer requested but compiler '${CMAKE_C_COMPILER_ID}' might not support it.")
+            endif ()
         else ()
             message(WARNING "AddressSanitizer requested but compiler '${CMAKE_C_COMPILER_ID}' might not support it.")
         endif ()
