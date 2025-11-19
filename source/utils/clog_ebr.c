@@ -3,9 +3,41 @@
  * @date  2025/11/19
  */
 #include "clog_ebr.h"
+#include <stdatomic.h>
 #include <stdbool.h>
 #include "casca_log_base.h"
 #include "clog_hooks.h"
+
+#define CLOG_EBR_NUM_EPOCHS 3
+
+typedef enum clog_ebr_local_state {
+    CLOG_EBR_LOCAL_ACTIVE = 0,
+    CLOG_EBR_LOCAL_INACTIVE = 1,
+    CLOG_EBR_LOCAL_RELEASED = 2
+} clog_ebr_local_state_e;
+
+typedef struct clog_ebr_entry {
+    void* ptr;
+    atomic_uintptr_t next;
+} clog_ebr_entry_t;
+
+typedef struct clog_ebr_retired_list {
+    atomic_uintptr_t head;
+} clog_ebr_retired_list_t;
+
+struct clog_ebr_global {
+    atomic_uint_fast64_t current_epoch;
+    clog_ebr_retired_list_t retired_lists[CLOG_EBR_NUM_EPOCHS];
+    atomic_uintptr_t registered_threads;
+    clog_deallocator_f free;
+};
+
+struct clog_ebr_thread_local {
+    const clog_ebr_global_t* global;
+    atomic_uint_fast64_t local_epoch;
+    atomic_uint state;
+    atomic_uintptr_t next;
+};
 
 static const uint_fast64_t EBR_UNINITIALIZED_EPOCH = UINT_FAST64_MAX;
 
@@ -23,12 +55,6 @@ clog_res_e clog_ebr_create(clog_ebr_global_t** global, clog_deallocator_f free)
     atomic_init(&tmp->registered_threads, 0);
     *global = tmp;
     return CLOG_SUCCESS;
-}
-
-void clog_ebr_destroy(clog_ebr_global_t* global)
-{
-    CLOG_RET_VOID_IF_NULL(global);
-    clog_free(global);
 }
 
 clog_res_e clog_ebr_register(clog_ebr_global_t* global, clog_ebr_thread_local_t** local)
@@ -141,4 +167,11 @@ void clog_ebr_poll(clog_ebr_global_t* global)
     }
     current_epoch = (current_epoch + 1) % CLOG_EBR_NUM_EPOCHS;
     atomic_store_explicit(&global->current_epoch, current_epoch, memory_order_release);
+}
+
+void clog_ebr_destroy(clog_ebr_global_t* global)
+{
+    CLOG_RET_VOID_IF_NULL(global);
+    /* TODO: safe free */
+    clog_free(global);
 }
