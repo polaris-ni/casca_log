@@ -151,7 +151,7 @@ TEST_F(CLogEbrTest, MultiThreadDeferRelease)
         EXPECT_EQ(clog_ebr_register(global, &locals[i]), CLOG_SUCCESS);
     }
 
-    std::atomic<int> total_allocated(0);
+    std::atomic total_allocated(0);
 
     for (int i = 0; i < num_threads; ++i) {
         threads.emplace_back(
