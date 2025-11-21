@@ -21,15 +21,16 @@ typedef enum clog_ebr_local_state {
 
 typedef enum clog_ebr_global_state {
     CLOG_EBR_GLOBAL_STATE_UNKNOWN = 0,
-    CLOG_EBR_GLOBAL_STATE_ACTIVE = 1,
-    CLOG_EBR_GLOBAL_STATE_INACTIVE = 2,
+    CLOG_EBR_GLOBAL_STATE_ACTIVE_NORMAL = 1,
+    CLOG_EBR_GLOBAL_STATE_ACTIVE_GC = 2,
+    CLOG_EBR_GLOBAL_STATE_INACTIVE = 3,
 } clog_ebr_global_state_e;
 
 typedef struct clog_ebr_global clog_ebr_global_t;
 typedef struct clog_ebr_thread_local clog_ebr_thread_local_t;
 
 /**
- * create a new global EBR state
+ * create a new global Epoch-Based Reclamation (EBR) state
  * @param global *global will be set to a newly allocated clog_ebr_global_t structure
  * @param free deallocator
  * @return #clog_res_e
@@ -39,7 +40,7 @@ clog_res_e clog_ebr_create(clog_ebr_global_t** global, clog_deallocator_f free);
 /**
  * get global state
  * @param global global EBR
- * @return #clog_ebr_global_state_t
+ * @return #clog_ebr_global_state_e
  */
 clog_ebr_global_state_e clog_ebr_get_global_state(const clog_ebr_global_t* global);
 
@@ -99,7 +100,9 @@ void clog_ebr_poll(clog_ebr_global_t* global);
  * If there are threads that have not been unregistered, the actual destroy operation will be delayed
  * until all thread cancellation operations are completed and CLOG_NOT_COMPLETED will be returned
  * @param global EBR to be destroyed
- * @return CLOG_NOT_COMPLETED if there exists an unregistered thread, CLOG_SUCCESS otherwise
+ * @return #CLOG_NOT_COMPLETED if there exists an unregistered thread
+ * #CLOG_ALREADY_EXISTED if clog_ebr_destroy has been called
+ * #CLOG_SUCCESS otherwise
  */
 clog_res_e clog_ebr_destroy(clog_ebr_global_t* global);
 
