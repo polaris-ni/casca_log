@@ -38,7 +38,7 @@ namespace CLogTest
                 std::cout << *str << std::endl;
             }
         }
-        ASSERT_EQ(tmp, memory.end()) << "Memory info is already existed: " << info.info("CURRENT\t")->c_str()
+        ASSERT_EQ(tmp, memory.end()) << "Memory info is already existed: " << info.info("CURRENT\t")->c_str() << " "
                                      << tmp->second.info("PREVIOUS\t")->c_str();
         memory[ptr] = info;
         logs.push_back(info.info("[ Memory Allocated ]\t"));

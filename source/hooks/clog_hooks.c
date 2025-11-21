@@ -10,8 +10,8 @@
 
 static clog_allocator_f g_allocator = malloc;
 static clog_deallocator_f g_deallocator = free;
-static clog_post_allocate_callback_f g_malloc_callback = NULL;
-static clog_post_deallocate_callback_f g_free_callback = NULL;
+static clog_post_allocate_callback_f g_allocate_callback = NULL;
+static clog_post_deallocate_callback_f g_deallocate_callback = NULL;
 
 void* clog_hook_malloc(uintptr_t trace, const char* file, const char* function, int line, size_t size)
 {
@@ -19,19 +19,19 @@ void* clog_hook_malloc(uintptr_t trace, const char* file, const char* function, 
     if (size > 0) {
         ptr = g_allocator(size);
     }
-    if (g_malloc_callback != NULL) {
-        g_malloc_callback(trace, file, function, line, size, ptr);
+    if (g_allocate_callback != NULL) {
+        g_allocate_callback(trace, file, function, line, size, ptr);
     }
     return ptr;
 }
 
 void clog_hook_free(uintptr_t trace, const char* file, const char* function, int line, void* ptr)
 {
+    if (g_deallocate_callback != NULL) {
+        g_deallocate_callback(trace, file, function, line, ptr);
+    }
     if (ptr != NULL) {
         g_deallocator(ptr);
-    }
-    if (g_free_callback != NULL) {
-        g_free_callback(trace, file, function, line, ptr);
     }
 }
 
@@ -45,7 +45,7 @@ void clog_register_memory_hook_func(clog_allocator_f allocator, clog_deallocator
     if (deallocator != NULL) {
         g_deallocator = deallocator;
     }
-    g_malloc_callback = allocate_callback;
-    g_free_callback = deallocate_callback;
+    g_allocate_callback = allocate_callback;
+    g_deallocate_callback = deallocate_callback;
 }
 #endif
