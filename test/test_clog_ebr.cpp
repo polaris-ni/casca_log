@@ -3,6 +3,7 @@
 #include <thread>
 #include <vector>
 #include "clog_ebr.h"
+#include "test_util.h"
 
 static std::atomic<int> freed_count(0);
 void test_deallocator(void* ptr)
@@ -18,6 +19,7 @@ protected:
 
     void SetUp() override
     {
+        CLogTest::CLogMemLeakDetect::start(nullptr, nullptr);
         EXPECT_EQ(clog_ebr_create(&global, test_deallocator), CLOG_SUCCESS);
         freed_count.store(0);
     }
@@ -36,6 +38,7 @@ protected:
         } while (result == CLOG_NOT_COMPLETED);
         EXPECT_EQ(result, CLOG_SUCCESS);
         global = nullptr;
+        CLogTest::CLogMemLeakDetect::end();
     }
 };
 
@@ -74,7 +77,7 @@ TEST_F(CLogEbrTest, SingleThreadDeferRelease)
     clog_ebr_thread_local_t* local;
     EXPECT_EQ(clog_ebr_register(global, &local), CLOG_SUCCESS);
 
-    void* ptr = malloc(10);
+    void* ptr = clog_malloc(10);
     EXPECT_EQ(clog_ebr_enter(local), CLOG_SUCCESS);
     EXPECT_NE(ptr, nullptr);
     clog_ebr_exit(local);
