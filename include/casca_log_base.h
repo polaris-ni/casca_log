@@ -94,6 +94,7 @@ typedef enum clog_res {
     CLOG_ALREADY_EXISTED = 10, /* something already existed */
     CLOG_NOT_COMPLETED = 11, /* operation not completed */
     CLOG_ABNORMAL_STATE = 12, /* abnormal state */
+    CLOG_BUSY = 13, /* resource busy */
 } clog_res_e;
 
 typedef enum clog_level {

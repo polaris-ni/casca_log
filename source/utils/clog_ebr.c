@@ -149,7 +149,7 @@ void clog_ebr_unregister(clog_ebr_thread_local_t* local)
 {
     CLOG_RET_VOID_IF_NULL(local);
 
-    uint32_t state;
+    int state;
     do {
         state = atomic_load_explicit(&local->state, memory_order_acquire);
     } while (!atomic_compare_exchange_strong(&local->state, &state, CLOG_EBR_LOCAL_STATE_RELEASED));
