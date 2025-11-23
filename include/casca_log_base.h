@@ -23,7 +23,13 @@ extern "C" {
 
 #define CLOG_RET_IF_NULL(ptr, ret) CLOG_RET_IF((ptr) == NULL, (ret))
 
-#define CLOG_RET_IF_FAILED(ret) CLOG_RET_IF((ret) != CLOG_SUCCESS, (ret))
+#define CLOG_RET_IF_FAILED(ret)             \
+    do {                                    \
+        clog_res_e __ret_of_ret = (ret);    \
+        if (__ret_of_ret != CLOG_SUCCESS) { \
+            return __ret_of_ret;            \
+        }                                   \
+    } while (0)
 
 #define CLOG_RET_VOID_IF(cond) \
     do {                       \
