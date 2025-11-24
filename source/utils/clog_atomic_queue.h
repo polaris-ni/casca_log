@@ -12,6 +12,13 @@
 extern "C" {
 #endif
 
+typedef enum clog_atomic_queue_bias {
+    CLOG_ATOMIC_QUEUE_BIASED_NONE = 0, /* no bias, GC will be triggered by both enqueue and dequeue */
+    CLOG_ATOMIC_QUEUE_BIASED_ENQUEUE = 1, /* GC will be trigger by enqueue */
+    CLOG_ATOMIC_QUEUE_BIASED_DEQUEUE = 2, /* GC will be trigger by dequeue */
+    CLOG_ATOMIC_QUEUE_BIASED_BIND = 3 /* GC will be trigger by the enqueue and dequeue of current operator */
+} clog_atomic_queue_bias_e;
+
 typedef struct clog_atomic_queue clog_atomic_queue_t;
 
 /**
@@ -19,9 +26,11 @@ typedef struct clog_atomic_queue clog_atomic_queue_t;
  * @param queue atomic queue
  * @param item_size the size of item in queue
  * @param threshold when usage is lower than threshold, queue will be shrinking
+ * @param bias atomic queue GC bias, reserved now
  * @return #clog_res_e
  */
-clog_res_e clog_atomic_queue_create(clog_atomic_queue_t** queue, size_t item_size, uint8_t threshold);
+clog_res_e clog_atomic_queue_create(clog_atomic_queue_t** queue, size_t item_size, uint8_t threshold,
+                                    clog_atomic_queue_bias_e bias);
 
 /**
  * enqueue data
@@ -30,7 +39,7 @@ clog_res_e clog_atomic_queue_create(clog_atomic_queue_t** queue, size_t item_siz
  * @param size size of #data
  * @return #clog_res_e
  */
-clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_t* queue, const void* data, size_t size);
+clog_res_e clog_atomic_queue_enqueue(const clog_atomic_queue_t* queue, const void* data, size_t size);
 
 /**
  * dequeue data
@@ -41,7 +50,7 @@ clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_t* queue, const void* dat
  * @param len nullable, it will be set to the actual size of the extracted data (even if truncation occurs) if not null
  * @return #clog_res_e
  */
-clog_res_e clog_atomic_queue_dequeue(clog_atomic_queue_t* queue, void* data, size_t size, size_t* len);
+clog_res_e clog_atomic_queue_dequeue(const clog_atomic_queue_t* queue, void* data, size_t size, size_t* len);
 
 /**
  * check if queue is empty

@@ -242,6 +242,12 @@ void clog_ebr_poll(clog_ebr_global_t* global)
     CLOG_IGNORE_RES(clog_mutex_unlock(&global->mutex));
 }
 
+void clog_ebr_local_poll(clog_ebr_thread_local_t* local)
+{
+    CLOG_RET_VOID_IF_NULL(local);
+    clog_ebr_poll(local->global);
+}
+
 clog_res_e clog_ebr_destroy(clog_ebr_global_t* global)
 {
     CLOG_RET_IF_NULL(global, CLOG_INVALID_PARAM);
