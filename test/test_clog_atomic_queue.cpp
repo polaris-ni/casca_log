@@ -29,7 +29,7 @@ protected:
 
 TEST_F(CLogAtomicQueueTest, CreateAndDestroy)
 {
-    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
+    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50, CLOG_ATOMIC_QUEUE_BIASED_NONE));
 
     ASSERT_NE(nullptr, queue);
     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_destroy(queue));
@@ -38,12 +38,12 @@ TEST_F(CLogAtomicQueueTest, CreateAndDestroy)
 
 TEST_F(CLogAtomicQueueTest, CreateWithNullPointer)
 {
-    EXPECT_EQ(CLOG_INVALID_PARAM, clog_atomic_queue_create(nullptr, 32, 50));
+    EXPECT_EQ(CLOG_INVALID_PARAM, clog_atomic_queue_create(nullptr, 32, 50, CLOG_ATOMIC_QUEUE_BIASED_NONE));
 }
 
 TEST_F(CLogAtomicQueueTest, EnqueueNormal)
 {
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 64, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 64, 50, CLOG_ATOMIC_QUEUE_BIASED_NONE));
 
     constexpr int data = 12345;
     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(queue, &data, sizeof(data)));
@@ -57,13 +57,13 @@ TEST_F(CLogAtomicQueueTest, EnqueueWithNullQueue)
 
 TEST_F(CLogAtomicQueueTest, EnqueueWithNullData)
 {
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 64, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 64, 50, CLOG_ATOMIC_QUEUE_BIASED_NONE));
     EXPECT_EQ(CLOG_INVALID_PARAM, clog_atomic_queue_enqueue(queue, nullptr, sizeof(int)));
 }
 
 TEST_F(CLogAtomicQueueTest, MultipleEnqueue)
 {
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50, CLOG_ATOMIC_QUEUE_BIASED_NONE));
 
     for (int i = 0; i < 10; ++i) {
         EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(queue, &i, sizeof(i)));
@@ -72,7 +72,7 @@ TEST_F(CLogAtomicQueueTest, MultipleEnqueue)
 
 TEST_F(CLogAtomicQueueTest, DequeueFromEmptyQueue)
 {
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50, CLOG_ATOMIC_QUEUE_BIASED_NONE));
 
     int data;
     size_t len;
@@ -81,7 +81,7 @@ TEST_F(CLogAtomicQueueTest, DequeueFromEmptyQueue)
 
 TEST_F(CLogAtomicQueueTest, EnqueueAndDequeue)
 {
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50, CLOG_ATOMIC_QUEUE_BIASED_NONE));
 
     int data_in = 54321;
     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(queue, &data_in, sizeof(data_in)));
@@ -95,7 +95,7 @@ TEST_F(CLogAtomicQueueTest, EnqueueAndDequeue)
 
 TEST_F(CLogAtomicQueueTest, DequeueWithSmallBuffer)
 {
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 40, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 40, 50, CLOG_ATOMIC_QUEUE_BIASED_NONE));
 
     const int data_in[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(queue, data_in, sizeof(data_in)));
@@ -108,7 +108,7 @@ TEST_F(CLogAtomicQueueTest, DequeueWithSmallBuffer)
 
 TEST_F(CLogAtomicQueueTest, DequeueWithoutLength)
 {
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50, CLOG_ATOMIC_QUEUE_BIASED_NONE));
 
     int data_in = 999;
     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(queue, &data_in, sizeof(data_in)));
@@ -120,7 +120,7 @@ TEST_F(CLogAtomicQueueTest, DequeueWithoutLength)
 
 TEST_F(CLogAtomicQueueTest, DequeueToNullBuffer)
 {
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50, CLOG_ATOMIC_QUEUE_BIASED_NONE));
 
     constexpr int data_in = 111;
     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(queue, &data_in, sizeof(data_in)));
@@ -134,7 +134,7 @@ TEST_F(CLogAtomicQueueTest, IsEmpty)
 {
     EXPECT_TRUE(clog_atomic_queue_is_empty(nullptr));
 
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50, CLOG_ATOMIC_QUEUE_BIASED_NONE));
     EXPECT_TRUE(clog_atomic_queue_is_empty(queue));
 
     constexpr int data = 1;
@@ -152,7 +152,7 @@ TEST_F(CLogAtomicQueueTest, DestroyNullQueue)
 
 TEST_F(CLogAtomicQueueTest, LargeDataOperations)
 {
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 1024, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 1024, 50, CLOG_ATOMIC_QUEUE_BIASED_NONE));
 
     constexpr int count = 1000;
     for (int i = 0; i < count; ++i) {
