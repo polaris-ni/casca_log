@@ -72,6 +72,7 @@ namespace CLogTest
             std::cout << info.info("[ LEAK ]\t")->c_str() << std::endl;
         }
         ASSERT_TRUE(memory.empty());
+        GTEST_LOG_(INFO) << "No Memory Leak Detected";
         clog_register_memory_hook_func(nullptr, nullptr, nullptr, nullptr);
         memory.clear();
         logs.clear();
