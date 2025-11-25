@@ -83,10 +83,17 @@ void clog_ebr_exit(clog_ebr_thread_local_t* local);
 
 /**
  * deferred memory release
+ * @param global global EBR
+ * @param ptr memory to be released
+ */
+void clog_ebr_defer_release_global(clog_ebr_global_t* global, void* ptr);
+
+/**
+ * deferred memory release
  * @param local thread local EBR
  * @param ptr memory to be released
  */
-void clog_ebr_defer_release(const clog_ebr_thread_local_t* local, void* ptr);
+void clog_ebr_defer_release_local(const clog_ebr_thread_local_t* local, void* ptr);
 
 /**
  * release memory by checking the status of all registered threads

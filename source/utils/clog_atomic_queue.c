@@ -144,7 +144,7 @@ clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_handle_t handle, const vo
     while (1) {
         tail = clog_atomic_get(&queue->tail);
         clog_queue_node_t* tail_node = (clog_queue_node_t*)tail;
-        const clog_atomic_basic_t next = clog_atomic_get(&tail_node->next);
+        clog_atomic_basic_t next = clog_atomic_get(&tail_node->next);
         if (next != 0) {
             CLOG_IGNORE_RES(clog_atomic_cas(&queue->tail, &tail, next));
             continue;
@@ -153,8 +153,7 @@ clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_handle_t handle, const vo
             CLOG_CLEAN_RET_IF_X(clog_atomic_get(&queue->state) != CLOG_ATOMIC_QUEUE_RUNNING,
                                 clog_buffer_pool_release(queue->pool, node), CLOG_ABNORMAL_STATE,
                                 "queue is not running");
-            clog_atomic_basic_t expected = 0;
-            if (clog_atomic_cas(&tail_node->next, &expected, (clog_atomic_basic_t)node)) {
+            if (clog_atomic_cas(&tail_node->next, &next, (clog_atomic_basic_t)node)) {
                 CLOG_IGNORE_RES(clog_atomic_cas(&queue->tail, &tail, (clog_atomic_basic_t)node));
                 clog_ebr_exit(handle->local);
                 return CLOG_SUCCESS;
@@ -172,13 +171,10 @@ static clog_res_e clog_atomic_queue_dequeue_internal(clog_atomic_queue_t* queue,
     while (1) {
         clog_atomic_basic_t head = clog_atomic_get(&queue->head);
         tail = clog_atomic_get(&queue->tail);
-        clog_atomic_basic_t next = clog_atomic_get(&((clog_queue_node_t*)head)->next);
+        const clog_atomic_basic_t next = clog_atomic_get(&((clog_queue_node_t*)head)->next);
         if (need_check) {
             CLOG_RET_IF_X(clog_atomic_get(&queue->state) != CLOG_ATOMIC_QUEUE_RUNNING, CLOG_ABNORMAL_STATE,
                           "queue is not running");
-        }
-        if (head != clog_atomic_get(&queue->head)) {
-            continue;
         }
         if (head == tail && next == 0) {
             return CLOG_TARGET_NOT_FOUND;
@@ -201,7 +197,7 @@ static clog_res_e clog_atomic_queue_dequeue_internal(clog_atomic_queue_t* queue,
             if (!clog_atomic_cas(&queue->head, &head, next)) {
                 continue;
             }
-            CLOG_IGNORE_RES(clog_buffer_pool_release(queue->pool, head_node));
+            clog_ebr_defer_release_global(queue->global, head_node);
             break;
         }
     }
@@ -222,7 +218,7 @@ clog_res_e clog_atomic_queue_dequeue(clog_atomic_queue_handle_t handle, void* da
     clog_ebr_enter(handle->local);
     const clog_res_e ret = clog_atomic_queue_dequeue_internal(queue, data, size, len, true);
     clog_ebr_exit(handle->local);
-    if (ret == CLOG_SUCCESS) {
+    if (ret == CLOG_SUCCESS || ret == CLOG_OVERSIZE) {
         clog_atomic_fetch_add(&handle->queue->release_num, 1);
     }
     return ret;
@@ -256,7 +252,7 @@ clog_res_e clog_atomic_queue_destroy(clog_atomic_queue_t* queue)
     /* clear dummy node */
     clog_queue_node_t* dummy = (clog_queue_node_t*)clog_atomic_get(&queue->head);
     if (dummy != NULL) {
-        CLOG_IGNORE_RES(clog_buffer_pool_release(queue->pool, dummy));
+        clog_ebr_defer_release_global(queue->global, dummy);
     }
     /* destroy ebr */
     clog_ebr_poll(queue->global);

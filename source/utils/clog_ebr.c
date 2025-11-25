@@ -179,25 +179,29 @@ void clog_ebr_exit(clog_ebr_thread_local_t* local)
     } while (!atomic_compare_exchange_strong(&local->state, &state, CLOG_EBR_LOCAL_STATE_INACTIVE));
 }
 
-void clog_ebr_defer_release(const clog_ebr_thread_local_t* local, void* ptr)
+void clog_ebr_defer_release_global(clog_ebr_global_t* global, void* ptr)
 {
-    CLOG_RET_VOID_IF_NULL(local);
-    CLOG_RET_VOID_IF_NULL(local->global);
+    CLOG_RET_VOID_IF_NULL(global);
     CLOG_RET_VOID_IF_NULL(ptr);
-
     clog_ebr_memory_node_t* entry = (clog_ebr_memory_node_t*)clog_malloc(sizeof(clog_ebr_memory_node_t));
-    CLOG_CLEAN_RET_VOID_IF_NULL(entry, local->global->free(ptr));
+    CLOG_CLEAN_RET_VOID_IF_NULL(entry, global->free(ptr));
     entry->ptr = ptr;
 
     uintptr_t old_head;
     clog_ebr_retired_list_t* list;
     do {
-        const uint_fast64_t current_epoch = atomic_load(&local->global->epoch);
+        const uint_fast64_t current_epoch = atomic_load(&global->epoch);
         const uint_fast64_t index = current_epoch % CLOG_EBR_NUM_EPOCHS;
-        list = &local->global->memory[index];
+        list = &global->memory[index];
         old_head = atomic_load(&list->head);
         atomic_store(&entry->next, old_head);
     } while (!atomic_compare_exchange_strong(&list->head, &old_head, (uintptr_t)entry));
+}
+
+void clog_ebr_defer_release_local(const clog_ebr_thread_local_t* local, void* ptr)
+{
+    CLOG_RET_VOID_IF_NULL(local);
+    clog_ebr_defer_release_global(local->global, ptr);
 }
 
 void clog_ebr_poll(clog_ebr_global_t* global)

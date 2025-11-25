@@ -318,10 +318,8 @@ TEST_F(CLogAtomicQueueTest, SingleProducerMultiConsumer)
                         }
                     } else if (res != CLOG_TARGET_NOT_FOUND) {
                         FAIL() << "Unexpected dequeue result: " << res;
-                    }
-
-                    if (res == CLOG_TARGET_NOT_FOUND) {
-                        std::this_thread::sleep_for(std::chrono::microseconds(1));
+                    } else {
+                        std::cout << "No item found\n";
                     }
                 }
 
@@ -337,7 +335,7 @@ TEST_F(CLogAtomicQueueTest, SingleProducerMultiConsumer)
 
             start_flag.store(true);
 
-            for (int i = 0; i < num_items; ++i) {
+            for (size_t i = 0; i < num_items; ++i) {
                 EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, &i, sizeof(i)));
             }
 
@@ -499,6 +497,8 @@ TEST_F(CLogAtomicQueueTest, MultiThreadsWithDifferentBiases)
                         res = clog_atomic_queue_dequeue(handle, &value, sizeof(value), &len);
                         if (res == CLOG_SUCCESS || res == CLOG_OVERSIZE) {
                             total_operations.fetch_add(1);
+                        } else {
+                            std::cout << "Unexpected dequeue result: " << res << "\n";
                         }
                     }
                 }
