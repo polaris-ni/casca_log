@@ -81,7 +81,7 @@ TEST_F(CLogEbrTest, SingleThreadDeferRelease)
     EXPECT_EQ(clog_ebr_enter(local), CLOG_SUCCESS);
     EXPECT_NE(ptr, nullptr);
     clog_ebr_exit(local);
-    clog_ebr_defer_release(local, ptr);
+    clog_ebr_defer_release_local(local, ptr);
 
     clog_ebr_poll(global);
     clog_ebr_poll(global);
@@ -96,7 +96,7 @@ TEST_F(CLogEbrTest, MultiThreadRegister)
     constexpr int num_threads = 10;
     std::vector<std::thread> threads;
     std::vector<clog_ebr_thread_local_t*> locals(num_threads);
-
+    threads.reserve(num_threads);
     for (int i = 0; i < num_threads; ++i) {
         threads.emplace_back([this, i, &locals]
                              { EXPECT_EQ(clog_ebr_register(this->global, &locals[i]), CLOG_SUCCESS); });
@@ -120,7 +120,7 @@ TEST_F(CLogEbrTest, MultiThreadEnterExit)
     constexpr int num_threads = 10;
     std::vector<std::thread> threads;
     std::atomic<int> active_count(0);
-
+    threads.reserve(num_threads);
     for (int i = 0; i < num_threads; ++i) {
         threads.emplace_back(
             [local, &active_count]
@@ -155,7 +155,7 @@ TEST_F(CLogEbrTest, MultiThreadDeferRelease)
     }
 
     std::atomic total_allocated(0);
-
+    threads.reserve(num_threads);
     for (int i = 0; i < num_threads; ++i) {
         threads.emplace_back(
             [this, i, &locals, &total_allocated]
@@ -166,7 +166,7 @@ TEST_F(CLogEbrTest, MultiThreadDeferRelease)
                     ASSERT_NE(ptr, nullptr);
                     total_allocated.fetch_add(1);
                     clog_ebr_exit(locals[i]);
-                    clog_ebr_defer_release(locals[i], ptr);
+                    clog_ebr_defer_release_local(locals[i], ptr);
 
                     if (j % 10 == 0) {
                         clog_ebr_poll(this->global);
