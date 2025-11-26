@@ -27,11 +27,16 @@ protected:
         }
         CLogTest::CLogMemLeakDetect::end();
     }
+
+    static void CLogAtomicQueueTestNoFree(void* ptr)
+    {
+        CLOG_UNUSED_VAR(ptr);
+    }
 };
 
 TEST_F(CLogAtomicQueueTest, CreateAndDestroy)
 {
-    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
+    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
 
     ASSERT_NE(nullptr, queue);
     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_destroy(queue));
@@ -40,119 +45,61 @@ TEST_F(CLogAtomicQueueTest, CreateAndDestroy)
 
 TEST_F(CLogAtomicQueueTest, CreateWithNullPointer)
 {
-    EXPECT_EQ(CLOG_INVALID_PARAM, clog_atomic_queue_create(nullptr, 32, 50));
+    EXPECT_EQ(CLOG_INVALID_PARAM, clog_atomic_queue_create(nullptr, CLogAtomicQueueTestNoFree));
 }
 
 TEST_F(CLogAtomicQueueTest, EnqueueNormal)
 {
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 64, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
     clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(queue, CLOG_ATOMIC_QUEUE_BIASED_ANY);
     EXPECT_NE(handle, nullptr);
 
-    constexpr int data = 12345;
-    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, &data, sizeof(data)));
+    constexpr std::uintptr_t data = 12345;
+    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, data));
     clog_atomic_queue_detach(handle);
 }
 
 TEST_F(CLogAtomicQueueTest, EnqueueWithNullQueue)
 {
-    constexpr int data = 12345;
-    EXPECT_EQ(CLOG_INVALID_PARAM, clog_atomic_queue_enqueue(nullptr, &data, sizeof(data)));
-}
-
-TEST_F(CLogAtomicQueueTest, EnqueueWithNullData)
-{
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 64, 50));
-    clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(queue, CLOG_ATOMIC_QUEUE_BIASED_ANY);
-    EXPECT_NE(handle, nullptr);
-    EXPECT_EQ(CLOG_INVALID_PARAM, clog_atomic_queue_enqueue(handle, nullptr, sizeof(int)));
-    clog_atomic_queue_detach(handle);
+    constexpr std::uintptr_t data = 12345;
+    EXPECT_EQ(CLOG_INVALID_PARAM, clog_atomic_queue_enqueue(nullptr, data));
 }
 
 TEST_F(CLogAtomicQueueTest, MultipleEnqueue)
 {
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
     clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(queue, CLOG_ATOMIC_QUEUE_BIASED_ANY);
     EXPECT_NE(handle, nullptr);
 
-    for (int i = 0; i < 10; ++i) {
-        EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, &i, sizeof(i)));
+    for (std::size_t i = 0; i < 10; ++i) {
+        EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, i));
     }
     clog_atomic_queue_detach(handle);
 }
 
 TEST_F(CLogAtomicQueueTest, DequeueFromEmptyQueue)
 {
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
     clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(queue, CLOG_ATOMIC_QUEUE_BIASED_ANY);
     EXPECT_NE(handle, nullptr);
 
-    int data;
-    size_t len;
-    EXPECT_EQ(CLOG_TARGET_NOT_FOUND, clog_atomic_queue_dequeue(handle, &data, sizeof(data), &len));
+    std::uintptr_t data;
+    EXPECT_EQ(CLOG_TARGET_NOT_FOUND, clog_atomic_queue_dequeue(handle, &data));
     clog_atomic_queue_detach(handle);
 }
 
 TEST_F(CLogAtomicQueueTest, EnqueueAndDequeue)
 {
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
     clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(queue, CLOG_ATOMIC_QUEUE_BIASED_ANY);
     EXPECT_NE(handle, nullptr);
 
-    constexpr int data_in = 54321;
-    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, &data_in, sizeof(data_in)));
+    constexpr std::uintptr_t data_in = 54321;
+    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, data_in));
 
-    int data_out;
-    size_t len;
-    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_dequeue(handle, &data_out, sizeof(data_out), &len));
+    std::uintptr_t data_out;
+    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_dequeue(handle, &data_out));
     EXPECT_EQ(data_in, data_out);
-    EXPECT_EQ(sizeof(data_in), len);
-    clog_atomic_queue_detach(handle);
-}
-
-TEST_F(CLogAtomicQueueTest, DequeueWithSmallBuffer)
-{
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 40, 50));
-    clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(queue, CLOG_ATOMIC_QUEUE_BIASED_ANY);
-    EXPECT_NE(handle, nullptr);
-
-    const int data_in[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, data_in, sizeof(data_in)));
-
-    int data_out[5];
-    size_t len;
-    EXPECT_EQ(CLOG_OVERSIZE, clog_atomic_queue_dequeue(handle, data_out, sizeof(data_out), &len));
-    EXPECT_EQ(sizeof(data_out), len);
-    clog_atomic_queue_detach(handle);
-}
-
-TEST_F(CLogAtomicQueueTest, DequeueWithoutLength)
-{
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
-    clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(queue, CLOG_ATOMIC_QUEUE_BIASED_ANY);
-    EXPECT_NE(handle, nullptr);
-
-    int data_in = 999;
-    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, &data_in, sizeof(data_in)));
-
-    int data_out;
-    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_dequeue(handle, &data_out, sizeof(data_out), nullptr));
-    EXPECT_EQ(data_in, data_out);
-    clog_atomic_queue_detach(handle);
-}
-
-TEST_F(CLogAtomicQueueTest, DequeueToNullBuffer)
-{
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
-    clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(queue, CLOG_ATOMIC_QUEUE_BIASED_ANY);
-    EXPECT_NE(handle, nullptr);
-
-    constexpr int data_in = 111;
-    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, &data_in, sizeof(data_in)));
-
-    size_t len;
-    EXPECT_EQ(CLOG_OVERSIZE, clog_atomic_queue_dequeue(handle, nullptr, 0, &len));
-    EXPECT_EQ(sizeof(data_in), len);
     clog_atomic_queue_detach(handle);
 }
 
@@ -160,16 +107,18 @@ TEST_F(CLogAtomicQueueTest, IsEmpty)
 {
     EXPECT_TRUE(clog_atomic_queue_is_empty(nullptr));
 
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 32, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
     clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(queue, CLOG_ATOMIC_QUEUE_BIASED_ANY);
     EXPECT_NE(handle, nullptr);
     EXPECT_TRUE(clog_atomic_queue_is_empty(handle));
 
-    constexpr int data = 1;
-    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, &data, sizeof(data)));
+    constexpr std::uintptr_t data = 1;
+    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, data));
     EXPECT_FALSE(clog_atomic_queue_is_empty(handle));
 
-    EXPECT_EQ(CLOG_OVERSIZE, clog_atomic_queue_dequeue(handle, nullptr, 0, nullptr));
+    EXPECT_EQ(CLOG_INVALID_PARAM, clog_atomic_queue_dequeue(handle, nullptr));
+    std::uintptr_t data_out;
+    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_dequeue(handle, &data_out));
     EXPECT_TRUE(clog_atomic_queue_is_empty(handle));
     clog_atomic_queue_detach(handle);
 }
@@ -181,21 +130,19 @@ TEST_F(CLogAtomicQueueTest, DestroyNullQueue)
 
 TEST_F(CLogAtomicQueueTest, LargeDataOperations)
 {
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, 1024, 50));
+    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
     clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(queue, CLOG_ATOMIC_QUEUE_BIASED_ANY);
     EXPECT_NE(handle, nullptr);
 
-    constexpr int count = 1000;
-    for (int i = 0; i < count; ++i) {
-        EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, &i, sizeof(i))) << "Failed at iteration " << i;
+    constexpr std::size_t count = 1000;
+    for (std::size_t i = 0; i < count; ++i) {
+        EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, i)) << "Failed at iteration " << i;
     }
 
-    for (int i = 0; i < count; ++i) {
-        int data_out;
-        size_t len;
-        EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_dequeue(handle, &data_out, sizeof(data_out), &len));
+    for (std::size_t i = 0; i < count; ++i) {
+        std::uintptr_t data_out;
+        EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_dequeue(handle, &data_out));
         EXPECT_EQ(i, data_out);
-        EXPECT_EQ(sizeof(i), len);
     }
 
     EXPECT_TRUE(clog_atomic_queue_is_empty(handle));
@@ -204,18 +151,17 @@ TEST_F(CLogAtomicQueueTest, LargeDataOperations)
 
 TEST_F(CLogAtomicQueueTest, MultiProducerSingleConsumer)
 {
-    constexpr size_t item_size = sizeof(size_t);
-    constexpr size_t num_producers = 4;
-    constexpr size_t num_items_per_producer = 1000;
+    constexpr std::size_t num_producers = 4;
+    constexpr std::size_t num_items_per_producer = 1000;
 
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, item_size, 50));
+    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
 
     std::vector<std::thread> producers;
     std::atomic start_flag{false};
     std::atomic total_produced{0};
 
     producers.reserve(num_producers);
-    for (size_t i = 0; i < num_producers; ++i) {
+    for (std::size_t i = 0; i < num_producers; ++i) {
         producers.emplace_back(
             [this, i, &start_flag, &total_produced, num_items_per_producer]
             {
@@ -225,11 +171,11 @@ TEST_F(CLogAtomicQueueTest, MultiProducerSingleConsumer)
 
                 clog_atomic_queue_handle_t handle =
                     clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_ENQUEUE);
-                ASSERT_NE(handle, nullptr);
+                EXPECT_NE(handle, nullptr);
 
-                for (size_t j = 0; j < num_items_per_producer; ++j) {
-                    size_t value = i * num_items_per_producer + j;
-                    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, &value, sizeof(value)));
+                for (std::size_t j = 0; j < num_items_per_producer; ++j) {
+                    const std::uintptr_t value = i * num_items_per_producer + j;
+                    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, value));
                     total_produced.fetch_add(1);
                 }
 
@@ -243,31 +189,28 @@ TEST_F(CLogAtomicQueueTest, MultiProducerSingleConsumer)
             start_flag.store(true);
 
             clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_DEQUEUE);
-            ASSERT_NE(handle, nullptr);
+            EXPECT_NE(handle, nullptr);
 
             std::vector received(num_producers * num_items_per_producer, false);
-            int items_received = 0;
+            std::size_t items_received = 0;
 
             while (items_received < num_producers * num_items_per_producer) {
-                size_t value;
-                size_t len;
-                const clog_res_e res = clog_atomic_queue_dequeue(handle, &value, sizeof(value), &len);
+                std::uintptr_t value;
+                const clog_res_e res = clog_atomic_queue_dequeue(handle, &value);
                 if (res == CLOG_SUCCESS) {
-                    ASSERT_LT(value, num_producers * num_items_per_producer);
-                    ASSERT_FALSE(received[value]);
+                    EXPECT_LT(value, num_producers * num_items_per_producer);
+                    EXPECT_FALSE(received[value]);
                     received[value] = true;
                     items_received++;
                 } else if (res != CLOG_TARGET_NOT_FOUND) {
                     FAIL() << "Unexpected dequeue result: " << res;
-                }
-
-                if (res == CLOG_TARGET_NOT_FOUND) {
+                } else {
                     std::this_thread::sleep_for(std::chrono::microseconds(1));
                 }
             }
 
-            for (size_t i = 0; i < num_producers * num_items_per_producer; ++i) {
-                ASSERT_TRUE(received[i]) << "Missing Item: " << i;
+            for (std::size_t i = 0; i < num_producers * num_items_per_producer; ++i) {
+                EXPECT_TRUE(received[i]) << "Missing Item: " << i;
             }
 
             clog_atomic_queue_detach(handle);
@@ -281,20 +224,19 @@ TEST_F(CLogAtomicQueueTest, MultiProducerSingleConsumer)
 
 TEST_F(CLogAtomicQueueTest, SingleProducerMultiConsumer)
 {
-    constexpr size_t item_size = sizeof(size_t);
-    constexpr size_t num_consumers = 4;
-    constexpr size_t num_items = 1000;
+    constexpr std::size_t num_consumers = 4;
+    constexpr std::size_t num_items = 1000;
 
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, item_size, 50));
+    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
 
     std::atomic start_flag{false};
     std::atomic total_consumed{0};
     std::vector<std::thread> consumers;
-    std::vector<size_t> consumed_values;
+    std::vector<std::size_t> consumed_values;
     std::mutex consumed_values_mutex;
 
     consumers.reserve(num_consumers);
-    for (size_t i = 0; i < num_consumers; ++i) {
+    for (std::size_t i = 0; i < num_consumers; ++i) {
         consumers.emplace_back(
             [this, &start_flag, &total_consumed, &consumed_values, &consumed_values_mutex, num_items]
             {
@@ -304,12 +246,11 @@ TEST_F(CLogAtomicQueueTest, SingleProducerMultiConsumer)
 
                 clog_atomic_queue_handle_t handle =
                     clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_DEQUEUE);
-                ASSERT_NE(handle, nullptr);
+                EXPECT_NE(handle, nullptr);
 
                 while (total_consumed.load() < num_items) {
-                    size_t value;
-                    size_t len;
-                    const clog_res_e res = clog_atomic_queue_dequeue(handle, &value, sizeof(value), &len);
+                    std::uintptr_t value;
+                    const clog_res_e res = clog_atomic_queue_dequeue(handle, &value);
                     if (res == CLOG_SUCCESS) {
                         total_consumed.fetch_add(1);
                         {
@@ -331,12 +272,12 @@ TEST_F(CLogAtomicQueueTest, SingleProducerMultiConsumer)
         [this, &start_flag, num_items]
         {
             clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_ENQUEUE);
-            ASSERT_NE(handle, nullptr);
+            EXPECT_NE(handle, nullptr);
 
             start_flag.store(true);
 
-            for (size_t i = 0; i < num_items; ++i) {
-                EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, &i, sizeof(i)));
+            for (std::size_t i = 0; i < num_items; ++i) {
+                EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, i));
             }
 
             clog_atomic_queue_detach(handle);
@@ -357,23 +298,22 @@ TEST_F(CLogAtomicQueueTest, SingleProducerMultiConsumer)
 
 TEST_F(CLogAtomicQueueTest, MultiProducerMultiConsumer)
 {
-    constexpr size_t item_size = sizeof(size_t);
-    constexpr size_t num_producers = 3;
-    constexpr size_t num_consumers = 3;
-    constexpr size_t num_items_per_producer = 500;
+    constexpr std::size_t num_producers = 3;
+    constexpr std::size_t num_consumers = 3;
+    constexpr std::size_t num_items_per_producer = 500;
 
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, item_size, 50));
+    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
 
     std::atomic start_flag{false};
     std::atomic total_produced{0};
     std::atomic total_consumed{0};
     std::vector<std::thread> producers;
     std::vector<std::thread> consumers;
-    std::vector<size_t> consumed_values;
+    std::vector<std::size_t> consumed_values;
     std::mutex consumed_values_mutex;
 
     producers.reserve(num_producers);
-    for (size_t i = 0; i < num_producers; ++i) {
+    for (std::size_t i = 0; i < num_producers; ++i) {
         producers.emplace_back(
             [this, i, &start_flag, &total_produced, num_items_per_producer]
             {
@@ -383,11 +323,11 @@ TEST_F(CLogAtomicQueueTest, MultiProducerMultiConsumer)
 
                 clog_atomic_queue_handle_t handle =
                     clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_ENQUEUE);
-                ASSERT_NE(handle, nullptr);
+                EXPECT_NE(handle, nullptr);
 
-                for (size_t j = 0; j < num_items_per_producer; ++j) {
-                    size_t value = i * num_items_per_producer + j;
-                    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, &value, sizeof(value)));
+                for (std::size_t j = 0; j < num_items_per_producer; ++j) {
+                    std::uintptr_t value = i * num_items_per_producer + j;
+                    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, value));
                     total_produced.fetch_add(1);
                 }
 
@@ -395,11 +335,11 @@ TEST_F(CLogAtomicQueueTest, MultiProducerMultiConsumer)
             });
     }
 
-    constexpr size_t items_to_consume = num_producers * num_items_per_producer / num_consumers + 10;
+    constexpr std::size_t items_to_consume = num_producers * num_items_per_producer / num_consumers + 10;
 
     consumers.reserve(num_consumers);
-    for (size_t i = 0; i < num_consumers; ++i) {
-        constexpr size_t total_num = num_producers * num_items_per_producer;
+    for (std::size_t i = 0; i < num_consumers; ++i) {
+        constexpr std::size_t total_num = num_producers * num_items_per_producer;
         consumers.emplace_back(
             [this, &start_flag, &total_consumed, &consumed_values, &consumed_values_mutex, items_to_consume, total_num]
             {
@@ -409,12 +349,11 @@ TEST_F(CLogAtomicQueueTest, MultiProducerMultiConsumer)
 
                 clog_atomic_queue_handle_t handle =
                     clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_DEQUEUE);
-                ASSERT_NE(handle, nullptr);
+                EXPECT_NE(handle, nullptr);
 
-                for (size_t j = 0; j < items_to_consume && total_consumed.load() < total_num;) {
-                    size_t value;
-                    size_t len;
-                    const clog_res_e res = clog_atomic_queue_dequeue(handle, &value, sizeof(value), &len);
+                for (std::size_t j = 0; j < items_to_consume && total_consumed.load() < total_num;) {
+                    std::uintptr_t value;
+                    const clog_res_e res = clog_atomic_queue_dequeue(handle, &value);
                     if (res == CLOG_SUCCESS) {
                         total_consumed.fetch_add(1);
                         {
@@ -424,9 +363,7 @@ TEST_F(CLogAtomicQueueTest, MultiProducerMultiConsumer)
                         j++;
                     } else if (res != CLOG_TARGET_NOT_FOUND) {
                         FAIL() << "Unexpected dequeue result: " << res;
-                    }
-
-                    if (res == CLOG_TARGET_NOT_FOUND) {
+                    } else {
                         std::this_thread::sleep_for(std::chrono::microseconds(1));
                     }
                 }
@@ -452,7 +389,7 @@ TEST_F(CLogAtomicQueueTest, MultiProducerMultiConsumer)
     const auto last = std::unique(consumed_values.begin(), consumed_values.end());
     EXPECT_EQ(last, consumed_values.end()) << "Duplicate values found";
 
-    for (size_t i = 0; i < num_producers * num_items_per_producer; ++i) {
+    for (std::size_t i = 0; i < num_producers * num_items_per_producer; ++i) {
         bool found = std::binary_search(consumed_values.begin(), consumed_values.end(), i);
         EXPECT_TRUE(found) << "Missing value: " << i;
     }
@@ -460,10 +397,9 @@ TEST_F(CLogAtomicQueueTest, MultiProducerMultiConsumer)
 
 TEST_F(CLogAtomicQueueTest, MultiThreadsWithDifferentBiases)
 {
-    constexpr size_t item_size = sizeof(size_t);
-    constexpr size_t num_threads = 4;
+    constexpr std::size_t num_threads = 4;
 
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, item_size, 50));
+    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
 
     std::vector<std::thread> threads;
     std::atomic start_flag{false};
@@ -472,8 +408,8 @@ TEST_F(CLogAtomicQueueTest, MultiThreadsWithDifferentBiases)
     clog_atomic_queue_bias_e biases[] = {CLOG_ATOMIC_QUEUE_BIASED_NONE, CLOG_ATOMIC_QUEUE_BIASED_ENQUEUE,
                                          CLOG_ATOMIC_QUEUE_BIASED_DEQUEUE, CLOG_ATOMIC_QUEUE_BIASED_ANY};
 
-    for (size_t i = 0; i < num_threads; ++i) {
-        constexpr size_t num_items_per_thread = 500;
+    for (std::size_t i = 0; i < num_threads; ++i) {
+        constexpr std::size_t num_items_per_thread = 500;
         threads.emplace_back(
             [this, i, &start_flag, &total_operations, biases, num_items_per_thread]
             {
@@ -482,20 +418,19 @@ TEST_F(CLogAtomicQueueTest, MultiThreadsWithDifferentBiases)
                 }
 
                 clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(this->queue, biases[i % 4]);
-                ASSERT_NE(handle, nullptr);
+                EXPECT_NE(handle, nullptr);
                 clog_res_e res;
-                for (size_t j = 0; j < num_items_per_thread; ++j) {
+                for (std::size_t j = 0; j < num_items_per_thread; ++j) {
                     if (j % 2 == 0) {
-                        size_t value = i * num_items_per_thread + j;
-                        res = clog_atomic_queue_enqueue(handle, &value, sizeof(value));
+                        const std::uintptr_t value = i * num_items_per_thread + j;
+                        res = clog_atomic_queue_enqueue(handle, value);
                         if (res == CLOG_SUCCESS) {
                             total_operations.fetch_add(1);
                         }
                     } else {
-                        int value;
-                        size_t len;
-                        res = clog_atomic_queue_dequeue(handle, &value, sizeof(value), &len);
-                        if (res == CLOG_SUCCESS || res == CLOG_OVERSIZE) {
+                        std::uintptr_t value;
+                        res = clog_atomic_queue_dequeue(handle, &value);
+                        if (res == CLOG_SUCCESS) {
                             total_operations.fetch_add(1);
                         } else {
                             std::cout << "Unexpected dequeue result: " << res << "\n";
@@ -514,36 +449,33 @@ TEST_F(CLogAtomicQueueTest, MultiThreadsWithDifferentBiases)
     }
 
     clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_ANY);
-    ASSERT_NE(handle, nullptr);
+    EXPECT_NE(handle, nullptr);
 
-    size_t remaining_count = 0;
-    size_t value;
-    size_t len;
-    while (clog_atomic_queue_dequeue(handle, &value, sizeof(value), &len) == CLOG_SUCCESS) {
+    std::size_t remaining_count = 0;
+    std::uintptr_t value;
+    while (clog_atomic_queue_dequeue(handle, &value) == CLOG_SUCCESS) {
         remaining_count++;
     }
 
     clog_atomic_queue_detach(handle);
-
     EXPECT_GT(total_operations.load(), 0);
 }
 
 TEST_F(CLogAtomicQueueTest, HighConcurrencyPerformance)
 {
-    constexpr size_t item_size = sizeof(size_t);
-    constexpr size_t num_threads = 8;
-    constexpr size_t num_items_per_thread = 1000;
+    constexpr std::size_t num_threads = 8;
+    constexpr std::size_t num_items_per_thread = 1000;
 
-    ASSERT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, item_size, 50));
+    EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
 
     std::vector<std::thread> threads;
     std::atomic start_flag{false};
-    std::atomic<size_t> sum_of_squared_values{0};
+    std::atomic<std::size_t> sum_of_squared_values{0};
 
     const auto start_time = std::chrono::high_resolution_clock::now();
 
     threads.reserve(num_threads);
-    for (size_t i = 0; i < num_threads; ++i) {
+    for (std::size_t i = 0; i < num_threads; ++i) {
         threads.emplace_back(
             [this, i, &start_flag, &sum_of_squared_values, &num_items_per_thread]
             {
@@ -552,23 +484,24 @@ TEST_F(CLogAtomicQueueTest, HighConcurrencyPerformance)
                 }
 
                 clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_ANY);
-                ASSERT_NE(handle, nullptr);
+                EXPECT_NE(handle, nullptr);
 
-                for (size_t j = 0; j < num_items_per_thread; ++j) {
+                for (std::size_t j = 0; j < num_items_per_thread; ++j) {
                     if (j % 2 == 0) {
-                        size_t value = i * num_items_per_thread + j;
-                        const clog_res_e res = clog_atomic_queue_enqueue(handle, &value, sizeof(value));
+                        const std::uintptr_t value = i * num_items_per_thread + j;
+                        const clog_res_e res = clog_atomic_queue_enqueue(handle, value);
                         if (res != CLOG_SUCCESS) {
                             FAIL() << "Enqueue failed with result: " << res;
                         }
                     } else {
-                        size_t value;
-                        size_t len;
-                        const clog_res_e res = clog_atomic_queue_dequeue(handle, &value, sizeof(value), &len);
+                        std::uintptr_t value;
+                        const clog_res_e res = clog_atomic_queue_dequeue(handle, &value);
                         if (res == CLOG_SUCCESS) {
                             sum_of_squared_values.fetch_add(value * value);
-                        } else if (res != CLOG_TARGET_NOT_FOUND && res != CLOG_OVERSIZE) {
+                        } else if (res != CLOG_TARGET_NOT_FOUND) {
                             FAIL() << "Dequeue failed with unexpected result: " << res;
+                        } else {
+                            std::this_thread::sleep_for(std::chrono::microseconds(1));
                         }
                     }
                 }
@@ -590,15 +523,12 @@ TEST_F(CLogAtomicQueueTest, HighConcurrencyPerformance)
                      << " threads and " << num_items_per_thread << " items per thread";
 
     clog_atomic_queue_handle_t cleanup_handle = clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_ANY);
-    ASSERT_NE(cleanup_handle, nullptr);
+    EXPECT_NE(cleanup_handle, nullptr);
 
-    size_t value;
-    size_t len;
-    while (clog_atomic_queue_dequeue(cleanup_handle, &value, sizeof(value), &len) == CLOG_SUCCESS) {
+    std::uintptr_t value;
+    while (clog_atomic_queue_dequeue(cleanup_handle, &value) == CLOG_SUCCESS) {
         sum_of_squared_values.fetch_add(value * value);
     }
-
     clog_atomic_queue_detach(cleanup_handle);
-
     EXPECT_GT(sum_of_squared_values.load(), 0);
 }

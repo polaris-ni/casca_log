@@ -3,8 +3,7 @@
  * @date  2025/11/11
  */
 #include "clog_atomic_queue.h"
-#include "clog_atomic_types.h"
-#include "clog_buffer_pool.h"
+#include <stdatomic.h>
 #include "clog_ebr.h"
 #include "clog_error.h"
 #include "clog_hooks.h"
@@ -14,19 +13,16 @@
 #define CLOG_ATOMIC_QUEUE_FINALIZING 1
 
 typedef struct clog_queue_node {
-    clog_buffer_pool_t* pool;
-    clog_atomic_type_t next;
-    size_t len;
-    char data[0];
+    atomic_uintptr_t next;
+    uintptr_t data;
 } clog_queue_node_t;
 
 struct clog_atomic_queue {
-    clog_atomic_type_t head;
-    clog_atomic_type_t tail;
-    clog_atomic_type_t state;
-    clog_atomic_type_t release_num;
-    size_t item_size;
-    clog_buffer_pool_t* pool;
+    atomic_uintptr_t head;
+    atomic_uintptr_t tail;
+    atomic_uintptr_t state;
+    atomic_uintptr_t release_num;
+    clog_deallocator_f deallocator;
     clog_ebr_global_t* global;
 };
 
@@ -38,52 +34,38 @@ struct clog_atomic_queue_handle {
 
 static void clog_atomic_queue_node_free(void* ptr)
 {
-    CLOG_RET_VOID_IF_NULL(ptr);
-    clog_queue_node_t* node = ptr;
-    CLOG_IGNORE_RES(clog_buffer_pool_release(node->pool, node));
+    clog_free(ptr);
 }
 
-clog_res_e clog_atomic_queue_create(clog_atomic_queue_t** queue, size_t item_size, uint8_t threshold)
+clog_res_e clog_atomic_queue_create(clog_atomic_queue_t** queue, clog_deallocator_f deallocator)
 {
     CLOG_RET_IF_NULL_X(queue, CLOG_INVALID_PARAM, "tmp is NULL");
+    CLOG_RET_IF_NULL_X(deallocator, CLOG_INVALID_PARAM, "deallocator is NULL");
     clog_atomic_queue_t* tmp = clog_malloc(sizeof(clog_atomic_queue_t));
     CLOG_RET_IF_NULL_X(tmp, CLOG_NO_MEMORY, "malloc clog_atomic_queue_t failed");
-    clog_atomic_set(&tmp->head, 0);
-    clog_atomic_set(&tmp->tail, 0);
-    clog_atomic_set(&tmp->state, CLOG_ATOMIC_QUEUE_RUNNING);
-    clog_atomic_set(&tmp->release_num, 0);
-    tmp->item_size = item_size;
-    const size_t element_size = sizeof(clog_queue_node_t) + item_size;
-    clog_res_e ret = clog_buffer_pool_initialize(&tmp->pool, element_size, 1, true, threshold);
-    if (ret != CLOG_SUCCESS) {
-        CLOG_ERR_ADD("clog_buffer_pool_initialize failed, ret = %u", ret);
-        goto CLEAN_QUEUE;
-    }
-    clog_queue_node_t* dummy = clog_buffer_pool_acquire(tmp->pool);
+    atomic_init(&tmp->head, 0);
+    atomic_init(&tmp->tail, 0);
+    atomic_init(&tmp->state, CLOG_ATOMIC_QUEUE_RUNNING);
+    atomic_init(&tmp->release_num, 0);
+    tmp->deallocator = deallocator;
+    clog_queue_node_t* dummy = clog_malloc(sizeof(clog_queue_node_t));
     if (dummy == NULL) {
         CLOG_ERR_ADD("acquire dummy node failed");
-        ret = CLOG_NO_MEMORY;
-        goto CLEAN_BUFFER_POOL;
+        clog_free(tmp);
+        return CLOG_NO_MEMORY;
     }
-    dummy->pool = tmp->pool;
-    clog_atomic_set(&dummy->next, 0);
-    dummy->len = 0;
-    clog_atomic_set(&tmp->head, (clog_atomic_basic_t)dummy);
-    clog_atomic_set(&tmp->tail, (clog_atomic_basic_t)dummy);
-
+    atomic_init(&dummy->next, 0);
+    atomic_init(&tmp->head, (uintptr_t)dummy);
+    atomic_init(&tmp->tail, (uintptr_t)dummy);
+    dummy->next = 0;
     tmp->global = NULL;
-    ret = clog_ebr_create(&tmp->global, clog_atomic_queue_node_free);
+    const clog_res_e ret = clog_ebr_create(&tmp->global, clog_atomic_queue_node_free);
     if (ret == CLOG_SUCCESS) {
         *queue = tmp;
-        return CLOG_SUCCESS;
+    } else {
+        clog_free(dummy);
+        clog_free(tmp);
     }
-
-CLEAN_BUFFER_POOL:
-    CLOG_IGNORE_RES(clog_buffer_pool_release(tmp->pool, (clog_queue_node_t*)clog_atomic_get(&tmp->head)));
-    CLOG_IGNORE_RES(clog_buffer_pool_finalize(tmp->pool));
-
-CLEAN_QUEUE:
-    clog_free(tmp);
     return ret;
 }
 
@@ -101,60 +83,55 @@ clog_atomic_queue_handle_t clog_atomic_queue_attach(clog_atomic_queue_t* queue, 
 
 static void clog_atomic_queue_gc(clog_atomic_queue_handle_t handle, bool is_enqueue)
 {
-    if (clog_atomic_get(&handle->queue->release_num) <= clog_buffer_pool_get_current_capacity(handle->queue->pool)) {
+    if (atomic_load(&handle->queue->release_num) <= 128) {
         return;
     }
     if (handle->bias == CLOG_ATOMIC_QUEUE_BIASED_ANY) {
         clog_ebr_local_poll(handle->local);
-        clog_atomic_set(&handle->queue->release_num, 0);
+        atomic_store(&handle->queue->release_num, 0);
     } else if (handle->bias == CLOG_ATOMIC_QUEUE_BIASED_ENQUEUE) {
         if (is_enqueue) {
             clog_ebr_local_poll(handle->local);
-            clog_atomic_set(&handle->queue->release_num, 0);
+            atomic_store(&handle->queue->release_num, 0);
         }
     } else if (handle->bias == CLOG_ATOMIC_QUEUE_BIASED_DEQUEUE) {
         if (!is_enqueue) {
             clog_ebr_local_poll(handle->local);
-            clog_atomic_set(&handle->queue->release_num, 0);
+            atomic_store(&handle->queue->release_num, 0);
         }
     } else {
         /* not perform gc on this thread */
     }
 }
 
-clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_handle_t handle, const void* data, size_t size)
+clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_handle_t handle, uintptr_t data)
 {
     CLOG_RET_IF_NULL_X(handle, CLOG_INVALID_PARAM, "handle is NULL");
-    CLOG_RET_IF_NULL_X(data, CLOG_INVALID_PARAM, "data is NULL");
     clog_atomic_queue_gc(handle, true);
     clog_atomic_queue_t* queue = handle->queue;
-    CLOG_RET_IF_X(clog_atomic_get(&queue->state) != CLOG_ATOMIC_QUEUE_RUNNING, CLOG_ABNORMAL_STATE,
-                  "queue is not running");
+    CLOG_RET_IF_X(atomic_load(&queue->state) != CLOG_ATOMIC_QUEUE_RUNNING, CLOG_ABNORMAL_STATE, "queue is not running");
 
-    clog_queue_node_t* node = clog_buffer_pool_acquire(queue->pool);
+    clog_queue_node_t* node = clog_malloc(sizeof(clog_queue_node_t));
     CLOG_RET_IF_NULL(node, CLOG_NO_MEMORY);
-    node->pool = queue->pool;
-    const clog_res_e ret = clog_memcpy(node->data, queue->item_size, data, size);
-    CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_buffer_pool_release(queue->pool, node), "memcpy failed, ret = %u", ret);
-    node->len = size;
-    clog_atomic_set(&node->next, 0);
+    node->data = data;
+    atomic_store(&node->next, 0);
 
     clog_ebr_enter(handle->local);
-    clog_atomic_basic_t tail;
+    atomic_uintptr_t tail;
     while (1) {
-        tail = clog_atomic_get(&queue->tail);
+        tail = atomic_load(&queue->tail);
         clog_queue_node_t* tail_node = (clog_queue_node_t*)tail;
-        clog_atomic_basic_t next = clog_atomic_get(&tail_node->next);
+        atomic_uintptr_t next = atomic_load(&tail_node->next);
         if (next != 0) {
-            CLOG_IGNORE_RES(clog_atomic_cas(&queue->tail, &tail, next));
+            atomic_compare_exchange_strong(&queue->tail, &tail, next); /* do not care whether it is successful */
             continue;
         }
-        if (tail == clog_atomic_get(&queue->tail)) {
-            CLOG_CLEAN_RET_IF_X(clog_atomic_get(&queue->state) != CLOG_ATOMIC_QUEUE_RUNNING,
-                                clog_buffer_pool_release(queue->pool, node), CLOG_ABNORMAL_STATE,
-                                "queue is not running");
-            if (clog_atomic_cas(&tail_node->next, &next, (clog_atomic_basic_t)node)) {
-                CLOG_IGNORE_RES(clog_atomic_cas(&queue->tail, &tail, (clog_atomic_basic_t)node));
+        if (tail == atomic_load(&queue->tail)) {
+            CLOG_CLEAN_RET_IF_X(atomic_load(&queue->state) != CLOG_ATOMIC_QUEUE_RUNNING, clog_free(node),
+                                CLOG_ABNORMAL_STATE, "queue is not running");
+            uintptr_t new_tail = (uintptr_t)node;
+            if (atomic_compare_exchange_strong(&tail_node->next, &next, new_tail)) {
+                atomic_compare_exchange_strong(&queue->tail, &tail, new_tail);
                 clog_ebr_exit(handle->local);
                 return CLOG_SUCCESS;
             }
@@ -162,64 +139,56 @@ clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_handle_t handle, const vo
     }
 }
 
-static clog_res_e clog_atomic_queue_dequeue_internal(clog_atomic_queue_t* queue, void* data, size_t size, size_t* len,
-                                                     bool need_check)
+static clog_res_e clog_atomic_queue_dequeue_internal(clog_atomic_queue_t* queue, uintptr_t* data, bool need_check)
 {
-    bool is_oversize = false;
-    size_t copy_num = 0;
-    clog_atomic_basic_t tail;
+    uintptr_t tail;
     while (1) {
-        clog_atomic_basic_t head = clog_atomic_get(&queue->head);
-        tail = clog_atomic_get(&queue->tail);
-        const clog_atomic_basic_t next = clog_atomic_get(&((clog_queue_node_t*)head)->next);
+        uintptr_t head = atomic_load(&queue->head);
+        tail = atomic_load(&queue->tail);
+        const uintptr_t next = atomic_load(&((clog_queue_node_t*)head)->next);
         if (need_check) {
-            CLOG_RET_IF_X(clog_atomic_get(&queue->state) != CLOG_ATOMIC_QUEUE_RUNNING, CLOG_ABNORMAL_STATE,
+            CLOG_RET_IF_X(atomic_load(&queue->state) != CLOG_ATOMIC_QUEUE_RUNNING, CLOG_ABNORMAL_STATE,
                           "queue is not running");
         }
         if (head == tail && next == 0) {
             return CLOG_TARGET_NOT_FOUND;
         }
         if (head == tail && next != 0) {
-            CLOG_IGNORE_RES(clog_atomic_cas(&queue->tail, &tail, next));
+            atomic_compare_exchange_strong(&queue->tail, &tail, next);
+            continue;
+        }
+        if (tail != atomic_load(&queue->tail)) {
             continue;
         }
 
         if (next != 0) {
-            clog_queue_node_t* head_node = (clog_queue_node_t*)head;
-            const clog_queue_node_t* next_node = (clog_queue_node_t*)next;
-            is_oversize = next_node->len > size;
-            if (data != NULL) {
-                copy_num = is_oversize ? size : next_node->len;
-                CLOG_IGNORE_RES(clog_memcpy(data, size, next_node->data, copy_num));
-            } else {
-                copy_num = next_node->len;
-            }
-            if (!clog_atomic_cas(&queue->head, &head, next)) {
+            if (!atomic_compare_exchange_strong(&queue->head, &head, next)) {
                 continue;
             }
+            clog_queue_node_t* head_node = (clog_queue_node_t*)head;
+            clog_queue_node_t* next_node = (clog_queue_node_t*)next;
+            *data = next_node->data;
+            next_node->data = 0;
             clog_ebr_defer_release_global(queue->global, head_node);
             break;
         }
     }
 
-    if (len != NULL) {
-        *len = copy_num;
-    }
-    return is_oversize ? CLOG_OVERSIZE : CLOG_SUCCESS;
+    return CLOG_SUCCESS;
 }
 
-clog_res_e clog_atomic_queue_dequeue(clog_atomic_queue_handle_t handle, void* data, size_t size, size_t* len)
+clog_res_e clog_atomic_queue_dequeue(clog_atomic_queue_handle_t handle, uintptr_t* data)
 {
     CLOG_RET_IF_NULL(handle, CLOG_INVALID_PARAM);
+    CLOG_RET_IF_NULL(data, CLOG_INVALID_PARAM);
     clog_atomic_queue_t* queue = handle->queue;
-    CLOG_RET_IF_X(clog_atomic_get(&queue->state) != CLOG_ATOMIC_QUEUE_RUNNING, CLOG_ABNORMAL_STATE,
-                  "queue is not running");
+    CLOG_RET_IF_X(atomic_load(&queue->state) != CLOG_ATOMIC_QUEUE_RUNNING, CLOG_ABNORMAL_STATE, "queue is not running");
     clog_atomic_queue_gc(handle, false);
     clog_ebr_enter(handle->local);
-    const clog_res_e ret = clog_atomic_queue_dequeue_internal(queue, data, size, len, true);
+    const clog_res_e ret = clog_atomic_queue_dequeue_internal(queue, data, true);
     clog_ebr_exit(handle->local);
-    if (ret == CLOG_SUCCESS || ret == CLOG_OVERSIZE) {
-        clog_atomic_fetch_add(&handle->queue->release_num, 1);
+    if (ret == CLOG_SUCCESS) {
+        atomic_fetch_and(&handle->queue->release_num, 1);
     }
     return ret;
 }
@@ -227,9 +196,9 @@ clog_res_e clog_atomic_queue_dequeue(clog_atomic_queue_handle_t handle, void* da
 bool clog_atomic_queue_is_empty(clog_atomic_queue_handle_t handle)
 {
     CLOG_RET_IF_NULL_X(handle, true, "queue is NULL");
-    const clog_atomic_basic_t head = clog_atomic_get(&handle->queue->head);
-    const clog_atomic_basic_t tail = clog_atomic_get(&handle->queue->tail);
-    const clog_atomic_basic_t next = clog_atomic_get(&((clog_queue_node_t*)head)->next);
+    const atomic_uintptr_t head = atomic_load(&handle->queue->head);
+    const atomic_uintptr_t tail = atomic_load(&handle->queue->tail);
+    const atomic_uintptr_t next = atomic_load(&((clog_queue_node_t*)head)->next);
     return head == tail && next == 0;
 }
 
@@ -243,23 +212,23 @@ void clog_atomic_queue_detach(clog_atomic_queue_handle_t handle)
 clog_res_e clog_atomic_queue_destroy(clog_atomic_queue_t* queue)
 {
     CLOG_RET_IF_NULL_X(queue, CLOG_INVALID_PARAM, "queue is NULL");
-    clog_atomic_set(&queue->state, CLOG_ATOMIC_QUEUE_FINALIZING);
+    atomic_store(&queue->state, CLOG_ATOMIC_QUEUE_FINALIZING);
     /* clear all nodes */
-    clog_res_e ret = clog_atomic_queue_dequeue_internal(queue, NULL, 0, NULL, false);
-    while (ret == CLOG_SUCCESS || ret == CLOG_OVERSIZE) {
-        ret = clog_atomic_queue_dequeue_internal(queue, NULL, 0, NULL, false);
+    uintptr_t tmp = 0;
+    clog_res_e ret = clog_atomic_queue_dequeue_internal(queue, &tmp, false);
+    queue->deallocator((void*)tmp);
+    while (ret == CLOG_SUCCESS) {
+        ret = clog_atomic_queue_dequeue_internal(queue, &tmp, false);
+        queue->deallocator((void*)tmp);
     }
     /* clear dummy node */
-    clog_queue_node_t* dummy = (clog_queue_node_t*)clog_atomic_get(&queue->head);
+    clog_queue_node_t* dummy = (clog_queue_node_t*)atomic_load(&queue->head);
     if (dummy != NULL) {
         clog_ebr_defer_release_global(queue->global, dummy);
     }
     /* destroy ebr */
     clog_ebr_poll(queue->global);
     CLOG_IGNORE_RES(clog_ebr_destroy(queue->global));
-    ret = clog_buffer_pool_finalize(queue->pool);
-    CLOG_RET_IF_FAILED_X(ret, "clog_buffer_pool_finalize failed, ret = %u", ret);
-    queue->pool = NULL;
     clog_free(queue);
     return CLOG_SUCCESS;
 }
