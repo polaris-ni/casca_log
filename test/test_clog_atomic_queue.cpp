@@ -151,19 +151,17 @@ TEST_F(CLogAtomicQueueTest, LargeDataOperations)
 
 TEST_F(CLogAtomicQueueTest, MultiProducerSingleConsumer)
 {
-    constexpr std::size_t num_producers = 4;
-    constexpr std::size_t num_items_per_producer = 1000;
+    CLogTest::CLogProducerConsumerDataHolder<4, 1, std::uintptr_t> holder(1000, 0);
 
     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
 
     std::vector<std::thread> producers;
     std::atomic start_flag{false};
-    std::atomic total_produced{0};
 
-    producers.reserve(num_producers);
-    for (std::size_t i = 0; i < num_producers; ++i) {
+    producers.reserve(holder.producer_num);
+    for (std::size_t i = 0; i < holder.producer_num; ++i) {
         producers.emplace_back(
-            [this, i, &start_flag, &total_produced, num_items_per_producer]
+            [this, i, &start_flag, &holder]
             {
                 while (!start_flag.load()) {
                     std::this_thread::yield();
@@ -173,10 +171,10 @@ TEST_F(CLogAtomicQueueTest, MultiProducerSingleConsumer)
                     clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_ENQUEUE);
                 EXPECT_NE(handle, nullptr);
 
-                for (std::size_t j = 0; j < num_items_per_producer; ++j) {
-                    const std::uintptr_t value = i * num_items_per_producer + j;
+                for (std::size_t j = 0; j < holder.num_per_producer; ++j) {
+                    const std::uintptr_t value = i * holder.num_per_producer + j;
                     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, value));
-                    total_produced.fetch_add(1);
+                    holder.Produce(i, value);
                 }
 
                 clog_atomic_queue_detach(handle);
@@ -184,33 +182,25 @@ TEST_F(CLogAtomicQueueTest, MultiProducerSingleConsumer)
     }
 
     std::thread consumer(
-        [this, &start_flag, num_producers, num_items_per_producer]
+        [this, &start_flag, &holder]
         {
             start_flag.store(true);
 
             clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_DEQUEUE);
             EXPECT_NE(handle, nullptr);
-
-            std::vector received(num_producers * num_items_per_producer, false);
             std::size_t items_received = 0;
 
-            while (items_received < num_producers * num_items_per_producer) {
+            while (items_received < holder.producer_num * holder.num_per_producer) {
                 std::uintptr_t value;
                 const clog_res_e res = clog_atomic_queue_dequeue(handle, &value);
                 if (res == CLOG_SUCCESS) {
-                    EXPECT_LT(value, num_producers * num_items_per_producer);
-                    EXPECT_FALSE(received[value]);
-                    received[value] = true;
-                    items_received++;
+                    holder.Consume(0, value);
+                    ++items_received;
                 } else if (res != CLOG_TARGET_NOT_FOUND) {
                     FAIL() << "Unexpected dequeue result: " << res;
                 } else {
                     std::this_thread::sleep_for(std::chrono::microseconds(1));
                 }
-            }
-
-            for (std::size_t i = 0; i < num_producers * num_items_per_producer; ++i) {
-                EXPECT_TRUE(received[i]) << "Missing Item: " << i;
             }
 
             clog_atomic_queue_detach(handle);
@@ -220,12 +210,12 @@ TEST_F(CLogAtomicQueueTest, MultiProducerSingleConsumer)
         producer.join();
     }
     consumer.join();
+    holder.Validate(holder.producer_num * holder.num_per_producer);
 }
 
 TEST_F(CLogAtomicQueueTest, SingleProducerMultiConsumer)
 {
-    constexpr std::size_t num_consumers = 4;
-    constexpr std::size_t num_items = 1000;
+    CLogTest::CLogProducerConsumerDataHolder<1, 4, std::uintptr_t> holder(0, 1000);
 
     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
 
@@ -233,12 +223,11 @@ TEST_F(CLogAtomicQueueTest, SingleProducerMultiConsumer)
     std::atomic total_consumed{0};
     std::vector<std::thread> consumers;
     std::vector<std::size_t> consumed_values;
-    std::mutex consumed_values_mutex;
 
-    consumers.reserve(num_consumers);
-    for (std::size_t i = 0; i < num_consumers; ++i) {
+    consumers.reserve(holder.consumer_num);
+    for (std::size_t i = 0; i < holder.consumer_num; ++i) {
         consumers.emplace_back(
-            [this, &start_flag, &total_consumed, &consumed_values, &consumed_values_mutex, num_items]
+            [this, &start_flag, &total_consumed, &holder, i]
             {
                 while (!start_flag.load()) {
                     std::this_thread::yield();
@@ -248,15 +237,12 @@ TEST_F(CLogAtomicQueueTest, SingleProducerMultiConsumer)
                     clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_DEQUEUE);
                 EXPECT_NE(handle, nullptr);
 
-                while (total_consumed.load() < num_items) {
+                while (total_consumed.load() < holder.consumer_num * holder.num_per_consumer) {
                     std::uintptr_t value;
                     const clog_res_e res = clog_atomic_queue_dequeue(handle, &value);
                     if (res == CLOG_SUCCESS) {
+                        holder.Consume(i, value);
                         total_consumed.fetch_add(1);
-                        {
-                            std::lock_guard lock(consumed_values_mutex);
-                            consumed_values.push_back(value);
-                        }
                     } else if (res != CLOG_TARGET_NOT_FOUND) {
                         FAIL() << "Unexpected dequeue result: " << res;
                     } else {
@@ -269,15 +255,16 @@ TEST_F(CLogAtomicQueueTest, SingleProducerMultiConsumer)
     }
 
     std::thread producer(
-        [this, &start_flag, num_items]
+        [this, &start_flag, &holder]
         {
             clog_atomic_queue_handle_t handle = clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_ENQUEUE);
             EXPECT_NE(handle, nullptr);
 
             start_flag.store(true);
 
-            for (std::size_t i = 0; i < num_items; ++i) {
+            for (std::size_t i = 0; i < holder.consumer_num * holder.num_per_consumer; ++i) {
                 EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, i));
+                holder.Produce(0, i);
             }
 
             clog_atomic_queue_detach(handle);
@@ -288,19 +275,14 @@ TEST_F(CLogAtomicQueueTest, SingleProducerMultiConsumer)
         consumer.join();
     }
 
-    EXPECT_EQ(total_consumed.load(), num_items);
-    EXPECT_EQ(consumed_values.size(), num_items);
-
-    std::sort(consumed_values.begin(), consumed_values.end());
-    const auto last = std::unique(consumed_values.begin(), consumed_values.end());
-    EXPECT_EQ(last, consumed_values.end()) << "Duplicate values found";
+    EXPECT_EQ(total_consumed.load(), holder.consumer_num * holder.num_per_consumer);
+    holder.Validate(holder.consumer_num * holder.num_per_consumer);
 }
 
 TEST_F(CLogAtomicQueueTest, MultiProducerMultiConsumer)
 {
-    constexpr std::size_t num_producers = 3;
-    constexpr std::size_t num_consumers = 3;
-    constexpr std::size_t num_items_per_producer = 500;
+
+    CLogTest::CLogProducerConsumerDataHolder<8, 8, std::uintptr_t> holder(1000, 1000);
 
     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
 
@@ -309,13 +291,11 @@ TEST_F(CLogAtomicQueueTest, MultiProducerMultiConsumer)
     std::atomic total_consumed{0};
     std::vector<std::thread> producers;
     std::vector<std::thread> consumers;
-    std::vector<std::size_t> consumed_values;
-    std::mutex consumed_values_mutex;
 
-    producers.reserve(num_producers);
-    for (std::size_t i = 0; i < num_producers; ++i) {
+    producers.reserve(holder.producer_num);
+    for (std::size_t i = 0; i < holder.producer_num; ++i) {
         producers.emplace_back(
-            [this, i, &start_flag, &total_produced, num_items_per_producer]
+            [this, i, &start_flag, &total_produced, &holder]
             {
                 while (!start_flag.load()) {
                     std::this_thread::yield();
@@ -325,9 +305,10 @@ TEST_F(CLogAtomicQueueTest, MultiProducerMultiConsumer)
                     clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_ENQUEUE);
                 EXPECT_NE(handle, nullptr);
 
-                for (std::size_t j = 0; j < num_items_per_producer; ++j) {
-                    std::uintptr_t value = i * num_items_per_producer + j;
+                for (std::size_t j = 0; j < holder.num_per_producer; ++j) {
+                    std::uintptr_t value = i * holder.num_per_producer + j;
                     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_enqueue(handle, value));
+                    holder.Produce(i, value);
                     total_produced.fetch_add(1);
                 }
 
@@ -335,31 +316,27 @@ TEST_F(CLogAtomicQueueTest, MultiProducerMultiConsumer)
             });
     }
 
-    constexpr std::size_t items_to_consume = num_producers * num_items_per_producer / num_consumers + 10;
+    consumers.reserve(holder.consumer_num);
+    for (std::size_t i = 0; i < holder.consumer_num; ++i) {
 
-    consumers.reserve(num_consumers);
-    for (std::size_t i = 0; i < num_consumers; ++i) {
-        constexpr std::size_t total_num = num_producers * num_items_per_producer;
         consumers.emplace_back(
-            [this, &start_flag, &total_consumed, &consumed_values, &consumed_values_mutex, items_to_consume, total_num]
+            [this, &start_flag, &total_consumed, &holder, i]
             {
                 while (!start_flag.load()) {
                     std::this_thread::yield();
                 }
-
+                const std::size_t total_num = holder.producer_num * holder.num_per_producer;
+                const std::size_t consume_num = total_num / holder.consumer_num + 10;
                 clog_atomic_queue_handle_t handle =
                     clog_atomic_queue_attach(this->queue, CLOG_ATOMIC_QUEUE_BIASED_DEQUEUE);
                 EXPECT_NE(handle, nullptr);
 
-                for (std::size_t j = 0; j < items_to_consume && total_consumed.load() < total_num;) {
+                for (std::size_t j = 0; j < consume_num && total_consumed.load() < total_num;) {
                     std::uintptr_t value;
                     const clog_res_e res = clog_atomic_queue_dequeue(handle, &value);
                     if (res == CLOG_SUCCESS) {
                         total_consumed.fetch_add(1);
-                        {
-                            std::lock_guard lock(consumed_values_mutex);
-                            consumed_values.push_back(value);
-                        }
+                        holder.Consume(i, value);
                         j++;
                     } else if (res != CLOG_TARGET_NOT_FOUND) {
                         FAIL() << "Unexpected dequeue result: " << res;
@@ -381,24 +358,14 @@ TEST_F(CLogAtomicQueueTest, MultiProducerMultiConsumer)
         consumer.join();
     }
 
-    EXPECT_EQ(total_produced.load(), num_producers * num_items_per_producer);
-    EXPECT_EQ(total_consumed.load(), num_producers * num_items_per_producer);
-    EXPECT_EQ(consumed_values.size(), num_producers * num_items_per_producer);
-
-    std::sort(consumed_values.begin(), consumed_values.end());
-    const auto last = std::unique(consumed_values.begin(), consumed_values.end());
-    EXPECT_EQ(last, consumed_values.end()) << "Duplicate values found";
-
-    for (std::size_t i = 0; i < num_producers * num_items_per_producer; ++i) {
-        bool found = std::binary_search(consumed_values.begin(), consumed_values.end(), i);
-        EXPECT_TRUE(found) << "Missing value: " << i;
-    }
+    EXPECT_EQ(total_produced.load(), holder.producer_num * holder.num_per_producer);
+    EXPECT_EQ(total_consumed.load(), total_consumed.load());
+    holder.Validate(total_produced.load());
 }
 
 TEST_F(CLogAtomicQueueTest, MultiThreadsWithDifferentBiases)
 {
     constexpr std::size_t num_threads = 4;
-
     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
 
     std::vector<std::thread> threads;
@@ -409,7 +376,7 @@ TEST_F(CLogAtomicQueueTest, MultiThreadsWithDifferentBiases)
                                          CLOG_ATOMIC_QUEUE_BIASED_DEQUEUE, CLOG_ATOMIC_QUEUE_BIASED_ANY};
 
     for (std::size_t i = 0; i < num_threads; ++i) {
-        constexpr std::size_t num_items_per_thread = 500;
+        std::size_t num_items_per_thread = 500;
         threads.emplace_back(
             [this, i, &start_flag, &total_operations, biases, num_items_per_thread]
             {
@@ -463,8 +430,8 @@ TEST_F(CLogAtomicQueueTest, MultiThreadsWithDifferentBiases)
 
 TEST_F(CLogAtomicQueueTest, HighConcurrencyPerformance)
 {
-    constexpr std::size_t num_threads = 8;
-    constexpr std::size_t num_items_per_thread = 1000;
+    constexpr std::size_t num_threads = 16;
+    std::size_t num_items_per_thread = 10000;
 
     EXPECT_EQ(CLOG_SUCCESS, clog_atomic_queue_create(&queue, CLogAtomicQueueTestNoFree));
 
