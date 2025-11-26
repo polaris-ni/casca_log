@@ -7,6 +7,7 @@
 
 #include <stdbool.h>
 #include "casca_log_base.h"
+#include "clog_hooks.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -26,11 +27,10 @@ typedef struct clog_atomic_queue_handle* clog_atomic_queue_handle_t;
 /**
  * create atomic queue
  * @param queue atomic queue
- * @param item_size the size of item in queue
- * @param threshold when usage is lower than threshold, queue will be shrinking
+ * @param deallocator when the queue is destroyed and the queue is not empty, the deallocator will be called
  * @return #clog_res_e
  */
-clog_res_e clog_atomic_queue_create(clog_atomic_queue_t** queue, size_t item_size, uint8_t threshold);
+clog_res_e clog_atomic_queue_create(clog_atomic_queue_t** queue, clog_deallocator_f deallocator);
 
 /**
  * get thread local atomic queue handle
@@ -43,22 +43,19 @@ clog_atomic_queue_handle_t clog_atomic_queue_attach(clog_atomic_queue_t* queue, 
 /**
  * enqueue data
  * @param handle atomic queue handle
- * @param data data
- * @param size size of #data
+ * @param ptr data pointer, it should not be free until it is dequeued
  * @return #clog_res_e
  */
-clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_handle_t handle, const void* data, size_t size);
+clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_handle_t handle, uintptr_t ptr);
 
 /**
  * dequeue data
  * if the len of data dequeued is greater than #size, data will be truncated and #CLOG_OVERSIZE will be return
  * @param handle atomic queue handle
- * @param data buffer to store data, if it is NULL, dequeue will still be performed
- * @param size size of #data
- * @param len nullable, it will be set to the actual size of the extracted data (even if truncation occurs) if not null
+ * @param data buffer to store data
  * @return #clog_res_e
  */
-clog_res_e clog_atomic_queue_dequeue(clog_atomic_queue_handle_t handle, void* data, size_t size, size_t* len);
+clog_res_e clog_atomic_queue_dequeue(clog_atomic_queue_handle_t handle, uintptr_t* data);
 
 /**
  * check if queue is empty
