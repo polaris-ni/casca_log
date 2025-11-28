@@ -1,3 +1,7 @@
+/**
+ * @author Polaris
+ * @date  2025/11/25
+ */
 #include <atomic>
 #include <gtest/gtest.h>
 #include <thread>
@@ -5,7 +9,7 @@
 #include "clog_ebr.h"
 #include "test_util.h"
 
-static std::atomic<int> freed_count(0);
+static std::atomic freed_count(0);
 void test_deallocator(void* ptr)
 {
     freed_count.fetch_add(1);
