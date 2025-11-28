@@ -37,7 +37,7 @@ clog_res_e clog_atomic_mpsc_queue_in(clog_atomic_mpsc_queue_t* queue, uintptr_t 
     CLOG_RET_IF_NULL(queue, CLOG_INVALID_PARAM);
     clog_atomic_mpsc_queue_node_t* node = clog_malloc(sizeof(clog_atomic_mpsc_queue_node_t));
     CLOG_RET_IF_NULL_X(node, CLOG_NO_MEMORY, "malloc clog_atomic_mpsc_queue_node_t failed");
-    node->data = 0;
+    node->data = data;
     atomic_init(&node->next, 0);
 
     while (true) {
