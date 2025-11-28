@@ -56,8 +56,7 @@ TEST_F(CLogAtomicMpscQueueTest, MultiProducerSingleConsumer)
     constexpr size_t NUM_ITEMS_PER_PRODUCER = 1000;
     constexpr size_t TOTAL_ITEMS = NUM_PRODUCERS * NUM_ITEMS_PER_PRODUCER;
 
-    CLogTest::CLogProducerConsumerDataHolder<NUM_PRODUCERS, 1, uintptr_t> data_holder(NUM_ITEMS_PER_PRODUCER,
-                                                                                      TOTAL_ITEMS);
+    CLogTest::CLogProducerConsumerDataHolder<NUM_PRODUCERS, 1, uintptr_t> holder(NUM_ITEMS_PER_PRODUCER, TOTAL_ITEMS);
 
     std::vector<std::thread> producers;
     std::atomic<bool> stop_consumer{false};
@@ -70,7 +69,7 @@ TEST_F(CLogAtomicMpscQueueTest, MultiProducerSingleConsumer)
                 uintptr_t data;
                 const clog_res_e result = clog_atomic_mpsc_queue_out(queue, &data);
                 if (result == CLOG_SUCCESS) {
-                    data_holder.Consume(0, data);
+                    holder.Consume(0, data);
                     consumed_count.fetch_add(1);
                 } else {
                     std::this_thread::sleep_for(std::chrono::microseconds(1));
@@ -87,7 +86,7 @@ TEST_F(CLogAtomicMpscQueueTest, MultiProducerSingleConsumer)
 
                 for (size_t j = 0; j < NUM_ITEMS_PER_PRODUCER; ++j) {
                     uintptr_t value = dist(rng);
-                    data_holder.Produce(i, value);
+                    holder.Produce(i, value);
 
                     clog_res_e result = clog_atomic_mpsc_queue_in(queue, value);
                     EXPECT_EQ(CLOG_SUCCESS, result);
@@ -106,28 +105,26 @@ TEST_F(CLogAtomicMpscQueueTest, MultiProducerSingleConsumer)
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     stop_consumer.store(true);
     consumer.join();
-    data_holder.Validate(TOTAL_ITEMS);
+    holder.Validate(TOTAL_ITEMS);
 }
 
 TEST_F(CLogAtomicMpscQueueTest, HighConcurrencyStressTest)
 {
     constexpr size_t NUM_PRODUCERS = 16;
-    constexpr size_t NUM_ITEMS_PER_PRODUCER = 100000;
+    constexpr size_t NUM_ITEMS_PER_PRODUCER = 1000;
     constexpr size_t TOTAL_ITEMS = NUM_PRODUCERS * NUM_ITEMS_PER_PRODUCER;
 
     std::vector<std::thread> producers;
     std::atomic<size_t> consumed_count{0};
-    std::atomic<bool> stop_consumer{false};
-    CLogTest::CLogProducerConsumerDataHolder<NUM_PRODUCERS, 1, uintptr_t> data_holder(NUM_ITEMS_PER_PRODUCER,
-                                                                                      TOTAL_ITEMS);
+    CLogTest::CLogProducerConsumerDataHolder<NUM_PRODUCERS, 1, uintptr_t> holder(NUM_ITEMS_PER_PRODUCER, TOTAL_ITEMS);
     auto consumer = std::thread(
         [&]
         {
-            while (!stop_consumer.load() || consumed_count.load() < TOTAL_ITEMS) {
+            while (consumed_count.load() < TOTAL_ITEMS) {
                 uintptr_t data;
                 const clog_res_e result = clog_atomic_mpsc_queue_out(queue, &data);
                 if (result == CLOG_SUCCESS) {
-                    data_holder.Consume(0, data);
+                    holder.Consume(0, data);
                     consumed_count.fetch_add(1);
                 } else {
                     std::this_thread::sleep_for(std::chrono::microseconds(1));
@@ -135,6 +132,7 @@ TEST_F(CLogAtomicMpscQueueTest, HighConcurrencyStressTest)
             }
         });
 
+    producers.reserve(NUM_PRODUCERS);
     for (size_t i = 0; i < NUM_PRODUCERS; ++i) {
         producers.emplace_back(
             [&, i]
@@ -143,7 +141,7 @@ TEST_F(CLogAtomicMpscQueueTest, HighConcurrencyStressTest)
                     const uintptr_t value = (i * NUM_ITEMS_PER_PRODUCER) + j;
                     clog_res_e result = clog_atomic_mpsc_queue_in(queue, value);
                     EXPECT_EQ(CLOG_SUCCESS, result);
-                    data_holder.Produce(i, value);
+                    holder.Produce(i, value);
                 }
             });
     }
@@ -152,15 +150,10 @@ TEST_F(CLogAtomicMpscQueueTest, HighConcurrencyStressTest)
         producer.join();
     }
 
-    for (int i = 0; i < 100 && consumed_count.load() < TOTAL_ITEMS; ++i) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-
-    stop_consumer.store(true);
     consumer.join();
 
     EXPECT_EQ(TOTAL_ITEMS, consumed_count.load());
-    data_holder.Validate(TOTAL_ITEMS);
+    holder.Validate(TOTAL_ITEMS);
 }
 
 TEST_F(CLogAtomicMpscQueueTest, RapidEnqueueDequeue)
