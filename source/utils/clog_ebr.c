@@ -22,19 +22,19 @@ typedef struct clog_ebr_retired_list {
 } clog_ebr_retired_list_t;
 
 struct clog_ebr_global {
-    _Alignas(CLOG_CACHE_LINE_SIZE) atomic_int state;
-    _Alignas(CLOG_CACHE_LINE_SIZE) atomic_uint_fast64_t epoch;
-    _Alignas(CLOG_CACHE_LINE_SIZE) clog_ebr_thread_local_t* threads;
-    _Alignas(CLOG_CACHE_LINE_SIZE) clog_mutex_t mutex;
-    _Alignas(CLOG_CACHE_LINE_SIZE) clog_ebr_retired_list_t memory[CLOG_EBR_NUM_EPOCHS];
-    _Alignas(CLOG_CACHE_LINE_SIZE) clog_deallocator_f free;
+    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) atomic_int state;
+    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) atomic_uint_fast64_t epoch;
+    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_ebr_thread_local_t* threads;
+    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_mutex_t mutex;
+    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_ebr_retired_list_t memory[CLOG_EBR_NUM_EPOCHS];
+    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_deallocator_f free;
 };
 
 struct clog_ebr_thread_local {
-    _Alignas(CLOG_CACHE_LINE_SIZE) clog_ebr_global_t* global;
-    _Alignas(CLOG_CACHE_LINE_SIZE) atomic_uint_fast64_t epoch;
-    _Alignas(CLOG_CACHE_LINE_SIZE) atomic_int state;
-    _Alignas(CLOG_CACHE_LINE_SIZE) clog_ebr_thread_local_t* next;
+    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_ebr_global_t* global;
+    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) atomic_uint_fast64_t epoch;
+    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) atomic_int state;
+    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_ebr_thread_local_t* next;
 };
 
 clog_res_e clog_ebr_create(clog_ebr_global_t** global, clog_deallocator_f free)

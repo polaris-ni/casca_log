@@ -20,14 +20,14 @@ struct clog_buffer {
 
 struct clog_buffer_pool {
     clog_atomic_type_t head;
-    char pad0[CLOG_CACHE_LINE_SIZE - sizeof(clog_atomic_type_t)];
+    char pad0[CASCA_LOG_CACHE_LINE_SIZE - sizeof(clog_atomic_type_t)];
 
     clog_atomic_type_t state;
-    char pad1[CLOG_CACHE_LINE_SIZE - sizeof(clog_atomic_type_t)];
+    char pad1[CASCA_LOG_CACHE_LINE_SIZE - sizeof(clog_atomic_type_t)];
 
     clog_atomic_type_t free_count;
     clog_atomic_type_t capacity;
-    char pad2[CLOG_CACHE_LINE_SIZE - 2 * sizeof(clog_atomic_type_t)];
+    char pad2[CASCA_LOG_CACHE_LINE_SIZE - 2 * sizeof(clog_atomic_type_t)];
 
     size_t init_capacity;
     size_t threshold;
