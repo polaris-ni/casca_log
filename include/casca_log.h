@@ -5,9 +5,10 @@
 #ifndef CASCA_LOG_CASCA_LOG_H
 #define CASCA_LOG_CASCA_LOG_H
 
+#include "clog_buffer_pool.h"
+#include "clog_config.h"
 #include "clog_filter.h"
 #include "clog_placeholder.h"
-#include "clog_config.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -105,6 +106,12 @@ void clog_set_filters(const clog_filter_t* pre, const clog_filter_t* post);
  * @return #clog_module_t, NULL if module is not existed or not enabled
  */
 const clog_module_t* clog_get_module_info(const char* module);
+
+/**
+ * get log buffer pool
+ * @return #clog_buffer_pool_t
+ */
+clog_buffer_pool_t* clog_get_buffer_pool(void);
 
 /**
  * destroy clog

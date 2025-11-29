@@ -75,7 +75,7 @@ clog_res_e clog_atomic_mpsc_queue_out(clog_atomic_mpsc_queue_t* queue, uintptr_t
     return CLOG_SUCCESS;
 }
 
-void clog_atomic_mpsc_atomic_destroy(clog_atomic_mpsc_queue_t* queue)
+void clog_atomic_mpsc_queue_destroy(clog_atomic_mpsc_queue_t* queue)
 {
     CLOG_RET_VOID_IF_NULL(queue);
     uintptr_t head = atomic_load(&queue->head);

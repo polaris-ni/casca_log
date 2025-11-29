@@ -16,7 +16,7 @@ void test_deallocator(void* ptr)
     clog_free(ptr);
 }
 
-class CLogEbrTest : public ::testing::Test
+class CLogEbrTest : public testing::Test
 {
 protected:
     clog_ebr_global_t* global = nullptr;

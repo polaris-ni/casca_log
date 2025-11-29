@@ -135,7 +135,7 @@ namespace CLogTest
         }
     };
 
-    int clog_test_gen_random(int min, int max);
+    int GenerateRandomNumber(int min, int max);
 
 } // namespace CLogTest
 #endif /* CASCA_LOG_TEST_UTIL_H */
