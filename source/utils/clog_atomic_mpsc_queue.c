@@ -35,56 +35,44 @@ clog_atomic_mpsc_queue_t* clog_atomic_mpsc_queue_create(void)
 clog_res_e clog_atomic_mpsc_queue_in(clog_atomic_mpsc_queue_t* queue, uintptr_t data)
 {
     CLOG_RET_IF_NULL(queue, CLOG_INVALID_PARAM);
+
     clog_atomic_mpsc_queue_node_t* node = clog_malloc(sizeof(clog_atomic_mpsc_queue_node_t));
-    CLOG_RET_IF_NULL_X(node, CLOG_NO_MEMORY, "malloc clog_atomic_mpsc_queue_node_t failed");
+    CLOG_RET_IF_NULL_X(node, CLOG_NO_MEMORY, "malloc failed");
+
     node->data = data;
     atomic_init(&node->next, 0);
 
-    while (true) {
-        uintptr_t tail = atomic_load(&queue->tail);
-        clog_atomic_mpsc_queue_node_t* tail_node = (clog_atomic_mpsc_queue_node_t*)tail;
-        uintptr_t next = atomic_load(&tail_node->next);
-        if (next != 0) {
-            atomic_compare_exchange_strong(&queue->tail, &tail, next);
-            continue;
-        }
-        if (tail != atomic_load(&queue->tail)) {
-            continue;
-        }
-        const uintptr_t new_tail = (uintptr_t)node;
-        if (atomic_compare_exchange_strong(&tail_node->next, &next, new_tail)) {
-            atomic_compare_exchange_strong(&queue->tail, &tail, new_tail);
-            return CLOG_SUCCESS;
-        }
-    }
+    const uintptr_t prev_tail = atomic_exchange_explicit(&queue->tail, (uintptr_t)node, memory_order_release);
+    clog_atomic_mpsc_queue_node_t* prev_tail_node = (clog_atomic_mpsc_queue_node_t*)prev_tail;
+
+    atomic_store_explicit(&prev_tail_node->next, (uintptr_t)node, memory_order_release);
+
+    return CLOG_SUCCESS;
 }
 
 clog_res_e clog_atomic_mpsc_queue_out(clog_atomic_mpsc_queue_t* queue, uintptr_t* data)
 {
     CLOG_RET_IF_NULL(queue, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(data, CLOG_INVALID_PARAM);
-    while (true) {
-        uintptr_t head = atomic_load(&queue->head);
-        uintptr_t tail = atomic_load(&queue->tail);
-        clog_atomic_mpsc_queue_node_t* head_node = (clog_atomic_mpsc_queue_node_t*)head;
-        if (head == tail) {
-            const uintptr_t next = atomic_load(&head_node->next);
-            if (next == 0) {
-                return CLOG_TARGET_NOT_FOUND;
-            }
-            atomic_compare_exchange_strong(&queue->tail, &tail, next);
-            continue;
-        }
-        const uintptr_t head_next = atomic_load(&head_node->next);
-        if (head_next == 0) {
-            return CLOG_ABNORMAL_STATE;
-        }
-        if (atomic_compare_exchange_strong(&queue->head, &head, head_next)) {
-            *data = ((clog_atomic_mpsc_queue_node_t*)head_next)->data;
-            clog_free(head_node);
-            return CLOG_SUCCESS;
-        }
+
+    clog_atomic_mpsc_queue_node_t* head =
+        (clog_atomic_mpsc_queue_node_t*)atomic_load_explicit(&queue->head, memory_order_relaxed);
+
+    clog_atomic_mpsc_queue_node_t* next =
+        (clog_atomic_mpsc_queue_node_t*)atomic_load_explicit(&head->next, memory_order_acquire);
+
+    if (next == NULL) {
+        return CLOG_TARGET_NOT_FOUND;
     }
+
+    *data = next->data;
+
+    atomic_store_explicit(&queue->head, (uintptr_t)next, memory_order_release);
+
+    atomic_thread_fence(memory_order_seq_cst);
+    clog_free(head);
+
+    return CLOG_SUCCESS;
 }
 
 void clog_atomic_mpsc_atomic_destroy(clog_atomic_mpsc_queue_t* queue)
