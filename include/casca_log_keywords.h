@@ -24,6 +24,9 @@ extern "C" {
 #define CLOG_STR_ERROR "error"
 #define CLOG_STR_FETAL "fetal"
 #define CLOG_STR_RECORDER "recorder"
+#define CLOG_STR_AUTO "auto"
+#define CLOG_STR_CAPACITY "capacity"
+#define CLOG_STR_THRESHOLD "threshold"
 
 /* groups */
 #define CLOG_STR_FILTERS "Filters"

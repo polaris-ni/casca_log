@@ -78,7 +78,7 @@ namespace CLogTest
         logs.clear();
     }
 
-    int clog_test_gen_random(int min, int max)
+    int GenerateRandomNumber(int min, int max)
     {
         std::random_device rd;
         std::mt19937 gen(rd());

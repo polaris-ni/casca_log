@@ -90,4 +90,6 @@ error = [[255, 0, 0], []]
 fetal = [[255, 255, 255], [139, 0, 0]]
 
 [Performance.BufferPool]
-capacity = 32
+auto = true # auto expand buffer pool, default value is true
+capacity = 32 # buffer pool init capacity
+threshold = 75 # buffer pool shrink threshold(percent), it should be (0, 100]

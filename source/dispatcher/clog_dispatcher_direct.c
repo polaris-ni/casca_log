@@ -21,12 +21,11 @@ static clog_res_e clog_dispatcher_direct_dispatch(clog_dispatcher_t* self, const
     return last;
 }
 
-const clog_dispatcher_t* clog_dispatcher_direct(void)
+void clog_dispatcher_direct(clog_dispatcher_t* dispatcher)
 {
-    static const clog_dispatcher_t dispatcher = {.id = CLOG_DISPATCHER_ID_DIRECT,
-                                                 .open = clog_dispatcher_empty_open,
-                                                 .dispatch = clog_dispatcher_direct_dispatch,
-                                                 .close = clog_dispatcher_empty_close,
-                                                 .extra = NULL};
-    return &dispatcher;
+    dispatcher->id = CLOG_DISPATCHER_ID_DIRECT;
+    dispatcher->open = clog_dispatcher_empty_open;
+    dispatcher->dispatch = clog_dispatcher_direct_dispatch;
+    dispatcher->close = clog_dispatcher_empty_close;
+    dispatcher->extra = NULL;
 }

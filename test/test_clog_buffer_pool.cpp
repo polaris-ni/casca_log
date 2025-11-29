@@ -9,7 +9,7 @@
 #include "clog_buffer_pool.h"
 #include "test_util.h"
 
-class CLogBufferPoolTest : public ::testing::Test
+class CLogBufferPoolTest : public testing::Test
 {
 protected:
     void SetUp() override
@@ -193,7 +193,7 @@ TEST_F(CLogBufferPoolTest, MultiThreadAcquireAndRelease)
 
             thread_entries[thread_id].push_back(entry);
 
-            std::this_thread::sleep_for(std::chrono::microseconds(CLogTest::clog_test_gen_random(0, 16)));
+            std::this_thread::sleep_for(std::chrono::microseconds(CLogTest::GenerateRandomNumber(0, 16)));
         }
 
         for (void* entry : thread_entries[thread_id]) {
@@ -236,7 +236,7 @@ TEST_F(CLogBufferPoolTest, MultiThreadAutoExpandAndShrink)
             ASSERT_NE(entry, nullptr);
             thread_entries[index].push_back(entry);
             ++total_acquired;
-            std::this_thread::sleep_for(std::chrono::microseconds(CLogTest::clog_test_gen_random(0, 16)));
+            std::this_thread::sleep_for(std::chrono::microseconds(CLogTest::GenerateRandomNumber(0, 16)));
         }
     };
 
@@ -303,7 +303,7 @@ TEST_F(CLogBufferPoolTest, MultiThreadUniqueEntryCheck)
             local_entries.push_back(entry);
             total_acquired.fetch_add(1);
 
-            std::this_thread::sleep_for(std::chrono::microseconds(CLogTest::clog_test_gen_random(0, 16)));
+            std::this_thread::sleep_for(std::chrono::microseconds(CLogTest::GenerateRandomNumber(0, 16)));
         }
 
         for (void* entry : local_entries) {

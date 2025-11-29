@@ -41,6 +41,7 @@ typedef struct clog_context {
         clog_filter_t pre;
         clog_filter_t post;
     } filters;
+    clog_buffer_pool_t* pool;
 } clog_context_t;
 
 static clog_context_t g_context = {0};
@@ -139,6 +140,30 @@ static clog_res_e clog_init_process(const char* process, const clog_config_group
     return CLOG_SUCCESS;
 }
 
+static clog_res_e clog_init_buffer_pool(clog_context_t* context, const clog_config_group_t* root)
+{
+    const char* groups[] = {CLOG_STR_PERFORMANCE, CLOG_STR_BUFFER_POOL};
+    const clog_config_group_t* config = clog_config_find_group(root, groups, CLOG_ARRAY_SIZE(groups));
+    CLOG_RET_IF_NULL_X(config, CLOG_TARGET_NOT_FOUND, "config Performance.BufferPool not found");
+    bool auto_manage = true;
+    clog_res_e ret = clog_config_find_item_in_group_bool(config, CLOG_STR_AUTO, &auto_manage);
+    if (ret != CLOG_SUCCESS) {
+        CLOG_RET_IF_X(ret != CLOG_TARGET_NOT_FOUND, ret,
+                      "parse config \"auto\" in Performance.BufferPool failed, ret = %u", ret);
+        auto_manage = true;
+    }
+    uint32_t capacity = 0;
+    ret = clog_config_find_item_in_group_uint(config, CLOG_STR_CAPACITY, &capacity);
+    CLOG_RET_IF_FAILED_X(ret, "parse config \"capacity\" in Performance.BufferPool failed, ret = %u", ret);
+    uint32_t threshold = 0;
+    ret = clog_config_find_item_in_group_uint(config, CLOG_STR_THRESHOLD, &threshold);
+    CLOG_RET_IF_FAILED_X(ret, "parse config \"threshold\" in Performance.BufferPool failed, ret = %u", ret);
+    CLOG_RET_IF_X(capacity == 0 || capacity >= 100, CLOG_INVALID_PARAM, "capacity(%u) is invalid", capacity);
+    ret = clog_buffer_pool_initialize(&context->pool, sizeof(clog_item_t), capacity, auto_manage, threshold);
+    CLOG_RET_IF_FAILED_X(ret, "clog_buffer_pool_initialize failed, ret = %u", ret);
+    return CLOG_SUCCESS;
+}
+
 clog_res_e clog_init(const char* process, const char* config)
 {
     CLOG_RET_IF_NULL_X(process, CLOG_INVALID_PARAM, "process is NULL");
@@ -152,14 +177,15 @@ clog_res_e clog_init(const char* process, const char* config)
         return CLOG_ERROR_FORMAT;
     }
 
-    const clog_res_e ret = clog_init_process(process, g_context.config.root, &g_context.modules);
+    clog_res_e ret = clog_init_process(process, g_context.config.root, &g_context.modules);
     if (g_context.modules == NULL) {
         clog_destroy(NULL, 0);
         return ret;
     }
 
 #ifdef CASCA_LOG_MEM_POOL
-    clog_mp_init(CLOG_MP_PRE_ALLOCATED_NORMAL);
+    ret = clog_init_buffer_pool(&g_context, g_context.config.root);
+    CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_destroy(NULL, 0), "clog_init_buffer_pool failed, ret = %u", ret);
 #endif
     return CLOG_SUCCESS;
 }
@@ -270,6 +296,11 @@ const clog_module_t* clog_get_module_info(const char* module)
     return clog_hashmap_get(g_context.modules, module);
 }
 
+clog_buffer_pool_t* clog_get_buffer_pool(void)
+{
+    return g_context.pool;
+}
+
 void clog_destroy(const clog_cleanup_f* funcs, const size_t num)
 {
     const size_t count = CLOG_ARRAY_SIZE(g_cleanup_funcs);
@@ -283,7 +314,9 @@ void clog_destroy(const clog_cleanup_f* funcs, const size_t num)
     g_context.filters.post.next = NULL;
     clog_config_destroy_group(g_context.config.root);
     clog_hashmap_destroy(&g_context.modules);
-    clog_mp_finalize();
+    if (g_context.pool != NULL) {
+        clog_buffer_pool_finalize(g_context.pool);
+    }
     g_context.config.root = NULL;
     g_context.config.level = CLOG_LEVEL_OFF;
     if (funcs != NULL && num != 0) {
