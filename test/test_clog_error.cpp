@@ -6,7 +6,7 @@
 #include "clog_error.h"
 #include "test_util.h"
 
-class CLogErrorTest : public ::testing::Test
+class CLogErrorTest : public testing::Test
 {
 protected:
     void SetUp() override

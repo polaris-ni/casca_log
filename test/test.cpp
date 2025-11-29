@@ -11,7 +11,7 @@
 #include "clog_secure_func.h"
 #include "test_util.h"
 
-class CLogMainTest : public ::testing::Test
+class CLogMainTest : public testing::Test
 {
 protected:
     void SetUp() override

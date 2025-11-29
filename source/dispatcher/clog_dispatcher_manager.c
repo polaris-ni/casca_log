@@ -5,6 +5,7 @@
 #include "clog_dispatcher_manager.h"
 #include "casca_log.h"
 #include "casca_log_keywords.h"
+#include "clog_dispatcher_async_thread.h"
 #include "clog_dispatcher_direct.h"
 #include "clog_error.h"
 #include "clog_secure_func.h"
@@ -12,7 +13,7 @@
 static clog_dispatcher_t* g_customized_dispatchers = NULL;
 static size_t g_customized_dispatcher_num = 0;
 
-static clog_dispatcher_t* g_dispatcher = NULL;
+static clog_dispatcher_t g_dispatcher = {CLOG_DISPATCHER_ID_INVALID, NULL, NULL, NULL, NULL};
 
 clog_res_e clog_dispatcher_register(const clog_dispatcher_t* dispatchers, size_t num)
 {
@@ -30,23 +31,30 @@ clog_res_e clog_dispatcher_register(const clog_dispatcher_t* dispatchers, size_t
     return CLOG_SUCCESS;
 }
 
-static const clog_dispatcher_t* clog_dispatcher_get_origin_by_id(const char* name, uint32_t id)
+static clog_res_e clog_dispatcher_get_origin_by_id(const char* name, uint32_t id, clog_dispatcher_t* dispatcher)
 {
-    CLOG_RET_IF_X(id == 0, NULL, "the id of dispatcher %s is invalid");
+    CLOG_RET_IF_X(id == 0, CLOG_INVALID_PARAM, "the id of dispatcher %s is invalid", name);
     if (id > CLOG_DISPATCHER_ID_RESERVED) {
-        CLOG_RET_IF_NULL_X(g_customized_dispatchers, NULL, "dispatcher %s not found(customized not set)", name);
+        CLOG_RET_IF_NULL_X(g_customized_dispatchers, CLOG_TARGET_NOT_FOUND,
+                           "dispatcher %s not found(customized not set)", name);
         for (size_t i = 0; i < g_customized_dispatcher_num; ++i) {
             if (g_customized_dispatchers[i].id == id) {
-                return &g_customized_dispatchers[i];
+                dispatcher->id = g_customized_dispatchers[i].id;
+                dispatcher->open = g_customized_dispatchers[i].open;
+                dispatcher->dispatch = g_customized_dispatchers[i].dispatch;
+                dispatcher->close = g_customized_dispatchers[i].close;
+                dispatcher->extra = g_customized_dispatchers[i].extra;
+                return CLOG_SUCCESS;
             }
         }
         CLOG_ERR_ADD("customized dispatcher %s not found, id = %u", name, id);
-        return NULL;
+        return CLOG_TARGET_NOT_FOUND;
     }
-    const clog_dispatcher_provider_f providers[] = {clog_dispatcher_direct};
+    const clog_dispatcher_provider_f providers[] = {clog_dispatcher_direct, clog_dispatcher_async_thread};
     const size_t num = CLOG_ARRAY_SIZE(providers);
-    CLOG_RET_IF_X(id > num, NULL, "default dispatcher %s(id %u) not supported now", name, id);
-    return providers[id - 1]();
+    CLOG_RET_IF_X(id > num, CLOG_TARGET_NOT_FOUND, "default dispatcher %s(id %u) not supported now", name, id);
+    providers[id - 1](dispatcher);
+    return CLOG_SUCCESS;
 }
 
 clog_res_e clog_dispatcher_setup(void)
@@ -68,23 +76,14 @@ clog_res_e clog_dispatcher_setup(void)
                                 "get \"enabled\" of %s failed, ret = %d ", name, ret);
             continue;
         }
-        if (g_dispatcher != NULL) {
-            CLOG_ERR_ADD("%s is enabled whiled dispatcher %u has been enabled", g_dispatcher->id, name);
-            clog_dispatcher_cleanup();
-            return CLOG_ALREADY_EXISTED;
-        }
         uint32_t id = CLOG_DISPATCHER_ID_INVALID;
         ret = clog_config_find_item_in_group_uint(item, CLOG_STR_ID, &id);
         CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_dispatcher_cleanup(), "get id of %s failed, ret = %d", item->name, ret);
-        const clog_dispatcher_t* recorder = clog_dispatcher_get_origin_by_id(item->name, id);
-        CLOG_CLEAN_RET_IF_NULL_X(recorder, clog_dispatcher_cleanup(), CLOG_TARGET_NOT_FOUND, "dispatcher not found");
-        g_dispatcher = clog_malloc(sizeof(clog_dispatcher_t));
-        CLOG_CLEAN_RET_IF_NULL_X(recorder, clog_dispatcher_cleanup(), CLOG_NO_MEMORY, "dispatcher malloc failed");
-        CLOG_IGNORE_RES(clog_memcpy(g_dispatcher, sizeof(clog_dispatcher_t), recorder, sizeof(clog_dispatcher_t)));
-        g_dispatcher->extra = NULL;
-        ret = g_dispatcher->open(g_dispatcher, item);
+        ret = clog_dispatcher_get_origin_by_id(item->name, id, &g_dispatcher);
+        CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_dispatcher_cleanup(), "set dispatcher failed, ret = %u", ret);
+        ret = g_dispatcher.open(&g_dispatcher, item);
         CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_dispatcher_cleanup(), "open dispatcher %s failed, ret = %d", name, ret);
-        item = item->sibling;
+        break;
     }
     CLOG_SAFE_FREE(g_customized_dispatchers);
     g_customized_dispatcher_num = 0;
@@ -95,9 +94,8 @@ void clog_dispatcher_cleanup(void)
 {
     CLOG_SAFE_FREE(g_customized_dispatchers);
     g_customized_dispatcher_num = 0;
-    if (g_dispatcher != NULL) {
-        g_dispatcher->close(g_dispatcher);
-        CLOG_SAFE_FREE(g_dispatcher);
+    if (g_dispatcher.close != NULL) {
+        g_dispatcher.close(&g_dispatcher);
     }
 }
 
@@ -105,6 +103,6 @@ clog_res_e clog_dispatch(const uint32_t* recorders, size_t num, const clog_item_
 {
     CLOG_RET_IF_NULL_X(recorders, CLOG_INVALID_PARAM, "target recorders is NULL");
     CLOG_RET_IF_NULL_X(item, CLOG_INVALID_PARAM, "item is NULL");
-    CLOG_ASSERT(g_dispatcher != NULL);
-    return g_dispatcher->dispatch(g_dispatcher, recorders, num, item);
+    CLOG_ASSERT(g_dispatcher.dispatch != NULL);
+    return g_dispatcher.dispatch(&g_dispatcher, recorders, num, item);
 }

@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-const clog_dispatcher_t* clog_dispatcher_direct(void);
+void clog_dispatcher_direct(clog_dispatcher_t* dispatcher);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

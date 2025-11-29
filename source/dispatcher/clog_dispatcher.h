@@ -13,6 +13,7 @@ extern "C" {
 
 #define CLOG_DISPATCHER_ID_INVALID 0U
 #define CLOG_DISPATCHER_ID_DIRECT 1U
+#define CLOG_DISPATCHER_ID_ASYNC_THREAD 2U
 #define CLOG_DISPATCHER_ID_RESERVED 1000U
 
 typedef struct clog_dispatcher clog_dispatcher_t;
@@ -51,11 +52,7 @@ struct clog_dispatcher {
     void* extra;
 };
 
-/**
- * dispatcher provider
- * @return #clog_dispatcher_t, it should never be NULL
- */
-typedef const clog_dispatcher_t* (*clog_dispatcher_provider_f)(void);
+typedef void (*clog_dispatcher_provider_f)(clog_dispatcher_t* dispatcher);
 
 static clog_res_e clog_dispatcher_empty_open(clog_dispatcher_t* self, const clog_config_group_t* group)
 {

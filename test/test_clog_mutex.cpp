@@ -9,7 +9,7 @@
 #include "clog_mutex.h"
 #include "test_util.h"
 
-class CLogMutexTest : public ::testing::Test
+class CLogMutexTest : public testing::Test
 {
 protected:
     clog_mutex_t mutex = {};

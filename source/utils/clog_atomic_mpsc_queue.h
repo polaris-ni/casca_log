@@ -39,7 +39,7 @@ clog_res_e clog_atomic_mpsc_queue_out(clog_atomic_mpsc_queue_t* queue, uintptr_t
  * destroy queue, ensure it will never be used
  * @param queue
  */
-void clog_atomic_mpsc_atomic_destroy(clog_atomic_mpsc_queue_t* queue);
+void clog_atomic_mpsc_queue_destroy(clog_atomic_mpsc_queue_t* queue);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

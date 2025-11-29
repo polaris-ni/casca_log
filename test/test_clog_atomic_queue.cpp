@@ -8,7 +8,7 @@
 #include "clog_atomic_queue.h"
 #include "test_util.h"
 
-class CLogAtomicQueueTest : public ::testing::Test
+class CLogAtomicQueueTest : public testing::Test
 {
 protected:
     clog_atomic_queue_t* queue = nullptr;

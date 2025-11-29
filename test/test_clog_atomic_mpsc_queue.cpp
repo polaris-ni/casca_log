@@ -10,13 +10,14 @@
 #include "clog_atomic_mpsc_queue.h"
 #include "test_util.h"
 
-class CLogAtomicMpscQueueTest : public ::testing::Test
+class CLogAtomicMpscQueueTest : public testing::Test
 {
 protected:
     clog_atomic_mpsc_queue_t* queue = nullptr;
 
     void SetUp() override
     {
+        CLogTest::CLogMemLeakDetect::start(nullptr, nullptr);
         queue = clog_atomic_mpsc_queue_create();
         ASSERT_NE(nullptr, queue);
     }
@@ -24,9 +25,10 @@ protected:
     void TearDown() override
     {
         if (queue != nullptr) {
-            clog_atomic_mpsc_atomic_destroy(queue);
+            clog_atomic_mpsc_queue_destroy(queue);
             queue = nullptr;
         }
+        CLogTest::CLogMemLeakDetect::end();
     }
 };
 
