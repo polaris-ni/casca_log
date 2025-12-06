@@ -34,6 +34,12 @@ priority = 1
 type = 1 # 0 - prefilter, 1 - postfilter
 keywords = "pw,password,ip\\,,dns" # if a keyword contains ',', use escape char '\\'
 
+[Channels]
+use = 1
+[Channels.CLogAtomicQueue]
+id = 1
+enabled = true
+
 [Dispatchers]
 [Dispatchers.ClogDirectDispatcher]
 id = 1

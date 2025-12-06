@@ -27,6 +27,7 @@ extern "C" {
 #define CLOG_STR_AUTO "auto"
 #define CLOG_STR_CAPACITY "capacity"
 #define CLOG_STR_THRESHOLD "threshold"
+#define CLOG_STR_USE "use"
 
 /* groups */
 #define CLOG_STR_FILTERS "Filters"
@@ -34,6 +35,8 @@ extern "C" {
 #define CLOG_STR_KEYWORDS_FILTER "ClogKeywordsFilter"
 #define CLOG_STR_DISPATCHERS "Dispatchers"
 #define CLOG_STR_DISPATCHER_DIRECT "ClogDirectDispatcher"
+#define CLOG_STR_CHANNELS "Channels"
+#define CLOG_STR_CHANNEL_ATOMIC_QUEUE "CLogAtomicQueue"
 #define CLOG_STR_RECORDERS "Recorders"
 #define CLOG_STR_RECORDER_STDOUT "ClogRecorderStdout"
 #define CLOG_STR_COLORS "Colors"

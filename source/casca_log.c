@@ -4,6 +4,8 @@
  */
 #include "casca_log.h"
 #include "casca_log_keywords.h"
+#include "clog_channel_base.h"
+#include "clog_channel_manager.h"
 #include "clog_config.h"
 #include "clog_config_ext.h"
 #include "clog_dispatcher_manager.h"
@@ -41,7 +43,10 @@ typedef struct clog_context {
         clog_filter_t pre;
         clog_filter_t post;
     } filters;
+#ifdef CASCA_LOG_MEM_POOL
     clog_buffer_pool_t* pool;
+#endif
+    clog_channel_t channel;
 } clog_context_t;
 
 static clog_context_t g_context = {0};
@@ -140,6 +145,7 @@ static clog_res_e clog_init_process(const char* process, const clog_config_group
     return CLOG_SUCCESS;
 }
 
+#ifdef CASCA_LOG_MEM_POOL
 static clog_res_e clog_init_buffer_pool(clog_context_t* context, const clog_config_group_t* root)
 {
     const char* groups[] = {CLOG_STR_PERFORMANCE, CLOG_STR_BUFFER_POOL};
@@ -163,6 +169,38 @@ static clog_res_e clog_init_buffer_pool(clog_context_t* context, const clog_conf
     CLOG_RET_IF_FAILED_X(ret, "clog_buffer_pool_initialize failed, ret = %u", ret);
     return CLOG_SUCCESS;
 }
+#endif
+
+static clog_res_e clog_init_channel(clog_channel_t* channel, const clog_config_group_t* root)
+{
+    const char* groups[] = {CLOG_STR_CHANNELS};
+    const clog_config_group_t* config = clog_config_find_group(root, groups, CLOG_ARRAY_SIZE(groups));
+    CLOG_RET_IF_NULL_X(config, CLOG_TARGET_NOT_FOUND, "config " CLOG_STR_CHANNELS " not found");
+    uint32_t use = CLOG_CHANNEL_ID_INVALID;
+    clog_res_e ret = clog_config_find_item_in_group_uint(config, CLOG_STR_USE, &use);
+    CLOG_RET_IF_FAILED_X(ret, "parse config " CLOG_STR_USE " in " CLOG_STR_CHANNELS " failed, ret = %u", ret);
+    CLOG_RET_IF_X(use == CLOG_CHANNEL_ID_INVALID, CLOG_INVALID_PARAM, "the value of " CLOG_STR_USE " is invalid");
+    const clog_config_group_t* child = config->child;
+    while (child != NULL) {
+        uint32_t id = CLOG_CHANNEL_ID_INVALID;
+        ret = clog_config_find_item_in_group_uint(child, CLOG_STR_ID, &id);
+        CLOG_RET_IF_FAILED_X(ret, "parse config " CLOG_STR_ID " in %s failed, ret = %u", child->name, ret);
+        if (id == use) {
+            bool enabled = true;
+            ret = clog_config_find_item_in_group_bool(child, CLOG_STR_ENABLED, &enabled);
+            CLOG_RET_IF_FAILED_X(ret, "parse config " CLOG_STR_ENABLED " in %s failed, ret = %u", child->name, ret);
+            CLOG_RET_IF_X(!enabled, CLOG_ABNORMAL_STATE, "the channel in use(id = %u) is disabled", use);
+            ret = clog_channel_get(use, channel);
+            CLOG_RET_IF_FAILED_X(ret, "clog_channel_get failed, ret = %u", ret);
+            ret = channel->open(channel, child);
+            CLOG_CLEAN_RET_IF_FAILED_X(ret, channel->close(channel), "open %s failed, ret = %u", child->name, ret);
+            return CLOG_SUCCESS;
+        }
+        child = child->sibling;
+    }
+    CLOG_ERR_ADD("the channel in use(id = %u) not found", use);
+    return CLOG_TARGET_NOT_FOUND;
+}
 
 clog_res_e clog_init(const char* process, const char* config)
 {
@@ -172,21 +210,19 @@ clog_res_e clog_init(const char* process, const char* config)
     CLOG_RET_IF_NULL_X(g_context.process, CLOG_NO_MEMORY, "clog_strdup process failed");
 
     g_context.config.root = clog_config_parse(config);
-    if (g_context.config.root == NULL) {
-        clog_destroy(NULL, 0);
-        return CLOG_ERROR_FORMAT;
-    }
+    CLOG_CLEAN_RET_IF_NULL_X(g_context.config.root, clog_destroy(NULL, 0), CLOG_ERROR_FORMAT,
+                             "clog_config_parse failed");
 
     clog_res_e ret = clog_init_process(process, g_context.config.root, &g_context.modules);
-    if (g_context.modules == NULL) {
-        clog_destroy(NULL, 0);
-        return ret;
-    }
+    CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_destroy(NULL, 0), "clog_init_process failed, ret = %u", ret);
 
 #ifdef CASCA_LOG_MEM_POOL
     ret = clog_init_buffer_pool(&g_context, g_context.config.root);
     CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_destroy(NULL, 0), "clog_init_buffer_pool failed, ret = %u", ret);
 #endif
+
+    ret = clog_init_channel(&g_context.channel, g_context.config.root);
+    CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_destroy(NULL, 0), "clog_init_channel failed, ret = %u", ret);
     return CLOG_SUCCESS;
 }
 
@@ -314,6 +350,10 @@ void clog_destroy(const clog_cleanup_f* funcs, const size_t num)
     g_context.filters.post.next = NULL;
     clog_config_destroy_group(g_context.config.root);
     clog_hashmap_destroy(&g_context.modules);
+    if (g_context.channel.close != NULL) {
+        g_context.channel.close(&g_context.channel);
+        CLOG_IGNORE_RES(clog_memset(&g_context.channel, sizeof(clog_channel_t), 0, sizeof(clog_channel_t)));
+    }
     if (g_context.pool != NULL) {
         clog_buffer_pool_finalize(g_context.pool);
     }

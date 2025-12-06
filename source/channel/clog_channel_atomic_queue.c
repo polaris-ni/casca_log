@@ -50,14 +50,13 @@ static void clog_atomic_queue_channel_close(clog_channel_t* channel)
     channel->param = NULL;
 }
 
-clog_res_e clog_get_atomic_queue_channel(clog_channel_t* channel)
+void clog_atomic_queue_channel_provider(clog_channel_t* channel)
 {
-    CLOG_RET_IF_NULL_X(channel, CLOG_INVALID_PARAM, "channel is null");
+    CLOG_RET_VOID_IF_NULL_X(channel, "channel is null");
     channel->id = CLOG_CHANNEL_ID_ATOMIC_QUEUE;
     channel->open = clog_atomic_queue_channel_open;
     channel->write = clog_atomic_queue_channel_write;
     channel->read = clog_atomic_queue_channel_read;
     channel->close = clog_atomic_queue_channel_close;
     channel->param = NULL;
-    return CLOG_SUCCESS;
 }
