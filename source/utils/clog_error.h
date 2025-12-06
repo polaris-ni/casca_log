@@ -21,6 +21,14 @@ extern "C" {
         }                                     \
     } while (0)
 
+#define CLOG_RET_VOID_IF_X(cond, msg, ...)    \
+    do {                                      \
+        if (cond) {                           \
+            CLOG_ERR_ADD(msg, ##__VA_ARGS__); \
+            return;                           \
+        }                                     \
+    } while (0)
+
 #define CLOG_CLEAN_RET_IF_X(cond, clean, ret, msg, ...) \
     do {                                                \
         if (cond) {                                     \
@@ -35,6 +43,14 @@ extern "C" {
         if ((ptr) == NULL) {                   \
             CLOG_ERR_ADD(msg, ##__VA_ARGS__);  \
             return ret;                        \
+        }                                      \
+    } while (0)
+
+#define CLOG_RET_VOID_IF_NULL_X(ptr, msg, ...) \
+    do {                                       \
+        if ((ptr) == NULL) {                   \
+            CLOG_ERR_ADD(msg, ##__VA_ARGS__);  \
+            return;                            \
         }                                      \
     } while (0)
 
@@ -53,6 +69,14 @@ extern "C" {
             CLOG_ERR_ADD(msg, ##__VA_ARGS__); \
             return ret;                       \
         }                                     \
+    } while (0)
+
+#define CLOG_RET_VOID_IF_FAILED_X(ret, msg, ...) \
+    do {                                         \
+        if ((ret) != CLOG_SUCCESS) {             \
+            CLOG_ERR_ADD(msg, ##__VA_ARGS__);    \
+            return;                              \
+        }                                        \
     } while (0)
 
 #define CLOG_CLEAN_RET_IF_FAILED_X(ret, clean, msg, ...) \
