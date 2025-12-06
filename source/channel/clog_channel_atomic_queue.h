@@ -16,7 +16,7 @@ extern "C" {
  * @param channel channel
  * @return #clog_res_e
  */
-clog_res_e clog_get_atomic_queue_channel(clog_channel_t* channel);
+void clog_atomic_queue_channel_provider(clog_channel_t* channel);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

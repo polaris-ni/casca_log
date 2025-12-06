@@ -14,10 +14,11 @@ extern "C" {
 
 #define CLOG_CHANNEL_ID_INVALID 0
 #define CLOG_CHANNEL_ID_ATOMIC_QUEUE 1
+#define CLOG_CHANNEL_ID_RESERVED 0xFFFFU
 
 typedef struct clog_channel clog_channel_t;
-
 typedef uint32_t clog_channel_id_t;
+typedef void(*clog_channel_provider_f)(clog_channel_t* channel);
 
 typedef clog_res_e (*clog_channel_open_f)(clog_channel_t* self, const clog_config_group_t* config);
 typedef clog_res_e (*clog_channel_write_f)(clog_channel_t* self, const clog_item_t* item);
