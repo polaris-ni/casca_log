@@ -425,14 +425,14 @@ static clog_res_e clog_log_internal(const uint32_t* recorders, size_t num, clog_
         clog_free(buf);
         return ret;
     }
-    item->content = buf;
     /* postfilter */
     pass = clog_filter_log(clog_get_filters(CLOG_FILTER_POST), item);
     if (!pass) {
         clog_free(buf);
         return CLOG_NOT_PERMITTED;
     }
-    ret = clog_dispatch(recorders, num, item);
+    /* add to channel */
+    ret = g_context.channel.write(&g_context.channel, item);
     clog_free(buf);
     return ret;
 }
@@ -444,17 +444,12 @@ clog_res_e clog_log(const char* module, uint32_t recorder, const char* file, con
     const clog_module_t* info = clog_get_module_info(module);
     CLOG_RET_IF_NULL_X(info, CLOG_TARGET_NOT_FOUND, "module info %s not found", module);
     CLOG_RET_IF(!clog_module_check(info, level, recorder), CLOG_NOT_PERMITTED);
-    clog_item_t item = {.filename = file,
-                        .function = function,
-                        .module = module,
-                        .tid = clog_thread_self(),
-                        .line = line,
-                        .level = level,
-                        .fmt = fmt};
-    clog_item_init_datetime(&item);
-    va_start(item.args, fmt);
-    const clog_res_e ret = clog_log_internal(&recorder, 1, &item);
-    va_end(item.args);
+    clog_item_wrapper_t wrapper = {0};
+    wrapper.log = NULL;
+    clog_item_init_datetime(wrapper.log);
+    va_start(wrapper.args, fmt);
+    const clog_res_e ret = clog_log_internal(&recorder, 1, wrapper.log);
+    va_end(wrapper.args);
     return ret;
 }
 
@@ -466,16 +461,14 @@ clog_res_e clog_module_log(const char* module, const char* file, const char* fun
     CLOG_RET_IF_NULL_X(info, CLOG_TARGET_NOT_FOUND, "module info %s not found", module);
     CLOG_RET_IF(((1 << (level - 1)) & info->level) == 0, CLOG_NOT_PERMITTED);
     CLOG_RET_IF(info->num == 0, CLOG_TARGET_NOT_FOUND);
-    clog_item_t item = {.filename = file,
-                        .function = function,
-                        .module = module,
+    clog_item_t item = {.filename = {0},
+                        .module = {0},
                         .tid = clog_thread_self(),
                         .line = line,
-                        .level = level,
-                        .fmt = fmt};
+                        .level = level,};
     clog_item_init_datetime(&item);
-    va_start(item.args, fmt);
+    // va_start(item.args, fmt);
     const clog_res_e ret = clog_log_internal(info->recorders, info->num, &item);
-    va_end(item.args);
+    // va_end(item.args);
     return ret;
 }

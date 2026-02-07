@@ -38,9 +38,8 @@ static void clog_dispatcher_async_thread_close(clog_dispatcher_t* self)
 
 void clog_dispatcher_async_thread(clog_dispatcher_t* dispatcher)
 {
-    dispatcher->id = CLOG_DISPATCHER_ID_DIRECT;
+    dispatcher->id = CLOG_DISPATCHER_ID_ASYNC_THREAD;
     dispatcher->open = clog_dispatcher_async_thread_open;
-    dispatcher->dispatch = clog_dispatcher_async_thread_dispatch;
     dispatcher->close = clog_dispatcher_async_thread_close;
     dispatcher->extra = NULL;
 }

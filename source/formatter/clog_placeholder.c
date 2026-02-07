@@ -97,10 +97,11 @@ static size_t clog_placeholder_file(const clog_item_t* item, char* buf, const si
 
 static size_t clog_placeholder_content(const clog_item_t* item, char* buf, const size_t size)
 {
-    clog_item_t* tmp = (clog_item_t*)item;
-    const int ret = vsnprintf(buf, size, item->fmt, tmp->args);
-    CLOG_RET_IF(ret < 0, CLOG_OVERSIZE);
-    return ret;
+    // clog_item_t* tmp = (clog_item_t*)item;
+    // const int ret = vsnprintf(buf, size, item->fmt, tmp->args);
+    // CLOG_RET_IF(ret < 0, CLOG_OVERSIZE);
+    // return ret;
+    return 0;
 }
 
 static size_t clog_placeholder_ln(const clog_item_t* item, char* buf, const size_t size)

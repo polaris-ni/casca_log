@@ -6,7 +6,6 @@
 #include "casca_log.h"
 #include "casca_log_keywords.h"
 #include "clog_dispatcher_async_thread.h"
-#include "clog_dispatcher_direct.h"
 #include "clog_error.h"
 #include "clog_secure_func.h"
 
@@ -41,7 +40,6 @@ static clog_res_e clog_dispatcher_get_origin_by_id(const char* name, uint32_t id
             if (g_customized_dispatchers[i].id == id) {
                 dispatcher->id = g_customized_dispatchers[i].id;
                 dispatcher->open = g_customized_dispatchers[i].open;
-                dispatcher->dispatch = g_customized_dispatchers[i].dispatch;
                 dispatcher->close = g_customized_dispatchers[i].close;
                 dispatcher->extra = g_customized_dispatchers[i].extra;
                 return CLOG_SUCCESS;
@@ -50,7 +48,7 @@ static clog_res_e clog_dispatcher_get_origin_by_id(const char* name, uint32_t id
         CLOG_ERR_ADD("customized dispatcher %s not found, id = %u", name, id);
         return CLOG_TARGET_NOT_FOUND;
     }
-    const clog_dispatcher_provider_f providers[] = {clog_dispatcher_direct, clog_dispatcher_async_thread};
+    const clog_dispatcher_provider_f providers[] = {clog_dispatcher_async_thread};
     const size_t num = CLOG_ARRAY_SIZE(providers);
     CLOG_RET_IF_X(id > num, CLOG_TARGET_NOT_FOUND, "default dispatcher %s(id %u) not supported now", name, id);
     providers[id - 1](dispatcher);
@@ -97,12 +95,4 @@ void clog_dispatcher_cleanup(void)
     if (g_dispatcher.close != NULL) {
         g_dispatcher.close(&g_dispatcher);
     }
-}
-
-clog_res_e clog_dispatch(const uint32_t* recorders, size_t num, const clog_item_t* item)
-{
-    CLOG_RET_IF_NULL_X(recorders, CLOG_INVALID_PARAM, "target recorders is NULL");
-    CLOG_RET_IF_NULL_X(item, CLOG_INVALID_PARAM, "item is NULL");
-    CLOG_ASSERT(g_dispatcher.dispatch != NULL);
-    return g_dispatcher.dispatch(&g_dispatcher, recorders, num, item);
 }
