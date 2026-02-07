@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "casca_log_config.h"
+#include "clog_platform.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -83,6 +84,14 @@ extern "C" {
 #define CLOG_ASSERT(cond)
 #endif
 
+#if defined(CLOG_COMPILER_CLANG) || defined(CLOG_COMPILER_GCC)
+#define CLOG_PACKED_STRUCT(STRUCT_DECL) STRUCT_DECL __attribute__((packed))
+#elif defined(CLOG_COMPILER_MSVC)
+#define CLOG_PACKED_STRUCT(STRUCT_DECL) __pragma(pack(push, 1)) STRUCT_DECL __pragma(pack(pop))
+#else
+#error "Compiler Not Supported Now"
+#endif
+
 #define CLOG_UNUSED_VAR(x) (void)x
 #define CLOG_IGNORE_RES(f) (void)(f)
 
@@ -116,52 +125,41 @@ typedef enum clog_level {
 #define CLOG_LEVEL_NUM 6
 #define CLOG_LEVEL_ALL 63 /* 1 | 2 | 4 | 8 | 16 | 32 */
 
+#ifdef CLOG_COMPILER_MSVC
+#pragma pack(push, 1)
+#endif
 typedef struct clog_item {
-    uint32_t seq;
-    const char* filename;
-    const char* function;
-    const char* module;
+    uint32_t recorder[CASCA_LOG_RECORDER_SIZE];
+    char process[CASCA_LOG_PROCESS_NAME_SIZE];
+    char module[CASCA_LOG_MODULE_NAME_SIZE];
+    char filename[CASCA_FILENAME_MAX_SIZE];
     uint64_t tid;
     uint32_t line;
-    clog_level_e level;
-    struct {
-        uint16_t year;
-        uint8_t month;
-        uint8_t day;
-        uint8_t hour;
-        uint8_t minute;
-        uint8_t second;
-        uint16_t millisecond;
-    };
-    const char* fmt;
-    va_list args;
-    const char* content;
-} clog_item_t;
-
-typedef struct clog_entry {
-    char process[64];
-    char module[64];
-    unsigned long long timestamp;
+    uint32_t level;
+    uint16_t year;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t minute;
+    uint8_t second;
+    uint16_t millisecond;
     char content[CASCA_LOG_SINGLE_LOG_MAX_SIZE];
-} clog_entry_t;
+}
+#if defined(CLOG_COMPILER_CLANG) || defined(CLOG_COMPILER_GCC)
+__attribute__((packed))
+#endif
+clog_item_t;
+#ifdef CLOG_COMPILER_MSVC
+#pragma pack(pop)
+#endif
 
 typedef struct clog_item_wrapper {
     const char* filename;
     const char* function;
-    uint64_t tid;
-    uint32_t line;
-    struct {
-        uint16_t year;
-        uint8_t month;
-        uint8_t day;
-        uint8_t hour;
-        uint8_t minute;
-        uint8_t second;
-        uint16_t millisecond;
-    };
+    const char* module;
     const char* fmt;
     va_list args;
-    clog_entry_t* log;
+    clog_item_t* log;
 } clog_item_wrapper_t;
 
 #if defined(__cplusplus) || defined(c_plusplus)

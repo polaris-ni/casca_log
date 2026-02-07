@@ -31,15 +31,6 @@ clog_res_e clog_dispatcher_setup(void);
  */
 void clog_dispatcher_cleanup(void);
 
-/**
- * dispatcher log item to #recorders
- * @param recorders recoder id array
- * @param num recoder num
- * @param item log item
- * @return #clog_res_e
- */
-clog_res_e clog_dispatch(const uint32_t* recorders, size_t num, const clog_item_t* item);
-
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif
