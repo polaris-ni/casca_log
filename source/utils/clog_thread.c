@@ -15,7 +15,7 @@
 
 typedef struct {
     clog_thread_routine_f routine;
-    void* arg;
+    void* args;
     size_t size;
 } clog_thread_data_wrapper_t;
 
@@ -67,16 +67,22 @@ clog_thread_id_t clog_thread_self(void)
 static DWORD WINAPI thread_wrapper(LPVOID param)
 {
     clog_thread_data_wrapper_t* data = param;
-    data->routine(data->arg, data->size);
+    void *args = data->args;
+    const size_t size = data->size;
+    const clog_thread_routine_f routine = data->routine;
     clog_free(data);
+    routine(args, size);
     return CLOG_SUCCESS;
 }
 #else
-static void* thread_wrapper(void* args)
+static void* thread_wrapper(void* param)
 {
-    clog_thread_data_wrapper_t* data = args;
-    data->routine(data->arg, data->size);
+    clog_thread_data_wrapper_t* data = param;
+    void *args = data->args;
+    const size_t size = data->size;
+    const clog_thread_routine_f routine = data->routine;
     clog_free(data);
+    routine(args, size);
     return NULL;
 }
 #endif
@@ -89,7 +95,7 @@ clog_res_e clog_thread_create(clog_thread_t* thread, const clog_thread_attr_t* a
     clog_thread_data_wrapper_t* wrapper = clog_malloc(sizeof(clog_thread_data_wrapper_t));
     CLOG_RET_IF_NULL_X(wrapper, CLOG_NO_MEMORY, "malloc clog_thread_data_wrapper_t failed");
     wrapper->routine = routine;
-    wrapper->arg = arg;
+    wrapper->args = arg;
     wrapper->size = size;
 #ifdef CLOG_PLATFORM_WINDOWS
     DWORD thread_id;

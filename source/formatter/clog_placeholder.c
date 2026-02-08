@@ -46,14 +46,14 @@ static size_t clog_num_to_str(uint32_t value, const size_t num, char* buf, const
     return i;
 }
 
-#define CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(name, max, num, is_padding)                        \
-    static inline size_t clog_placeholder_##name(const clog_item_t* item, char* buf, const size_t size) \
-    {                                                                                                   \
-        CLOG_RET_IF(size < (num), 0);                                                                   \
-        CLOG_ASSERT(item != NULL);                                                                      \
-        CLOG_ASSERT(buf != NULL);                                                                       \
-        CLOG_ASSERT(item->name <= (max));                                                               \
-        return clog_num_to_str(item->name, (num), buf, size, (is_padding));                             \
+#define CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(name, max, num, is_padding)                                   \
+    static inline size_t clog_placeholder_##name(const clog_item_wrapper_t* wrapper, char* buf, const size_t size) \
+    {                                                                                                              \
+        CLOG_RET_IF(size < (num), 0);                                                                              \
+        CLOG_ASSERT(wrapper != NULL);                                                                              \
+        CLOG_ASSERT(buf != NULL);                                                                                  \
+        CLOG_ASSERT(wrapper->log->name <= (max));                                                                  \
+        return clog_num_to_str(wrapper->log->name, (num), buf, size, (is_padding));                                \
     }
 
 CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(year, 9999, 4, true)
@@ -79,42 +79,40 @@ static size_t clog_placeholder_string_copy(const char* str, char* buf, const siz
     return i;
 }
 
-static size_t clog_placeholder_process(const clog_item_t* item, char* buf, const size_t size)
+static size_t clog_placeholder_process(const clog_item_wrapper_t* wrapper, char* buf, const size_t size)
 {
-    CLOG_UNUSED_VAR(item);
+    CLOG_UNUSED_VAR(wrapper);
     return clog_placeholder_string_copy(clog_get_process(), buf, size);
 }
 
-static size_t clog_placeholder_module(const clog_item_t* item, char* buf, const size_t size)
+static size_t clog_placeholder_module(const clog_item_wrapper_t* wrapper, char* buf, const size_t size)
 {
-    return clog_placeholder_string_copy(item->module, buf, size);
+    return clog_placeholder_string_copy(wrapper->module, buf, size);
 }
 
-static size_t clog_placeholder_file(const clog_item_t* item, char* buf, const size_t size)
+static size_t clog_placeholder_file(const clog_item_wrapper_t* wrapper, char* buf, const size_t size)
 {
-    return clog_placeholder_string_copy(item->filename, buf, size);
+    return clog_placeholder_string_copy(wrapper->filename, buf, size);
 }
 
-static size_t clog_placeholder_content(const clog_item_t* item, char* buf, const size_t size)
+static size_t clog_placeholder_content(const clog_item_wrapper_t* wrapper, char* buf, const size_t size)
 {
-    // clog_item_t* tmp = (clog_item_t*)item;
-    // const int ret = vsnprintf(buf, size, item->fmt, tmp->args);
-    // CLOG_RET_IF(ret < 0, CLOG_OVERSIZE);
-    // return ret;
-    return 0;
+    const int ret = vsnprintf(buf, size, wrapper->fmt, wrapper->args);
+    CLOG_RET_IF(ret < 0, 0);
+    return ret;
 }
 
-static size_t clog_placeholder_ln(const clog_item_t* item, char* buf, const size_t size)
+static size_t clog_placeholder_ln(const clog_item_wrapper_t* wrapper, char* buf, const size_t size)
 {
-    CLOG_UNUSED_VAR(item);
+    CLOG_UNUSED_VAR(wrapper);
     CLOG_UNUSED_VAR(size);
     buf[0] = '\n';
     return 1;
 }
 
-static size_t clog_placeholder_level(const clog_item_t* item, char* buf, const size_t size)
+static size_t clog_placeholder_level(const clog_item_wrapper_t* wrapper, char* buf, const size_t size)
 {
-    return clog_placeholder_string_copy(g_tags[item->level - 1], buf, size);
+    return clog_placeholder_string_copy(g_tags[wrapper->log->level - 1], buf, size);
 }
 
 

@@ -26,6 +26,12 @@ clog_res_e clog_dispatcher_register(const clog_dispatcher_t* dispatchers, size_t
 clog_res_e clog_dispatcher_setup(void);
 
 /**
+ * notify event to dispatcher
+ * @param event clog_dispatcher_event_e
+ */
+void clog_dispatcher_notify(clog_dispatcher_event_e event);
+
+/**
  * cleanup dispatchers
  * @return #clog_res_e
  */

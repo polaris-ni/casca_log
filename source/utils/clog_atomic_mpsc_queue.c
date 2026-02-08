@@ -4,7 +4,6 @@
  */
 #include "clog_atomic_mpsc_queue.h"
 #include <stdatomic.h>
-#include <stdbool.h>
 #include "casca_log_config.h"
 #include "clog_error.h"
 #include "clog_hooks.h"

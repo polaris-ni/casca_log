@@ -54,13 +54,16 @@ clog_res_e clog_formatter_setup(void)
     return CLOG_SUCCESS;
 }
 
-clog_res_e clog_format_log(const clog_placeholder_t* placeholders, const clog_item_t* item, char* content,
+clog_res_e clog_format_log(const clog_placeholder_t* placeholders, const clog_item_wrapper_t* wrapper, char* content,
                            const size_t size)
 {
     CLOG_RET_IF_NULL(placeholders, CLOG_INVALID_PARAM);
-    CLOG_RET_IF_NULL(item, CLOG_INVALID_PARAM);
+    CLOG_RET_IF_NULL(wrapper, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(content, CLOG_INVALID_PARAM);
     CLOG_RET_IF(size == 0, CLOG_OVERSIZE);
+    CLOG_IGNORE_RES(clog_strcpy(wrapper->log->process, sizeof(wrapper->log->process), wrapper->process));
+    CLOG_IGNORE_RES(clog_strcpy(wrapper->log->module, sizeof(wrapper->log->module), wrapper->module));
+    CLOG_IGNORE_RES(clog_strcpy(wrapper->log->filename, sizeof(wrapper->log->filename), wrapper->filename));
     const size_t remain = size - 1;
     size_t offset = 0;
     const clog_placeholder_t* placeholder = placeholders;
@@ -70,7 +73,7 @@ clog_res_e clog_format_log(const clog_placeholder_t* placeholders, const clog_it
             CLOG_RET_IF(ret < 0, CLOG_OVERSIZE);
             offset += ret;
         } else {
-            const size_t len = placeholder->func(item, content + offset, remain - offset);
+            const size_t len = placeholder->func(wrapper, content + offset, remain - offset);
             CLOG_RET_IF(len == 0, CLOG_OVERSIZE);
             offset += len;
         }
