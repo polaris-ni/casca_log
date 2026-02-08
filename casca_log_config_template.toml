@@ -43,6 +43,9 @@ enabled = true
 [Dispatchers]
 [Dispatchers.ClogDirectDispatcher]
 id = 1
+enabled = false
+[Dispatchers.ClogAsyncThreadDispatcher]
+id = 2
 enabled = true
 
 [Recorders]

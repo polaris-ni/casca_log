@@ -80,6 +80,22 @@ static int32_t clog_strncmp(const char* str1, const char* str2, const size_t num
     return strncmp(str1, str2, num);
 }
 
+#ifndef _STDIO_DEFINED
+/* just avoid include <stdio.h> */
+extern int snprintf(char* __restrict s, size_t size_of_s, const char* __restrict format, ...);
+#endif
+
+static clog_res_e clog_strcpy(char* buf, size_t size, const char* src)
+{
+#ifdef CLOG_COMPILER_MSVC
+    const errno_t err = strcpy_s(buf, size, src);
+    return err == 0 ? CLOG_SUCCESS : CLOG_FAIL;
+#else
+    const int ret = snprintf(buf, size, "%s", src);
+    return ret >= 0 ? CLOG_SUCCESS : CLOG_FAIL;
+#endif
+}
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

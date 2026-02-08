@@ -6,6 +6,7 @@
 #define CASCA_LOG_CASCA_LOG_H
 
 #include "clog_buffer_pool.h"
+#include "clog_channel_base.h"
 #include "clog_config.h"
 #include "clog_filter.h"
 #include "clog_placeholder.h"
@@ -107,11 +108,31 @@ void clog_set_filters(const clog_filter_t* pre, const clog_filter_t* post);
  */
 const clog_module_t* clog_get_module_info(const char* module);
 
+#ifdef CASCA_LOG_MEM_POOL
 /**
  * get log buffer pool
  * @return #clog_buffer_pool_t
  */
 clog_buffer_pool_t* clog_get_buffer_pool(void);
+#endif
+
+/**
+ * get log item memory
+ * @return return buffered item if CASCA_LOG_MEM_POOL if enabled, item malloced from heap otherwise
+ */
+clog_item_t* clog_acquire_log_item(void);
+
+/**
+ * release log item acquired from #clog_acquire_log_item
+ * @param item log item
+ */
+void clog_release_log_item(clog_item_t* item);
+
+/**
+ * get current using channel
+ * @return clog_channel_t
+ */
+clog_channel_t* clog_get_channel(void);
 
 /**
  * destroy clog
