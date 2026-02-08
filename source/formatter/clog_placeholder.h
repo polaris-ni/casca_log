@@ -13,12 +13,12 @@ extern "C" {
 
 /**
  * placeholder
- * @param item log item, contains log info and content, it should never be NULL
+ * @param wrapper log item, contains log info and content, it should never be NULL
  * @param buf the buffer to store log
  * @param size buffer size
  * @return size_t write size
  */
-typedef size_t (*clog_placeholder_f)(const clog_item_t* item, char* buf, size_t size);
+typedef size_t (*clog_placeholder_f)(const clog_item_wrapper_t* wrapper, char* buf, size_t size);
 
 typedef struct clog_placeholder {
     const char* name;

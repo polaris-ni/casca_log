@@ -8,7 +8,7 @@
 #include "clog_hooks.h"
 #include "clog_secure_func.h"
 
-static clog_filter_res_e clog_filter_keywords(const clog_item_t* item);
+static clog_filter_res_e clog_filter_keywords(const clog_item_wrapper_t* wrapper);
 
 static clog_filter_t g_filters[] = {{CLOG_STR_KEYWORDS_FILTER, 0, CLOG_FILTER_POST, clog_filter_keywords, NULL}};
 
@@ -278,13 +278,13 @@ void clog_filter_cleanup(void)
     g_keywords_count = 0;
 }
 
-bool clog_filter_log(const clog_filter_t* filters, const clog_item_t* item)
+bool clog_filter_log(const clog_filter_t* filters, const clog_item_wrapper_t* wrapper)
 {
-    CLOG_RET_IF_NULL(item, true); /* no filters, pass */
+    CLOG_RET_IF_NULL(wrapper, true); /* no filters, pass */
     const clog_filter_t* filter = filters;
     while (filter != NULL) {
         CLOG_RET_IF_NULL(filter->filter, false);
-        const clog_filter_res_e res = filter->filter(item);
+        const clog_filter_res_e res = filter->filter(wrapper);
         CLOG_RET_IF(res == CLOG_FILTER_ACCEPT, true);
         CLOG_RET_IF(res == CLOG_FILTER_REJECT, false);
         filter = filter->next;
@@ -292,12 +292,12 @@ bool clog_filter_log(const clog_filter_t* filters, const clog_item_t* item)
     return true;
 }
 
-static clog_filter_res_e clog_filter_keywords(const clog_item_t* item)
+static clog_filter_res_e clog_filter_keywords(const clog_item_wrapper_t* wrapper)
 {
-    CLOG_RET_IF_NULL(item, CLOG_FILTER_REJECT);
+    CLOG_RET_IF_NULL(wrapper, CLOG_FILTER_REJECT);
     CLOG_RET_IF_NULL(g_keywords, CLOG_FILTER_REJECT);
     for (uint32_t i = 0; i < g_keywords_count; ++i) {
-        const char* str = strstr(item->content, g_keywords[i]);
+        const char* str = strstr(wrapper->log->content, g_keywords[i]);
         CLOG_RET_IF(str != NULL, CLOG_FILTER_REJECT);
     }
     return CLOG_FILTER_CONTINUE;

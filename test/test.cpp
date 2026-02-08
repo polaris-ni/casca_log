@@ -9,6 +9,7 @@
 #include "clog_hooks.h"
 #include "clog_recorder_manager.h"
 #include "clog_secure_func.h"
+#include "clog_thread.h"
 #include "test_util.h"
 
 class CLogMainTest : public testing::Test
@@ -79,6 +80,7 @@ TEST_F(CLogMainTest, CreateLog)
                    "test log print process fetal [%s]", clog_get_process());
     EXPECT_EQ(ret, CLOG_SUCCESS);
     clog_free(tmp);
+    clog_thread_sleep(1000);
     clog_destroy(nullptr, 0);
     clog_err_cleanup();
 }

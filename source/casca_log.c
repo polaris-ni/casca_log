@@ -12,7 +12,6 @@
 #include "clog_error.h"
 #include "clog_formatter.h"
 #include "clog_hashmap.h"
-#include "clog_mem_pool.h"
 #include "clog_platform.h"
 #include "clog_recorder_manager.h"
 #include "clog_secure_func.h"
@@ -332,9 +331,36 @@ const clog_module_t* clog_get_module_info(const char* module)
     return clog_hashmap_get(g_context.modules, module);
 }
 
+#ifdef CASCA_LOG_MEM_POOL
 clog_buffer_pool_t* clog_get_buffer_pool(void)
 {
     return g_context.pool;
+}
+#endif
+
+clog_item_t* clog_acquire_log_item(void)
+{
+#ifdef CASCA_LOG_MEM_POOL
+    CLOG_ASSERT(g_context.pool != NULL);
+    return clog_buffer_pool_acquire(g_context.pool);
+#else
+    return clog_malloc(sizeof(clog_item_wrapper_t));
+#endif
+}
+
+void clog_release_log_item(clog_item_t* item)
+{
+#ifdef CASCA_LOG_MEM_POOL
+    CLOG_ASSERT(g_context.pool != NULL);
+    clog_buffer_pool_release(g_context.pool, item);
+#else
+    clog_free(item);
+#endif
+}
+
+clog_channel_t* clog_get_channel(void)
+{
+    return &g_context.channel;
 }
 
 void clog_destroy(const clog_cleanup_f* funcs, const size_t num)
@@ -412,29 +438,46 @@ static bool clog_module_check(const clog_module_t* info, clog_level_e level, uin
     return false;
 }
 
-static clog_res_e clog_log_internal(const uint32_t* recorders, size_t num, clog_item_t* item)
+static clog_res_e clog_log_internal(const uint32_t* recorders, size_t num, const clog_item_wrapper_t* wrapper)
 {
     /* prefilter */
-    bool pass = clog_filter_log(clog_get_filters(CLOG_FILTER_PRE), item);
-    CLOG_RET_IF(!pass, CLOG_NOT_PERMITTED);
-    char* buf = clog_malloc(CASCA_LOG_SINGLE_LOG_MAX_SIZE);
-    CLOG_RET_IF_NULL_X(buf, CLOG_NO_MEMORY, "malloc log content buf failed, size = %d", CASCA_LOG_SINGLE_LOG_MAX_SIZE);
+    bool pass = clog_filter_log(clog_get_filters(CLOG_FILTER_PRE), wrapper);
+    CLOG_RET_IF_X(!pass, CLOG_NOT_PERMITTED, "clog_filter_log PRE failed");
     /* formatter */
-    clog_res_e ret = clog_format_log(g_context.formatter.placeholder.next, item, buf, CASCA_LOG_SINGLE_LOG_MAX_SIZE);
-    if (ret != CLOG_SUCCESS) {
-        clog_free(buf);
-        return ret;
-    }
+    const clog_res_e ret = clog_format_log(g_context.formatter.placeholder.next, wrapper, wrapper->log->content,
+                                           sizeof(wrapper->log->content));
+    CLOG_RET_IF_FAILED_X(ret, "clog_format_log failed, ret = %u", ret);
     /* postfilter */
-    pass = clog_filter_log(clog_get_filters(CLOG_FILTER_POST), item);
-    if (!pass) {
-        clog_free(buf);
-        return CLOG_NOT_PERMITTED;
+    pass = clog_filter_log(clog_get_filters(CLOG_FILTER_POST), wrapper);
+    CLOG_RET_IF_X(!pass, CLOG_NOT_PERMITTED, "clog_filter_log POST failed");
+    for (size_t i = 0; i < num && i < CLOG_ARRAY_SIZE(wrapper->log->recorder); ++i) {
+        wrapper->log->recorder[i] = recorders[i];
     }
     /* add to channel */
-    ret = g_context.channel.write(&g_context.channel, item);
-    clog_free(buf);
-    return ret;
+    const clog_res_e res = g_context.channel.write(&g_context.channel, wrapper->log);
+    if (res == CLOG_SUCCESS) {
+        /* notify dispatcher to handle log */
+        clog_dispatcher_notify(CLOG_DISPATCHER_EVENT_DATA);
+    }
+    return res;
+}
+
+static clog_res_e clog_init_item_wrapper(const char* module, const char* file, const char* function, const int line,
+                                         const clog_level_e level, const char* fmt, clog_item_wrapper_t* wrapper)
+{
+    clog_item_t* item = clog_acquire_log_item();
+    CLOG_RET_IF_NULL_X(item, CLOG_NO_MEMORY, "clog_acquire_log_item failed");
+    wrapper->process = g_context.process;
+    wrapper->module = module;
+    wrapper->filename = file;
+    wrapper->function = function;
+    wrapper->fmt = fmt;
+    wrapper->log = item;
+    clog_item_init_datetime(wrapper->log);
+    wrapper->log->tid = clog_thread_self();
+    wrapper->log->line = line;
+    wrapper->log->level = level;
+    return CLOG_SUCCESS;
 }
 
 clog_res_e clog_log(const char* module, uint32_t recorder, const char* file, const char* function, const int line,
@@ -444,11 +487,11 @@ clog_res_e clog_log(const char* module, uint32_t recorder, const char* file, con
     const clog_module_t* info = clog_get_module_info(module);
     CLOG_RET_IF_NULL_X(info, CLOG_TARGET_NOT_FOUND, "module info %s not found", module);
     CLOG_RET_IF(!clog_module_check(info, level, recorder), CLOG_NOT_PERMITTED);
-    clog_item_wrapper_t wrapper = {0};
-    wrapper.log = NULL;
-    clog_item_init_datetime(wrapper.log);
+    clog_item_wrapper_t wrapper;
+    const clog_res_e res = clog_init_item_wrapper(module, file, function, line, level, fmt, &wrapper);
+    CLOG_RET_IF_FAILED_X(res, "clog_init_item_wrapper failed, res = %u", res);
     va_start(wrapper.args, fmt);
-    const clog_res_e ret = clog_log_internal(&recorder, 1, wrapper.log);
+    const clog_res_e ret = clog_log_internal(&recorder, 1, &wrapper);
     va_end(wrapper.args);
     return ret;
 }
@@ -461,14 +504,11 @@ clog_res_e clog_module_log(const char* module, const char* file, const char* fun
     CLOG_RET_IF_NULL_X(info, CLOG_TARGET_NOT_FOUND, "module info %s not found", module);
     CLOG_RET_IF(((1 << (level - 1)) & info->level) == 0, CLOG_NOT_PERMITTED);
     CLOG_RET_IF(info->num == 0, CLOG_TARGET_NOT_FOUND);
-    clog_item_t item = {.filename = {0},
-                        .module = {0},
-                        .tid = clog_thread_self(),
-                        .line = line,
-                        .level = level,};
-    clog_item_init_datetime(&item);
-    // va_start(item.args, fmt);
-    const clog_res_e ret = clog_log_internal(info->recorders, info->num, &item);
-    // va_end(item.args);
+    clog_item_wrapper_t wrapper;
+    const clog_res_e res = clog_init_item_wrapper(module, file, function, line, level, fmt, &wrapper);
+    CLOG_RET_IF_FAILED_X(res, "clog_init_item_wrapper failed, res = %u", res);
+    va_start(wrapper.args, fmt);
+    const clog_res_e ret = clog_log_internal(info->recorders, info->num, &wrapper);
+    va_end(wrapper.args);
     return ret;
 }
