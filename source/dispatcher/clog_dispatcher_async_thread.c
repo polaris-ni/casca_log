@@ -3,7 +3,9 @@
  * @date  2025/11/27
  */
 #include "clog_dispatcher_async_thread.h"
+#ifndef errno
 #include <errno.h>
+#endif
 #include "casca_log.h"
 #include "clog_atomic_queue.h"
 #include "clog_error.h"
@@ -113,9 +115,9 @@ static void clog_dispatcher_async_thread_close(clog_dispatcher_t *self) {
     if (state == CLOG_ASYNC_THREAD_DISPATCHER_RUNNING) {
         clog_atomic_set(&param->state, CLOG_ASYNC_THREAD_DISPATCHER_STOPPING);
         CLOG_IGNORE_RES(clog_sem_post(param->sem));
-        while (clog_atomic_get(&param->state) != CLOG_ASYNC_THREAD_DISPATCHER_CLOSED) {
-            clog_thread_sleep(10);
-        }
+    }
+    /* wait thread process over */
+    while (clog_atomic_get(&param->state) != CLOG_ASYNC_THREAD_DISPATCHER_CLOSED) {
     }
     CLOG_IGNORE_RES(clog_sem_destroy(param->sem));
     CLOG_IGNORE_RES(clog_memset(&param->thread, sizeof(param->thread), 0, sizeof(param->thread)));
