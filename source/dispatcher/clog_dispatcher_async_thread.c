@@ -12,6 +12,12 @@
 #include "clog_recorder_manager.h"
 #include "clog_secure_func.h"
 
+typedef struct clog_dispatcher_async_thread_param {
+    clog_thread_t thread;
+    atomic_uintptr_t state;
+    clog_sem_t *sem;
+} clog_dispatcher_async_thread_param_t;
+
 typedef enum clog_async_thread_dispatcher_state {
     CLOG_ASYNC_THREAD_DISPATCHER_IDLE,
     CLOG_ASYNC_THREAD_DISPATCHER_RUNNING,
@@ -60,8 +66,7 @@ static void clog_async_thread_handler(void *args, size_t size) {
     }
 }
 
-static clog_res_e clog_dispatcher_async_thread_open(clog_dispatcher_t *self, const clog_config_group_t *group,
-                                                    clog_channel_t *channel) {
+static clog_res_e clog_dispatcher_async_thread_open(clog_dispatcher_t *self, const clog_config_group_t *group) {
     CLOG_UNUSED_VAR(group);
     clog_dispatcher_async_thread_param_t *param = clog_malloc(sizeof(clog_dispatcher_async_thread_param_t));
     CLOG_RET_IF_NULL_X(param, CLOG_NO_MEMORY, "malloc async thread param failed");
@@ -73,7 +78,6 @@ static clog_res_e clog_dispatcher_async_thread_open(clog_dispatcher_t *self, con
     }
     clog_atomic_set(&param->state, CLOG_ASYNC_THREAD_DISPATCHER_IDLE);
     self->extra = param;
-    self->channel = channel;
     const clog_res_e res =
             clog_thread_create(&param->thread, NULL, clog_async_thread_handler, self, sizeof(clog_dispatcher_t));
     if (res != CLOG_SUCCESS) {
