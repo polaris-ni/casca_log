@@ -28,11 +28,9 @@ typedef enum clog_dispatcher_event {
  * open dispatcher, extra param should be initialized at this function
  * @param self clog_dispatcher_t itself
  * @param group the parsed #clog_config_group_t from the Dispatchers.ClogXxx
- * @param channel current used channel
  * @return clog_res_e
  */
-typedef clog_res_e (*clog_dispatcher_open_f)(clog_dispatcher_t* self, const clog_config_group_t* group,
-                                             clog_channel_t* channel);
+typedef clog_res_e (*clog_dispatcher_open_f)(clog_dispatcher_t* self, const clog_config_group_t* group);
 
 /**
  * notify dispatcher that a new log item has been put into channel
