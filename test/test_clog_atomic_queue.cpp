@@ -246,7 +246,6 @@ TEST_F(CLogAtomicQueueTest, SingleProducerMultiConsumer)
                     } else if (res != CLOG_TARGET_NOT_FOUND) {
                         FAIL() << "Unexpected dequeue result: " << res;
                     } else {
-                        std::cout << "No item found\n";
                     }
                 }
 
