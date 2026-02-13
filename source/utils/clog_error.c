@@ -3,18 +3,20 @@
  * @date  2025/10/18
  */
 #include "clog_error.h"
+#ifndef errno
+#include <errno.h>
+#endif
 #include <stdio.h>
 #include "clog_atomic_types.h"
 #include "clog_config.h"
 #include "clog_hooks.h"
 
-static char** g_err_msg = NULL;
+static char **g_err_msg = NULL;
 static uint16_t g_err_num = 0;
 static uint16_t g_err_line_size = 0;
 static clog_atomic_type_t g_err_count;
 
-void clog_err_setup(unsigned short num, unsigned short size)
-{
+void clog_err_setup(unsigned short num, unsigned short size) {
     CLOG_RET_VOID_IF((num == 0) || (size == 0));
     g_err_msg = clog_malloc(num * sizeof(char*));
     CLOG_RET_VOID_IF_NULL(g_err_msg);
@@ -33,24 +35,22 @@ void clog_err_setup(unsigned short num, unsigned short size)
     clog_atomic_set(&g_err_count, 0);
 }
 
-static uint32_t clog_err_get_index(void)
-{
+static uint32_t clog_err_get_index(void) {
     clog_atomic_basic_t new_index = 0;
     clog_atomic_basic_t old_index = 0;
     do {
-        old_index = (uint32_t)clog_atomic_get(&g_err_count) & UINT32_MAX;
+        old_index = (uint32_t) clog_atomic_get(&g_err_count) & UINT32_MAX;
         CLOG_RET_IF(old_index >= g_err_num, g_err_num);
         new_index = old_index + 1;
     } while (!clog_atomic_cas(&g_err_count, &old_index, new_index));
-    return (uint32_t)old_index;
+    return (uint32_t) old_index;
 }
 
-void clog_err_put(const char* file, int line, const char* fmt, ...)
-{
+void clog_err_put(const char *file, int line, const char *fmt, ...) {
     CLOG_RET_VOID_IF(g_err_num == 0);
     const uint32_t index = clog_err_get_index();
     CLOG_RET_VOID_IF(index >= g_err_num);
-    char* log = g_err_msg[index];
+    char *log = g_err_msg[index];
     int ret = snprintf(log, g_err_line_size, "[%u %s:%d] ", index, file, line);
     if (ret < 0) {
         ret = 0;
@@ -62,23 +62,21 @@ void clog_err_put(const char* file, int line, const char* fmt, ...)
     va_end(args);
 }
 
-const char** clog_err_get(unsigned int* num)
-{
+const char **clog_err_get(unsigned int *num) {
     CLOG_RET_IF_NULL(num, NULL);
     *num = 0;
     CLOG_RET_IF(g_err_num == 0, NULL);
     const clog_atomic_basic_t tmp = clog_atomic_get(&g_err_count);
     CLOG_RET_IF(tmp == 0, NULL);
-    *num = (unsigned int)tmp;
-    return (const char**)g_err_msg;
+    *num = (unsigned int) tmp;
+    return (const char **) g_err_msg;
 }
 
-void clog_err_print(char* buf, unsigned int size, const char* separator)
-{
+void clog_err_print(char *buf, unsigned int size, const char *separator) {
     CLOG_RET_VOID_IF_NULL(buf);
     CLOG_RET_VOID_IF(size == 0);
     uint32_t num = 0;
-    const char** errors = clog_err_get(&num);
+    const char **errors = clog_err_get(&num);
     CLOG_RET_VOID_IF_NULL(errors);
     CLOG_RET_VOID_IF(num == 0);
     size_t offset = 0;
@@ -102,13 +100,11 @@ void clog_err_print(char* buf, unsigned int size, const char* separator)
     }
 }
 
-void clog_err_clear(void)
-{
+void clog_err_clear(void) {
     clog_atomic_set(&g_err_count, 0);
 }
 
-void clog_err_cleanup(void)
-{
+void clog_err_cleanup(void) {
     for (size_t i = 0; i < g_err_num; ++i) {
         CLOG_SAFE_FREE(g_err_msg[i]);
     }
@@ -116,4 +112,19 @@ void clog_err_cleanup(void)
     g_err_num = 0;
     g_err_line_size = 0;
     clog_atomic_set(&g_err_count, 0);
+}
+
+clog_res_e clog_err_to_res(int err) {
+    switch (err) {
+        case ENOMEM:
+            return CLOG_NO_MEMORY;
+        case ENOENT:
+            return CLOG_TARGET_NOT_FOUND;
+        case EACCES:
+            return CLOG_NOT_PERMITTED;
+        case 0:
+            return CLOG_SUCCESS;
+        default:
+            return CLOG_FAIL;
+    }
 }

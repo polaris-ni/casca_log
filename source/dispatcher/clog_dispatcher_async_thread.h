@@ -5,10 +5,7 @@
 #ifndef CASCA_LOG_CLOG_DISPATCHER_ASYNC_THREAD_H
 #define CASCA_LOG_CLOG_DISPATCHER_ASYNC_THREAD_H
 
-#include "clog_semaphore.h"
-#include "clog_atomic_types.h"
 #include "clog_dispatcher.h"
-#include "clog_thread.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {

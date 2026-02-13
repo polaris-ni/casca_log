@@ -156,13 +156,15 @@ clog_item_t;
 
 typedef struct clog_item_wrapper {
     const char *process;
-    const char* module;
-    const char* filename;
-    const char* function;
-    const char* fmt;
+    const char *module;
+    const char *filename;
+    const char *function;
+    const char *fmt;
     va_list args;
-    clog_item_t* log;
+    clog_item_t *log;
 } clog_item_wrapper_t;
+
+clog_res_e clog_err_to_res(int err);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

@@ -7,7 +7,9 @@
 #include <errno.h>
 #endif
 #include "casca_log.h"
-#include "clog_atomic_queue.h"
+#include "clog_semaphore.h"
+#include "clog_thread.h"
+#include "clog_atomic_types.h"
 #include "clog_error.h"
 #include "clog_recorder_manager.h"
 #include "clog_secure_func.h"

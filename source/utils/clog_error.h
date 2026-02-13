@@ -12,7 +12,6 @@ extern "C" {
 #define CLOG_STR_TMP(x) #x
 #define CLOG_STR(x) CLOG_STR_TMP(x)
 
-
 #define CLOG_RET_IF_X(cond, ret, msg, ...)    \
     do {                                      \
         if (cond) {                           \
