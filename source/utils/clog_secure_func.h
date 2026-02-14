@@ -91,8 +91,11 @@ static clog_res_e clog_strcpy(char* buf, size_t size, const char* src)
     const errno_t err = strcpy_s(buf, size, src);
     return err == 0 ? CLOG_SUCCESS : CLOG_FAIL;
 #else
+    CLOG_RET_IF_NULL(buf, CLOG_INVALID_PARAM);
+    CLOG_RET_IF_NULL(src, CLOG_INVALID_PARAM);
+    CLOG_RET_IF(size == 0 && src[0] == '\0', CLOG_SUCCESS);
     const int ret = snprintf(buf, size, "%s", src);
-    return ret >= 0 ? CLOG_SUCCESS : CLOG_FAIL;
+    return ret > 0 && ret < size ? CLOG_SUCCESS : CLOG_FAIL;
 #endif
 }
 

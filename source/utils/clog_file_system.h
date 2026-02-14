@@ -10,6 +10,8 @@
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
+
+
 #endif
 
 typedef struct clog_file clog_file_t;
@@ -20,8 +22,8 @@ typedef enum clog_file_flag {
     CLOG_FILE_WRITE = 1 << 0, /* open for write */
     CLOG_FILE_READ = 1 << 1, /* open for read */
 
-    CLOG_FILE_CREATE = 1 << 2, /* create file always, when CLOG_FILE_EXIST is specified, open file if exists */
-    CLOG_FILE_EXIST = 1 << 3, /* open file if exists, open failed if not specified */
+    CLOG_FILE_CREATE = 1 << 2, /* create file always, when CLOG_FILE_EXIST is specified, open file if existed */
+    CLOG_FILE_EXIST = 1 << 3, /* open file when existed, open failed if not specified when not existed */
 
     CLOG_FILE_TRUNCATE = 1 << 4, /* truncate file, if not specified, data will be appended to the file */
 
@@ -36,9 +38,10 @@ typedef enum clog_file_flag {
  * open file
  * @param path file path
  * @param flags flag of file, see #clog_file_flag_e
+ * @param modes mode of file on linux, not used on Windows
  * @return file handle if open success, NULL if open failed
  */
-clog_file_t *clog_file_open(const char *path, uint64_t flags);
+clog_file_t *clog_file_open(const char *path, uint64_t flags, uint64_t modes);
 
 /**
  * write data to file
@@ -64,6 +67,33 @@ clog_res_e clog_file_read(const clog_file_t *file, void *buf, size_t size, size_
  * @param file file handle
  */
 void clog_file_close(clog_file_t *file);
+
+/**
+* get current work directory
+* @param path buffer to store path
+* @param size buffer size
+* @return #clog_res_e
+*/
+clog_res_e clog_cwd(char *path, size_t size);
+
+/**
+ * normalize file path
+ * @param path original file path
+ * @param buf buffer to store normalized file path
+ * @param size buffer size
+ * @return #clog_res_e
+ */
+clog_res_e clog_normalize(const char *path, char *buf, size_t size);
+
+/**
+ * create directory recursively
+ * @param path directory path
+ * @param flags mode of directory on linux, not used on Windows
+ * @return CLOG_SUCCESS if create success
+ *         CLOG_ALREADY_EXISTED if directory is already existed
+ *         CLOG_BUSY if there is a file that have the same name as the directory
+ */
+clog_res_e clog_dir_create(const char *path, uint64_t flags);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
