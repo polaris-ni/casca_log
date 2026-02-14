@@ -58,6 +58,9 @@ extern "C" {
 #ifndef CASCA_FILENAME_MAX_SIZE
 #define CASCA_FILENAME_MAX_SIZE 64
 #endif
+#ifndef CLOG_FILEPATH_MAX_SIZE
+#define CLOG_FILEPATH_MAX_SIZE 256
+#endif
 
 #ifndef CLOG_FILENAME
 #ifndef __FILE_NAME__

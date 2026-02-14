@@ -97,7 +97,7 @@ static size_t clog_placeholder_file(const clog_item_wrapper_t* wrapper, char* bu
 
 static size_t clog_placeholder_content(const clog_item_wrapper_t* wrapper, char* buf, const size_t size)
 {
-    const int ret = vsnprintf(buf, size, wrapper->fmt, wrapper->args);
+    const int ret = vsnprintf(buf, size, wrapper->fmt, ((clog_item_wrapper_t *)wrapper)->args);
     CLOG_RET_IF(ret < 0, 0);
     return ret;
 }
