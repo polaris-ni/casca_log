@@ -10,8 +10,6 @@
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
-
-
 #endif
 
 typedef struct clog_file clog_file_t;
