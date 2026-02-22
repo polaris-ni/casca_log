@@ -1,6 +1,7 @@
-//
-// Created by Polaris on 2026/2/8.
-//
+/**
+ * @author Polaris
+ * @date  2026/2/8
+ */
 
 #ifndef CASCA_LOG_CLOG_SEMAPHORE_H
 #define CASCA_LOG_CLOG_SEMAPHORE_H
@@ -13,9 +14,6 @@
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
-
-
-
 #endif
 
 typedef struct clog_sem clog_sem_t;
