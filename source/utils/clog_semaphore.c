@@ -1,25 +1,23 @@
-//
-// Created by Polaris on 2026/2/8.
-//
+/**
+* @author Polaris
+ * @date  2026/2/8
+ */
 
 #include "clog_semaphore.h"
 #include "clog_platform.h"
 #include <stdlib.h>
-
 #include "clog_hooks.h"
 
 #ifdef CLOG_PLATFORM_WINDOWS
 #include <windows.h>
 #include <stdint.h>
 
-#include "clog_hooks.h"
-
 struct clog_sem {
     HANDLE handle;
 };
 
 clog_sem_t *clog_sem_create(unsigned int value) {
-    clog_sem_t *sem = (clog_sem_t *) clog_malloc(sizeof(clog_sem_t));
+    clog_sem_t *sem = clog_malloc(sizeof(clog_sem_t));
     if (!sem) return NULL;
 
     sem->handle = CreateSemaphoreA(NULL, (LONG) value, INT32_MAX, NULL);

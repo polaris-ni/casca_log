@@ -197,7 +197,7 @@ static clog_placeholder_t* clog_placeholder_create(const char* name, const bool 
 }
 
 /* {hello} -> hello */
-static const char* clog_placeholder_parse_name(const char* format)
+static const char* clog_interpolator_parse_placeholder_name(const char* format)
 {
     const char* tmp = format + 1;
     if (*tmp == '}') {
@@ -224,7 +224,7 @@ static clog_res_e clog_placeholder_parse_format(const char* format, clog_placeho
     CLOG_RET_IF(format[0] == '\0', CLOG_SUCCESS); /* parse over */
     const char* tmp = format;
     if (*tmp == '{') {
-        tmp = clog_placeholder_parse_name(format);
+        tmp = clog_interpolator_parse_placeholder_name(format);
         CLOG_RET_IF_NULL(tmp, CLOG_INVALID_PARAM);
         char* name = clog_strndup(format + 1, tmp - format);
         CLOG_RET_IF_NULL(name, CLOG_NO_MEMORY);
