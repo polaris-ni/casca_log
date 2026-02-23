@@ -6,7 +6,7 @@
 #define CASCA_LOG_CLOG_FORMATTER_H
 
 #include "casca_log_base.h"
-#include "clog_placeholder.h"
+#include "clog_interpolator.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -20,13 +20,13 @@ clog_res_e clog_formatter_setup(void);
 
 /**
  * format #clog_item_t with #clog_placeholder_t
- * @param placeholders placeholders
+ * @param interpolator interpolator
  * @param wrapper clog item with params
  * @param content log buffer
  * @param size log buffer size
  * @return #clog_res_e
  */
-clog_res_e clog_format_log(const clog_placeholder_t* placeholders, const clog_item_wrapper_t* wrapper, char* content, size_t size);
+clog_res_e clog_format_log(const clog_interpolator_t* interpolator, const clog_item_wrapper_t* wrapper, char* content, size_t size);
 
 /**
  * cleanup formatter resource

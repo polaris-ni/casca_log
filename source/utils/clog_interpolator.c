@@ -65,7 +65,7 @@ static bool clog_placeholder_is_name_valid(const char ch) {
 }
 
 static clog_interpolator_t *clog_interpolator_create(const clog_hashmap_t *map, const char *name, bool should_handle) {
-    clog_placeholder_handler_f func = NULL;
+    const clog_placeholder_handler_f *func = NULL;
     if (should_handle) {
         func = clog_hashmap_get(map, name);
         CLOG_RET_IF_NULL_X(func, NULL, "get %s function failed", name);
@@ -82,7 +82,7 @@ static clog_interpolator_t *clog_interpolator_create(const clog_hashmap_t *map, 
         interpolator->pure.length = strlen(interpolator->pure.string);
     } else {
         interpolator->should_handle = true;
-        interpolator->handler = func;
+        interpolator->handler = *func;
     }
     interpolator->next = NULL;
     return interpolator;
@@ -119,13 +119,11 @@ static clog_res_e clog_interpolator_parse_format(const clog_hashmap_t *map, cons
         CLOG_RET_IF_NULL(tmp, CLOG_INVALID_PARAM);
         char *name = clog_strndup(format + 1, tmp - format);
         CLOG_RET_IF_NULL(name, CLOG_NO_MEMORY);
-        clog_interpolator_t *placeholder = clog_interpolator_create(map, name, true);
-        if (placeholder == NULL) {
-            clog_free(name);
-            return CLOG_FAIL;
-        }
-        root->next = placeholder;
-        return clog_interpolator_parse_format(map, tmp + 2, placeholder);
+        clog_interpolator_t *interpolator = clog_interpolator_create(map, name, true);
+        CLOG_CLEAN_RET_IF_NULL_X(interpolator, clog_free(name), CLOG_FAIL, "clog_interpolator_create %s failed", name);
+        CLOG_SAFE_FREE(name);
+        root->next = interpolator;
+        return clog_interpolator_parse_format(map, tmp + 2, interpolator);
     }
     bool is_escape = false;
     while (*tmp != '\0') {
@@ -159,13 +157,11 @@ static clog_res_e clog_interpolator_parse_format(const clog_hashmap_t *map, cons
         start++;
     }
     *ptr = '\0';
-    clog_interpolator_t *placeholder = clog_interpolator_create(map, name, false);
-    if (placeholder == NULL) {
-        clog_free(name);
-        return CLOG_FAIL;
-    }
-    root->next = placeholder;
-    return clog_interpolator_parse_format(map, tmp, placeholder);
+    clog_interpolator_t *interpolator = clog_interpolator_create(map, name, false);
+    CLOG_CLEAN_RET_IF_NULL_X(interpolator, clog_free(name), CLOG_FAIL, "clog_interpolator_create %s failed", name);
+    CLOG_SAFE_FREE(name);
+    root->next = interpolator;
+    return clog_interpolator_parse_format(map, tmp, interpolator);
 }
 
 clog_res_e clog_interpolator_parse(const clog_interpolator_context_t *context, const char *fmt,
@@ -182,39 +178,39 @@ clog_res_e clog_interpolator_parse(const clog_interpolator_context_t *context, c
     return CLOG_SUCCESS;
 }
 
-clog_res_e clog_interpolator_interpolate(clog_interpolator_context_t *context, const clog_interpolator_t *interpolator,
-                                         void *param, char *buf, size_t size, size_t *num) {
-    CLOG_RET_IF_NULL_X(context, CLOG_INVALID_PARAM, "context is NULL");
+clog_res_e clog_interpolator_interpolate(const clog_interpolator_t *interpolator, void *param, char *buf, size_t size,
+                                         size_t *num) {
     CLOG_RET_IF_NULL_X(interpolator, CLOG_INVALID_PARAM, "interpolator is NULL");
     CLOG_RET_IF_NULL_X(buf, CLOG_INVALID_PARAM, "buf is NULL");
     CLOG_RET_IF_X(size <= 1, CLOG_INVALID_PARAM, "size is too small");
-    clog_interpolator_t *placeholder = interpolator->next;
+    const clog_interpolator_t *tmp = interpolator->next;
     size_t offset = 0;
     clog_res_e res;
-    while (placeholder != NULL) {
-        if (!placeholder->should_handle) {
-            CLOG_ASSERT(placeholder->pure.string != NULL);
-            CLOG_ASSERT(placeholder->pure.length > 0);
-            res = clog_strcpy(buf + offset, size - offset, placeholder->pure.string);
+    while (tmp != NULL) {
+        if (!tmp->should_handle) {
+            CLOG_ASSERT(tmp->pure.string != NULL);
+            CLOG_ASSERT(tmp->pure.length > 0);
+            res = clog_strcpy(buf + offset, size - offset, tmp->pure.string);
             if (res != CLOG_SUCCESS) {
                 CLOG_ERR_ADD("clog_interpolator_interpolate copy string %s failed, offset = %zu, size = %zu, ret = %u",
-                             placeholder->pure.string, offset, size, res);
+                             tmp->pure.string, offset, size, res);
                 buf[0] = '\0';
                 return res;
             }
-            offset += placeholder->pure.length;
+            offset += tmp->pure.length;
         } else {
-            CLOG_ASSERT(placeholder->handler != NULL);
-            const int tmp = placeholder->handler(context, param, buf + offset, size - offset);
-            if (tmp <= 0) {
-                res = -tmp;
+            CLOG_ASSERT(tmp->handler != NULL);
+            const int len = tmp->handler(param, buf + offset, size - offset);
+            if (len <= 0) {
+                res = -len;
                 CLOG_ERR_ADD("clog_interpolator_interpolate func failed, offset = %zu, size = %zu, ret = %u", offset,
                              size, res);
                 buf[0] = '\0';
                 return res;
             }
-            offset += tmp;
+            offset += len;
         }
+        tmp = tmp->next;
     }
     if (offset >= size) {
         CLOG_ERR_ADD("clog_interpolator_interpolate buf overflow, offset = %zu, size = %u", offset, size);

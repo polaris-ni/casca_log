@@ -9,7 +9,7 @@
 #include "clog_channel_base.h"
 #include "clog_config.h"
 #include "clog_filter.h"
-#include "clog_placeholder.h"
+#include "clog_log_format_placeholder.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -76,16 +76,16 @@ const char* clog_get_level_tag(clog_level_e level);
 void clog_set_level_tag(clog_level_e level, const char* tag);
 
 /**
- * get placeholders
- * @return placeholders
+ * get interpolator
+ * @return interpolator
  */
-const clog_placeholder_t* clog_get_placeholders(void);
+clog_interpolator_t* clog_get_interpolator(void);
 
 /**
- * set placeholder to context, attention that placeholder will not be copy in a new memory
- * @param placeholder placeholder
+ * set interpolator to context, attention that interpolator will not be copy in a new memory
+ * @param interpolator interpolator
  */
-void clog_set_placeholders(const clog_placeholder_t* placeholder);
+void clog_set_interpolator(clog_interpolator_t* interpolator);
 
 /**
  * get pre-filters
