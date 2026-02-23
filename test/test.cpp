@@ -61,22 +61,22 @@ TEST_F(CLogMainTest, CreateLog)
     const clog_config_group_t* root = clog_get_config_root();
     EXPECT_TRUE(clog_config_dump_group(root, tmp, len, "  "));
 
-    ret = clog_log("test", CLOG_RECORDER_STDOUT_ID, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_TRACE,
+    ret = clog_log("test", CLOG_RECORDER_ID_STDOUT, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_TRACE,
                    "test log print process trace [%s]", clog_get_process());
     EXPECT_EQ(ret, CLOG_SUCCESS);
-    ret = clog_log("test", CLOG_RECORDER_STDOUT_ID, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_DEBUG,
+    ret = clog_log("test", CLOG_RECORDER_ID_STDOUT, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_DEBUG,
                    "test log print process debug [%s]", clog_get_process());
     EXPECT_EQ(ret, CLOG_SUCCESS);
-    ret = clog_log("test", CLOG_RECORDER_STDOUT_ID, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_INFO,
+    ret = clog_log("test", CLOG_RECORDER_ID_STDOUT, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_INFO,
                    "test log print process info [%s]", clog_get_process());
     EXPECT_EQ(ret, CLOG_SUCCESS);
-    ret = clog_log("test", CLOG_RECORDER_STDOUT_ID, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_WARN,
+    ret = clog_log("test", CLOG_RECORDER_ID_STDOUT, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_WARN,
                    "test log print process warn [%s]", clog_get_process());
     EXPECT_EQ(ret, CLOG_SUCCESS);
-    ret = clog_log("test", CLOG_RECORDER_STDOUT_ID, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_ERROR,
+    ret = clog_log("test", CLOG_RECORDER_ID_STDOUT, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_ERROR,
                    "test log print process error [%s]", clog_get_process());
     EXPECT_EQ(ret, CLOG_SUCCESS);
-    ret = clog_log("test", CLOG_RECORDER_STDOUT_ID, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_FETAL,
+    ret = clog_log("test", CLOG_RECORDER_ID_STDOUT, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_FETAL,
                    "test log print process fetal [%s]", clog_get_process());
     EXPECT_EQ(ret, CLOG_SUCCESS);
     clog_free(tmp);
