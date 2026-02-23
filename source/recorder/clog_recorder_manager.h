@@ -11,7 +11,8 @@
 extern "C" {
 #endif
 
-#define CLOG_RECORDER_STDOUT_ID (1)
+#define CLOG_RECORDER_ID_STDOUT (1)
+#define CLOG_RECORDER_ID_FILE (2)
 
 /**
  * write log item to recoder
@@ -22,12 +23,10 @@ extern "C" {
 clog_res_e clog_recoder_write(uint32_t id, const clog_item_t* item);
 
 /**
- * register customized recorders
- * @param recorders customized recorders
- * @param num the num of customized recorders
- * @return clog_res_e
+ * register customized recorders provider
+ * @param provider the provider of customized recorders
  */
-clog_res_e clog_recorder_register(const clog_recorder_t* recorders, size_t num);
+void clog_recorder_register_provider(clog_recorder_provider_f provider);
 
 /**
  * setup recorders

@@ -20,7 +20,7 @@ fetal = "F"
 level = 62 # CLOG_LEVEL_DEBUG | CLOG_LEVEL_INFO | CLOG_LEVEL_WARN | CLOG_LEVEL_ERROR | CLOG_LEVEL_FETAL
 [Process.casca_log_test.test]
 level = 63 # override process level
-recorder = [1]
+recorder = [1, 2]
 [Process.casca_log_test.main]
 # level inherited from process
 enabled = false # main is not allowed to output log, if not set, default value is true
@@ -97,6 +97,13 @@ info = [[255, 255, 255], []]
 warn = [[255, 255, 0], []]
 error = [[255, 0, 0], []]
 fetal = [[255, 255, 255], [139, 0, 0]]
+
+[Recorders.ClogRecorderFile]
+id = 2
+enabled = true
+directory = "/{_cwd}/logs/{_year}{_month}{_day}/"
+index = "log_index"
+file = "log_{_year}{_month}{_day}_{_hour}{_minute}{_second}.log"
 
 [Performance.BufferPool]
 auto = true # auto expand buffer pool, default value is true

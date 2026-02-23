@@ -18,20 +18,20 @@ extern "C" {
 typedef struct clog_recorder clog_recorder_t;
 
 /**
- * setup recorder, it will be called only once when #clog_recorder_setup
- * if there are extra params, it should be set to #extra of #clog_recorder_t
- * @param self itself
- * @param group the parsed #clog_config_group_t from the Recorders.ClogXxx
+ * customized recorder provider function
+ * @param id recorder id
+ * @param recorder customized recorder
  * @return #clog_res_e
  */
-typedef clog_res_e (*clog_recorder_setup_f)(clog_recorder_t* self, const clog_config_group_t* group);
+typedef clog_res_e (*clog_recorder_provider_f)(uint32_t id, clog_recorder_t *recorder);
 
 /**
  * open recorder
  * @param self itself
+ * @param group the parsed #clog_config_group_t from the Recorders.ClogXxx
  * @return #clog_res_e
  */
-typedef clog_res_e (*clog_recorder_open_f)(clog_recorder_t* self);
+typedef clog_res_e (*clog_recorder_open_f)(clog_recorder_t *self, const clog_config_group_t *group);
 
 /**
  * write log to recorder
@@ -39,7 +39,7 @@ typedef clog_res_e (*clog_recorder_open_f)(clog_recorder_t* self);
  * @param log log item
  * @return #clog_res_e
  */
-typedef clog_res_e (*clog_recorder_write_f)(clog_recorder_t* self, const clog_item_t* log);
+typedef clog_res_e (*clog_recorder_write_f)(clog_recorder_t *self, const clog_item_t *log);
 
 /**
  * flush recorder
@@ -47,65 +47,40 @@ typedef clog_res_e (*clog_recorder_write_f)(clog_recorder_t* self, const clog_it
  * @param self itself
  * @return #clog_res_e
  */
-typedef clog_res_e (*clog_recorder_flush_f)(clog_recorder_t* self);
+typedef clog_res_e (*clog_recorder_flush_f)(clog_recorder_t *self);
 
 /**
  * close recoder
  * @param self itself
  */
-typedef void (*clog_recorder_close_f)(clog_recorder_t* self);
-
-/**
- * cleanup recoder, it will be called when #clog_recorder_cleanup
- * remember to free #extra if it is set by #clog_recorder_setup_f
- * @param self itself
- */
-typedef void (*clog_recorder_cleanup_f)(clog_recorder_t* self);
+typedef void (*clog_recorder_close_f)(clog_recorder_t *self);
 
 struct clog_recorder {
     uint32_t id;
-    clog_recorder_setup_f setup;
     clog_recorder_open_f open;
     clog_recorder_write_f write;
     clog_recorder_flush_f flush;
     clog_recorder_close_f close;
-    clog_recorder_cleanup_f cleanup;
-    void* extra;
+    void *extra;
 };
 
-static clog_res_e clog_recorder_empty_setup(clog_recorder_t* self, const clog_config_group_t* group)
-{
-    CLOG_UNUSED_VAR(self);
-    CLOG_UNUSED_VAR(group);
-    return CLOG_SUCCESS;
-}
-
-static clog_res_e clog_recorder_empty_open(clog_recorder_t* self)
-{
+static clog_res_e clog_recorder_empty_open(clog_recorder_t *self, const clog_config_group_t *group) {
     CLOG_UNUSED_VAR(self);
     return CLOG_SUCCESS;
 }
 
-static clog_res_e clog_recorder_empty_write(clog_recorder_t* self, const clog_item_t* log)
-{
+static clog_res_e clog_recorder_empty_write(clog_recorder_t *self, const clog_item_t *log) {
     CLOG_UNUSED_VAR(self);
     CLOG_UNUSED_VAR(log);
     return CLOG_SUCCESS;
 }
 
-static clog_res_e clog_recorder_empty_flush(clog_recorder_t* self)
-{
+static clog_res_e clog_recorder_empty_flush(clog_recorder_t *self) {
     CLOG_UNUSED_VAR(self);
     return CLOG_SUCCESS;
 }
 
-static void clog_recorder_empty_close(clog_recorder_t* self)
-{
-    CLOG_UNUSED_VAR(self);
-}
-
-static void clog_recorder_empty_cleanup(clog_recorder_t* self)
-{
+static void clog_recorder_empty_close(clog_recorder_t *self) {
     CLOG_UNUSED_VAR(self);
 }
 
