@@ -27,7 +27,7 @@ typedef struct clog_context {
     clog_config_t config;
 
     struct {
-        clog_placeholder_t placeholder;
+        clog_interpolator_t *interpolator;
 
         struct {
             struct {
@@ -292,12 +292,12 @@ void clog_set_level_tag(const clog_level_e level, const char *tag) {
     }
 }
 
-const clog_placeholder_t *clog_get_placeholders(void) {
-    return g_context.formatter.placeholder.next;
+clog_interpolator_t *clog_get_interpolator(void) {
+    return g_context.formatter.interpolator;
 }
 
-void clog_set_placeholders(const clog_placeholder_t *placeholder) {
-    g_context.formatter.placeholder.next = placeholder;
+void clog_set_interpolator(clog_interpolator_t *interpolator) {
+    g_context.formatter.interpolator = interpolator;
 }
 
 const clog_filter_t *clog_get_filters(const clog_filter_type_e type) {
@@ -402,7 +402,7 @@ static clog_res_e clog_log_internal(const uint32_t *recorders, size_t num, const
     bool pass = clog_filter_log(clog_get_filters(CLOG_FILTER_PRE), wrapper);
     CLOG_RET_IF_X(!pass, CLOG_NOT_PERMITTED, "clog_filter_log PRE failed");
     /* formatter */
-    const clog_res_e ret = clog_format_log(g_context.formatter.placeholder.next, wrapper, wrapper->log->content,
+    const clog_res_e ret = clog_format_log(g_context.formatter.interpolator, wrapper, wrapper->log->content,
                                            sizeof(wrapper->log->content));
     CLOG_RET_IF_FAILED_X(ret, "clog_format_log failed, ret = %u", ret);
     /* postfilter */

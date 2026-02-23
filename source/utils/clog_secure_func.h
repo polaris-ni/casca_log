@@ -8,6 +8,9 @@
 #include <string.h>
 #include "casca_log_base.h"
 #include "clog_hooks.h"
+#ifndef CLOG_COMPILER_MSVC
+#include <stdio.h>
+#endif
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -21,7 +24,7 @@ extern "C" {
  * @param count count of padding
  * @return result
  */
-clog_res_e clog_memset(void* dest, size_t size, char padding, size_t count);
+clog_res_e clog_memset(void *dest, size_t size, char padding, size_t count);
 
 /**
  * copy memory
@@ -31,14 +34,14 @@ clog_res_e clog_memset(void* dest, size_t size, char padding, size_t count);
  * @param count count of memory
  * @return result
  */
-clog_res_e clog_memcpy(void* dest, size_t size, const void* src, size_t count);
+clog_res_e clog_memcpy(void *dest, size_t size, const void *src, size_t count);
 
 /**
  * duplicate string
  * @param str string
  * @return result, NULL if str is NULL
  */
-char* clog_strdup(const char* str);
+char *clog_strdup(const char *str);
 
 /**
  * duplicate the first n bytes of string
@@ -49,11 +52,10 @@ char* clog_strdup(const char* str);
  * @param num the num to be duplicated
  * @return result
  */
-static char* clog_strndup(const char* start, const size_t num)
-{
+static char *clog_strndup(const char *start, const size_t num) {
     CLOG_RET_IF(num == 0, NULL);
     CLOG_RET_IF_NULL(start, NULL);
-    char* tmp = (char*)clog_malloc(num + 1);
+    char *tmp = (char *) clog_malloc(num + 1);
     CLOG_RET_IF_NULL(tmp, NULL);
     CLOG_IGNORE_RES(clog_memcpy(tmp, num + 1, start, num));
     tmp[num] = '\0';
@@ -69,8 +71,7 @@ static char* clog_strndup(const char* start, const size_t num)
  * @param num the num to be compared
  * @return 0 if equal, -1 if str1 < str2, 1 if str1 > str2
  */
-static int32_t clog_strncmp(const char* str1, const char* str2, const size_t num)
-{
+static int32_t clog_strncmp(const char *str1, const char *str2, const size_t num) {
     if (str1 == NULL && str2 == NULL) {
         return 0;
     }
@@ -80,13 +81,7 @@ static int32_t clog_strncmp(const char* str1, const char* str2, const size_t num
     return strncmp(str1, str2, num);
 }
 
-#ifndef _STDIO_DEFINED
-/* just avoid include <stdio.h> */
-extern int snprintf(char* __restrict s, size_t size_of_s, const char* __restrict format, ...);
-#endif
-
-static clog_res_e clog_strcpy(char* buf, size_t size, const char* src)
-{
+static clog_res_e clog_strcpy(char *buf, size_t size, const char *src) {
 #ifdef CLOG_COMPILER_MSVC
     const errno_t err = strcpy_s(buf, size, src);
     return err == 0 ? CLOG_SUCCESS : CLOG_FAIL;

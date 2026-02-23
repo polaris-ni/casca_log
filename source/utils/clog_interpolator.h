@@ -18,13 +18,12 @@ typedef struct clog_interpolator_context clog_interpolator_context_t;
 
 /**
  * interpolator placeholder handler
- * @param context #clog_interpolator_context_t
  * @param param receive extra param
  * @param buf result string buffer
  * @param size buffer size
  * @return return interpolated string length('\0' is not include) if success, otherwise return -clog_res_e
  */
-typedef int (*clog_placeholder_handler_f)(clog_interpolator_context_t *context, void *param, char *buf, size_t size);
+typedef int (*clog_placeholder_handler_f)(void *param, char *buf, size_t size);
 
 typedef struct clog_interpolator clog_interpolator_t;
 
@@ -63,7 +62,6 @@ clog_res_e clog_interpolator_parse(const clog_interpolator_context_t *context, c
 
 /**
  * interpolate interpolator string
- * @param context #clog_interpolator_context_t
  * @param interpolator parsed interpolator
  * @param param extra param, will be passed to placeholder handler
  * @param buf result string buffer
@@ -71,8 +69,8 @@ clog_res_e clog_interpolator_parse(const clog_interpolator_context_t *context, c
  * @param num if not NULL, it will be ste result string character num('\0' not included)
  * @return #clog_res_e
  */
-clog_res_e clog_interpolator_interpolate(clog_interpolator_context_t *context, const clog_interpolator_t *interpolator,
-                                         void *param, char *buf, size_t size, size_t *num);
+clog_res_e clog_interpolator_interpolate(const clog_interpolator_t *interpolator, void *param, char *buf, size_t size,
+                                         size_t *num);
 
 /**
  * clear parsed interpolator
