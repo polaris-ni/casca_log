@@ -67,12 +67,12 @@ extern "C" {
 
 #define CLOG_CLEAN_RET_VOID_IF_FAILED(ret, clean) CLOG_CLEAN_RET_VOID_IF((ret) != CLOG_SUCCESS, (clean))
 
-#define CLOG_SAFE_FREE(mem)          \
-    do {                             \
-        if ((mem) != NULL) {         \
-            clog_free((void*)(mem)); \
-            (mem) = NULL;            \
-        }                            \
+#define CLOG_SAFE_FREE(mem)           \
+    do {                              \
+        if ((mem) != NULL) {          \
+            clog_free((void *)(mem)); \
+            (mem) = NULL;             \
+        }                             \
     } while (0)
 
 #define CLOG_ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -85,9 +85,11 @@ extern "C" {
 #endif
 
 #if defined(CLOG_COMPILER_CLANG) || defined(CLOG_COMPILER_GCC)
-#define CLOG_PACKED_STRUCT(STRUCT_DECL) STRUCT_DECL __attribute__((packed))
+#define CLOG_PACKED_STRUCT(name, stat) typedef struct name stat __attribute__((packed)) name##_t;
 #elif defined(CLOG_COMPILER_MSVC)
-#define CLOG_PACKED_STRUCT(STRUCT_DECL) __pragma(pack(push, 1)) STRUCT_DECL __pragma(pack(pop))
+#define CLOG_PACKED_STRUCT(name, stat)                         \
+    __pragma(pack(push, 1)) typedef struct name stat name##_t; \
+    __pragma(pack(pop))
 #else
 #error "Compiler Not Supported Now"
 #endif

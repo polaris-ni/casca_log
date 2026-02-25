@@ -32,6 +32,12 @@ typedef enum clog_file_flag {
     CLOG_FILE_SYNC = 1 << 7, /* sync to file system */
 } clog_file_flag_e;
 
+typedef enum clog_file_seek {
+    CLOG_FILE_SEEK_SET = 0, /* seek from start */
+    CLOG_FILE_SEEK_CUR = 1, /* seek from current position */
+    CLOG_FILE_SEEK_END = 2, /* seek from end */
+} clog_file_seek_e;
+
 /**
  * open file
  * @param path file path
@@ -61,17 +67,29 @@ clog_res_e clog_file_write(const clog_file_t *file, const void *buf, size_t size
 clog_res_e clog_file_read(const clog_file_t *file, void *buf, size_t size, size_t *num);
 
 /**
+ * seek file
+ * @param file file handle
+ * @param whence whence
+ * @param offset offset
+ * @param num the num of bytes to the start of the file
+ * @return CLOG_SUCCESS if seek success
+ *         CLOG_INVALID_PARAM if file is NULL
+ *         CLOG_FAIL if seek failed
+ */
+clog_res_e clog_file_seek(const clog_file_t *file, clog_file_seek_e whence, int offset, size_t *num);
+
+/**
  * close file
  * @param file file handle
  */
-void clog_file_close(clog_file_t *file);
+void clog_file_close(clog_file_t **file);
 
 /**
-* get current work directory
-* @param path buffer to store path
-* @param size buffer size
-* @return #clog_res_e
-*/
+ * get current work directory
+ * @param path buffer to store path
+ * @param size buffer size
+ * @return #clog_res_e
+ */
 clog_res_e clog_cwd(char *path, size_t size);
 
 /**
@@ -92,6 +110,26 @@ clog_res_e clog_normalize(const char *path, char *buf, size_t size);
  *         CLOG_BUSY if there is a file that have the same name as the directory
  */
 clog_res_e clog_dir_create(const char *path, uint64_t flags);
+
+/**
+ * get file name from full path
+ * @param fullpath full path
+ * @param file buffer to store file name
+ * @param size buffer size
+ * @return CLOG_SUCCESS if success
+ *         CLOG_INVALID_PARAM if fullpath is NULL
+ */
+clog_res_e clog_file_get_name(const char *fullpath, char *file, size_t size);
+
+/**
+ * get directory name from full path
+ * @param fullpath full path
+ * @param dir buffer to store directory name
+ * @param size buffer size
+ * @return CLOG_SUCCESS if success
+ *         CLOG_INVALID_PARAM if fullpath is NULL
+ */
+clog_res_e clog_file_get_dir(const char *fullpath, char *dir, size_t size);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

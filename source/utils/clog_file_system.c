@@ -7,6 +7,7 @@
 #include "clog_error.h"
 #include "clog_hooks.h"
 #include "clog_platform.h"
+#include "clog_secure_func.h"
 #ifdef CLOG_PLATFORM_WINDOWS
 #include <windows.h>
 #else
@@ -16,10 +17,7 @@
 #include <string.h>
 #include <sys/file.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
-#include <linux/limits.h>
-#include "clog_secure_func.h"
 
 typedef struct clog_path_node {
     char *name;
@@ -42,7 +40,8 @@ struct clog_file {
 };
 
 #ifdef CLOG_PLATFORM_WINDOWS
-static wchar_t *clog_utf8_to_utf16(const char *utf8_str) {
+static wchar_t *clog_utf8_to_utf16(const char *utf8_str)
+{
     const int len = MultiByteToWideChar(CP_UTF8, 0, utf8_str, -1, NULL, 0);
     CLOG_RET_IF(len <= 0, NULL);
     wchar_t *w_str = clog_malloc(len * sizeof(wchar_t));
@@ -55,7 +54,8 @@ static wchar_t *clog_utf8_to_utf16(const char *utf8_str) {
 }
 #endif
 
-clog_file_t *clog_file_open(const char *path, uint64_t flags, uint64_t modes) {
+clog_file_t *clog_file_open(const char *path, uint64_t flags, uint64_t modes)
+{
     CLOG_RET_IF_NULL_X(path, NULL, "path is NULL");
     CLOG_RET_IF_X(flags == CLOG_FILE_NONE, NULL, "flags is CLOG_FILE_NONE");
 #ifdef CLOG_PLATFORM_WINDOWS
@@ -103,18 +103,18 @@ clog_file_t *clog_file_open(const char *path, uint64_t flags, uint64_t modes) {
     HANDLE handle = CreateFileW(w_path, access, share, NULL, disposition, flag, NULL);
     CLOG_SAFE_FREE(w_path);
     CLOG_RET_IF_X(handle == INVALID_HANDLE_VALUE, NULL, "CreateFileW failed, flags = 0x%llX err = 0x%llX", flags,
-                  (uint64_t) GetLastError());
+                  (uint64_t)GetLastError());
 
     if (CLOG_FILE_CHECK_FLAG(flags, CLOG_FILE_WRITE)) {
         const DWORD move = CLOG_FILE_CHECK_FLAG(flags, CLOG_FILE_TRUNCATE) ? FILE_BEGIN : FILE_END;
         if (SetFilePointer(handle, 0, NULL, move) == INVALID_SET_FILE_POINTER) {
-            CLOG_ERR_ADD("SetFilePointer %u failed, err = 0x%llX", move, (uint64_t) GetLastError());
+            CLOG_ERR_ADD("SetFilePointer %u failed, err = 0x%llX", move, (uint64_t)GetLastError());
             CloseHandle(handle);
             return NULL;
         }
         if (CLOG_FILE_CHECK_FLAG(flags, CLOG_FILE_TRUNCATE)) {
             if (!SetEndOfFile(handle)) {
-                CLOG_ERR_ADD("SetEndOfFile failed, err = 0x%llX", (uint64_t) GetLastError());
+                CLOG_ERR_ADD("SetEndOfFile failed, err = 0x%llX", (uint64_t)GetLastError());
                 CloseHandle(handle);
                 return NULL;
             }
@@ -158,7 +158,7 @@ clog_file_t *clog_file_open(const char *path, uint64_t flags, uint64_t modes) {
     if (CLOG_FILE_CHECK_FLAG(flags, CLOG_FILE_SYNC)) {
         flag |= O_SYNC;
     }
-    const int fd = open(path, flag, (mode_t) modes);
+    const int fd = open(path, flag, (mode_t)modes);
     CLOG_RET_IF_X(fd < 0, NULL, "open failed, err = %d", errno);
     if (CLOG_FILE_CHECK_FLAG(flags, CLOG_FILE_WRITE) && !CLOG_FILE_CHECK_FLAG(flags, CLOG_FILE_SHARED)) {
         CLOG_IGNORE_RES(flock(fd, LOCK_EX | LOCK_NB));
@@ -171,7 +171,8 @@ clog_file_t *clog_file_open(const char *path, uint64_t flags, uint64_t modes) {
 #endif
 }
 
-clog_res_e clog_file_write(const clog_file_t *file, const void *buf, size_t size) {
+clog_res_e clog_file_write(const clog_file_t *file, const void *buf, size_t size)
+{
     CLOG_RET_IF_NULL_X(file, CLOG_INVALID_PARAM, "file is NULL");
     CLOG_RET_IF_NULL_X(buf, CLOG_INVALID_PARAM, "buf is NULL");
     CLOG_RET_IF_X(size == 0, CLOG_INVALID_PARAM, "buf size is 0");
@@ -179,12 +180,12 @@ clog_res_e clog_file_write(const clog_file_t *file, const void *buf, size_t size
 #ifdef CLOG_PLATFORM_WINDOWS
     CLOG_RET_IF_X(file->handle == INVALID_HANDLE_VALUE, CLOG_INVALID_PARAM, "file handle is invalid");
     if (!WriteFile(file->handle, buf, size, NULL, NULL)) {
-        CLOG_ERR_ADD("WriteFile failed, err = 0x%llX", (uint64_t) GetLastError());
+        CLOG_ERR_ADD("WriteFile failed, err = 0x%llX", (uint64_t)GetLastError());
         return CLOG_FAIL;
     }
     if (CLOG_FILE_CHECK_FLAG(file->flags, CLOG_FILE_SYNC)) {
         if (!FlushFileBuffers(file->handle)) {
-            CLOG_ERR_ADD("WARN: FlushFileBuffers failed, size = %zu, err = 0x%llX", size, (uint64_t) GetLastError());
+            CLOG_ERR_ADD("WARN: FlushFileBuffers failed, size = %zu, err = 0x%llX", size, (uint64_t)GetLastError());
         }
     }
     return CLOG_SUCCESS;
@@ -196,7 +197,8 @@ clog_res_e clog_file_write(const clog_file_t *file, const void *buf, size_t size
 #endif
 }
 
-clog_res_e clog_file_read(const clog_file_t *file, void *buf, size_t size, size_t *num) {
+clog_res_e clog_file_read(const clog_file_t *file, void *buf, size_t size, size_t *num)
+{
     CLOG_RET_IF_NULL_X(file, CLOG_INVALID_PARAM, "file is NULL");
     CLOG_RET_IF_NULL_X(buf, CLOG_INVALID_PARAM, "buf is NULL");
     CLOG_RET_IF_X(size == 0, CLOG_INVALID_PARAM, "buf size is 0");
@@ -205,7 +207,7 @@ clog_res_e clog_file_read(const clog_file_t *file, void *buf, size_t size, size_
     CLOG_RET_IF_X(file->handle == INVALID_HANDLE_VALUE, CLOG_INVALID_PARAM, "file handle is invalid");
     DWORD read_size = 0;
     if (!ReadFile(file->handle, buf, size, &read_size, NULL)) {
-        CLOG_ERR_ADD("ReadFile failed, size = %zu, err = 0x%llX", size, (uint64_t) GetLastError());
+        CLOG_ERR_ADD("ReadFile failed, size = %zu, err = 0x%llX", size, (uint64_t)GetLastError());
         return CLOG_FAIL;
     }
     if (num != NULL) {
@@ -223,28 +225,62 @@ clog_res_e clog_file_read(const clog_file_t *file, void *buf, size_t size, size_
 #endif
 }
 
-void clog_file_close(clog_file_t *file) {
-    CLOG_RET_VOID_IF_NULL(file);
+clog_res_e clog_file_seek(const clog_file_t *file, clog_file_seek_e whence, int offset, size_t *num)
+{
+    CLOG_RET_IF_NULL_X(file, CLOG_INVALID_PARAM, "file is NULL");
+    CLOG_RET_IF_X(whence > CLOG_FILE_SEEK_END, CLOG_INVALID_PARAM, "whence %u is invalid", whence);
 #ifdef CLOG_PLATFORM_WINDOWS
-    CloseHandle(file->handle);
+    CLOG_RET_IF_X(file->handle == INVALID_HANDLE_VALUE, CLOG_INVALID_PARAM, "file h0andle is invalid");
+    const DWORD move = whence == CLOG_FILE_SEEK_SET ? FILE_BEGIN
+        : whence == CLOG_FILE_SEEK_CUR              ? FILE_CURRENT
+                                                    : FILE_END;
+    const DWORD ret = SetFilePointer(file->handle, 0, NULL, move);
+    if (ret == INVALID_SET_FILE_POINTER) {
+        const DWORD err = GetLastError();
+        CLOG_RET_IF_X(err != NO_ERROR, CLOG_FAIL, "SetFilePointer failed, err = 0x%llX", err);
+        if (num != NULL) {
+            *num = ret;
+        }
+        return CLOG_FAIL;
+    }
+    return CLOG_SUCCESS;
 #else
-    CLOG_IGNORE_RES(close(file->fd));
+    const int move = whence == CLOG_FILE_SEEK_SET ? SEEK_SET : whence == CLOG_FILE_SEEK_CUR ? SEEK_CUR : SEEK_END;
+    const off_t ret = lseek(file->fd, offset, move);
+    CLOG_RET_IF_X(ret == -1, CLOG_FAIL, "lseek failed, offset = %d, move = %d, err = %d", offset, move, errno);
+    if (num != NULL) {
+        *num = ret;
+    }
+    return CLOG_SUCCESS;
 #endif
-    clog_free(file);
 }
 
-clog_res_e clog_cwd(char *path, size_t size) {
+void clog_file_close(clog_file_t **file)
+{
+    CLOG_RET_VOID_IF_NULL(file);
+    CLOG_RET_VOID_IF_NULL(*file);
+#ifdef CLOG_PLATFORM_WINDOWS
+    CloseHandle((*file)->handle);
+#else
+    CLOG_IGNORE_RES(close((*file)->fd));
+#endif
+    clog_free(*file);
+    *file = NULL;
+}
+
+clog_res_e clog_cwd(char *path, size_t size)
+{
     CLOG_RET_IF_NULL_X(path, CLOG_INVALID_PARAM, "path is NULL");
     CLOG_RET_IF_X(size == 0, CLOG_INVALID_PARAM, "path size is 0");
 #ifdef CLOG_PLATFORM_WINDOWS
     const DWORD ret = GetCurrentDirectory(size, path);
     if (ret == 0 || ret >= size) {
         CLOG_ERR_ADD("GetCurrentDirectoryW failed, ret = %u, size = %zu, err = 0x%llX", ret, size,
-                     (uint64_t) GetLastError());
+                     (uint64_t)GetLastError());
         return CLOG_FAIL;
     }
 #else
-    if (getcwd(path, (int) size) == NULL) {
+    if (getcwd(path, (int)size) == NULL) {
         CLOG_ERR_ADD("getcwd failed, err = %d", errno);
         return CLOG_FAIL;
     }
@@ -253,7 +289,8 @@ clog_res_e clog_cwd(char *path, size_t size) {
 }
 
 #ifndef CLOG_PLATFORM_WINDOWS
-static clog_res_e clog_create_path_node(clog_path_node_t **node, const char **last, const char **cur) {
+static clog_res_e clog_create_path_node(clog_path_node_t **node, const char **last, const char **cur)
+{
     const char *last_spliter = *last;
     const char *current = *cur;
     clog_path_node_t *current_node = *node;
@@ -297,7 +334,8 @@ static clog_res_e clog_create_path_node(clog_path_node_t **node, const char **la
     return CLOG_SUCCESS;
 }
 
-static clog_res_e clog_get_unnormalized_abs_path(const char *path, char **unnormalized) {
+static clog_res_e clog_get_unnormalized_abs_path(const char *path, char **unnormalized)
+{
     char *buffer = NULL;
     if (path[0] != '/') {
         char cwd[CLOG_FILEPATH_MAX_SIZE] = {0};
@@ -328,7 +366,8 @@ static clog_res_e clog_get_unnormalized_abs_path(const char *path, char **unnorm
 }
 #endif
 
-clog_res_e clog_normalize(const char *path, char *buf, size_t size) {
+clog_res_e clog_normalize(const char *path, char *buf, size_t size)
+{
     CLOG_RET_IF_NULL_X(path, CLOG_INVALID_PARAM, "path is NULL");
     CLOG_RET_IF_NULL_X(buf, CLOG_INVALID_PARAM, "buf is NULL");
     CLOG_RET_IF_X(size < 2, CLOG_INVALID_PARAM, "path size is %zu", size);
@@ -336,7 +375,7 @@ clog_res_e clog_normalize(const char *path, char *buf, size_t size) {
     SetLastError(0);
     const DWORD ret = GetFullPathNameA(path, size, buf, NULL);
     if (ret == 0 || ret >= size || GetLastError() != 0) {
-        CLOG_ERR_ADD("GetFullPathNameA failed, ret = %u, err = 0x%llX", ret, (uint64_t) GetLastError());
+        CLOG_ERR_ADD("GetFullPathNameA failed, ret = %u, err = 0x%llX", ret, (uint64_t)GetLastError());
         return CLOG_FAIL;
     }
     const size_t len = strlen(buf);
@@ -418,13 +457,14 @@ cleanup:
 }
 
 #ifdef CLOG_PLATFORM_WINDOWS
-static clog_res_e clog_dir_create_direct_win(const char *path) {
+static clog_res_e clog_dir_create_direct_win(const char *path)
+{
     clog_res_e ret = CLOG_FAIL;
     const DWORD attr = GetFileAttributesA(path);
     if (attr == INVALID_FILE_ATTRIBUTES) {
         if (!CreateDirectoryA(path, NULL)) {
             if (GetLastError() != ERROR_ALREADY_EXISTS) {
-                CLOG_ERR_ADD("CreateDirectoryA %s failed, err = 0x%llX", path, (uint64_t) GetLastError());
+                CLOG_ERR_ADD("CreateDirectoryA %s failed, err = 0x%llX", path, (uint64_t)GetLastError());
                 return CLOG_FAIL;
             }
             ret = CLOG_ALREADY_EXISTED;
@@ -441,7 +481,8 @@ static clog_res_e clog_dir_create_direct_win(const char *path) {
 }
 #endif
 
-clog_res_e clog_dir_create(const char *path, uint64_t flags) {
+clog_res_e clog_dir_create(const char *path, uint64_t flags)
+{
     CLOG_RET_IF_NULL_X(path, CLOG_INVALID_PARAM, "path is NULL");
 #ifdef CLOG_PLATFORM_WINDOWS
     CLOG_UNUSED_VAR(flags);
@@ -527,4 +568,33 @@ clog_res_e clog_dir_create(const char *path, uint64_t flags) {
 
     return res;
 #endif
+}
+
+clog_res_e clog_file_get_name(const char *fullpath, char *file, size_t size)
+{
+    CLOG_RET_IF_NULL_X(fullpath, CLOG_INVALID_PARAM, "fullpath is NULL");
+    CLOG_RET_IF_NULL_X(file, CLOG_INVALID_PARAM, "filename buf is NULL");
+#ifdef CLOG_PLATFORM_WINDOWS
+    const char *p = strrchr(fullpath, '\\');
+#else
+    const char *p = strrchr(fullpath, '/');
+#endif
+    CLOG_RET_IF_NULL_X(p, CLOG_INVALID_PARAM, "fullpath is invalid");
+    return clog_strcpy(file, size, p + 1);
+}
+
+clog_res_e clog_file_get_dir(const char *fullpath, char *dir, size_t size)
+{
+    CLOG_RET_IF_NULL_X(fullpath, CLOG_INVALID_PARAM, "fullpath is NULL");
+    CLOG_RET_IF_NULL_X(dir, CLOG_INVALID_PARAM, "dir buf is NULL");
+#ifdef CLOG_PLATFORM_WINDOWS
+    const char *p = strrchr(fullpath, '\\');
+#else
+    const char *p = strrchr(fullpath, '/');
+#endif
+    CLOG_RET_IF_NULL_X(p, CLOG_INVALID_PARAM, "fullpath is invalid");
+    const size_t num = p - fullpath + 1;
+    CLOG_RET_IF_X(num > size, CLOG_INVALID_PARAM, "dir buf is too small, size = %zu, num = %zu", size, num);
+    dir[num] = '\0';
+    return clog_memcpy(dir, size, fullpath, num);
 }
