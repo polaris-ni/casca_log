@@ -101,9 +101,15 @@ fetal = [[255, 255, 255], [139, 0, 0]]
 [Recorders.ClogRecorderFile]
 id = 2
 enabled = true
+index = "/{_cwd}/logs/log_index"
 directory = "/{_cwd}/logs/{_year}{_month}{_day}/"
-index = "log_index"
-file = "log_{_year}{_month}{_day}_{_hour}{_minute}{_second}.log"
+file = "log_{_log_index}_{_year}{_month}{_day}_{_hour}{_minute}{_second}.log"
+# file spilt, [type, value]
+#   type: 0 - no spilt, value is ignored
+#         1 - spilt by size, value(unit: Byte) is the max size of a log file
+#         2 - spilt by time, value(unit: Second) is the time interval between two log files
+#         3 - spilt by num of log items, value(unit: Number) is the max num of log items
+spilt = [1, 1048576] # 1MB
 
 [Performance.BufferPool]
 auto = true # auto expand buffer pool, default value is true

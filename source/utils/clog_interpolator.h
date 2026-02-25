@@ -76,7 +76,7 @@ clog_res_e clog_interpolator_interpolate(const clog_interpolator_t *interpolator
  * clear parsed interpolator
  * @param interpolator interpolator, it will be free
  */
-void clog_interpolator_clear(clog_interpolator_t *interpolator);
+void clog_interpolator_clear(clog_interpolator_t **interpolator);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

@@ -76,7 +76,7 @@ void clog_formatter_cleanup(void) {
     clog_log_format_placeholder_clear();
     clog_interpolator_t *interpolator = clog_get_interpolator();
     clog_set_interpolator(NULL);
-    clog_interpolator_clear(interpolator);
+    clog_interpolator_clear(&interpolator);
 
     const char *tag = clog_get_level_tag(CLOG_LEVEL_TRACE);
     clog_set_level_tag(CLOG_LEVEL_TRACE, NULL);

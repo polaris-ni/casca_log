@@ -25,7 +25,8 @@ struct clog_interpolator {
     clog_interpolator_t *next;
 };
 
-clog_interpolator_context_t *clog_interpolator_context_create(clog_hashmap_t *map) {
+clog_interpolator_context_t *clog_interpolator_context_create(clog_hashmap_t *map)
+{
     clog_interpolator_context_t *context = clog_malloc(sizeof(clog_interpolator_context_t));
     CLOG_RET_IF_NULL_X(context, NULL, "malloc clog_interpolator_context_t failed");
     if (map != NULL) {
@@ -33,7 +34,7 @@ clog_interpolator_context_t *clog_interpolator_context_create(clog_hashmap_t *ma
         context->is_map_allocated = false;
     } else {
         context->map = clog_hashmap_create(0, sizeof(clog_placeholder_handler_f), clog_hashmap_string_dup,
-                                           clog_hashmap_string_free,NULL, NULL, clog_hashmap_string_cmp,
+                                           clog_hashmap_string_free, NULL, NULL, clog_hashmap_string_cmp,
                                            clog_hashmap_string_size, 0);
         CLOG_CLEAN_RET_IF_NULL_X(context->map, clog_free(context), NULL, "clog_hashmap_create failed");
         context->is_map_allocated = true;
@@ -42,14 +43,16 @@ clog_interpolator_context_t *clog_interpolator_context_create(clog_hashmap_t *ma
 }
 
 clog_res_e clog_interpolator_context_register(clog_interpolator_context_t *context, const char *name,
-                                              clog_placeholder_handler_f handler) {
+                                              clog_placeholder_handler_f handler)
+{
     CLOG_RET_IF_NULL_X(context, CLOG_INVALID_PARAM, "context is NULL");
     CLOG_RET_IF_NULL_X(name, CLOG_INVALID_PARAM, "name is NULL");
     CLOG_RET_IF_NULL_X(handler, CLOG_INVALID_PARAM, "handler is NULL");
     return clog_hashmap_put(context->map, name, handler);
 }
 
-void clog_interpolator_context_destroy(clog_interpolator_context_t *context) {
+void clog_interpolator_context_destroy(clog_interpolator_context_t *context)
+{
     CLOG_RET_VOID_IF_NULL_X(context, "context is NULL");
     if (context->is_map_allocated) {
         clog_hashmap_destroy(&context->map);
@@ -57,14 +60,16 @@ void clog_interpolator_context_destroy(clog_interpolator_context_t *context) {
     clog_free(context);
 }
 
-static bool clog_placeholder_is_name_valid(const char ch) {
+static bool clog_placeholder_is_name_valid(const char ch)
+{
     if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_') {
         return true;
     }
     return false;
 }
 
-static clog_interpolator_t *clog_interpolator_create(const clog_hashmap_t *map, const char *name, bool should_handle) {
+static clog_interpolator_t *clog_interpolator_create(const clog_hashmap_t *map, const char *name, bool should_handle)
+{
     const clog_placeholder_handler_f *func = NULL;
     if (should_handle) {
         func = clog_hashmap_get(map, name);
@@ -89,7 +94,8 @@ static clog_interpolator_t *clog_interpolator_create(const clog_hashmap_t *map, 
 }
 
 /* {hello} -> hello */
-static const char *clog_interpolator_parse_placeholder_name(const char *format) {
+static const char *clog_interpolator_parse_placeholder_name(const char *format)
+{
     const char *tmp = format + 1;
     if (*tmp == '}') {
         CLOG_ERR_ADD("placeholder name empty {}");
@@ -111,7 +117,8 @@ static const char *clog_interpolator_parse_placeholder_name(const char *format) 
 }
 
 static clog_res_e clog_interpolator_parse_format(const clog_hashmap_t *map, const char *format,
-                                                 clog_interpolator_t *root) {
+                                                 clog_interpolator_t *root)
+{
     CLOG_RET_IF(format[0] == '\0', CLOG_SUCCESS); /* parse over */
     const char *tmp = format;
     if (*tmp == '{') {
@@ -165,7 +172,8 @@ static clog_res_e clog_interpolator_parse_format(const clog_hashmap_t *map, cons
 }
 
 clog_res_e clog_interpolator_parse(const clog_interpolator_context_t *context, const char *fmt,
-                                   clog_interpolator_t **interpolator) {
+                                   clog_interpolator_t **interpolator)
+{
     CLOG_RET_IF_NULL_X(context, CLOG_INVALID_PARAM, "context is NULL");
     CLOG_RET_IF_NULL_X(fmt, CLOG_INVALID_PARAM, "interpolator string is NULL");
     CLOG_RET_IF_NULL_X(interpolator, CLOG_INVALID_PARAM, "interpolator is NULL");
@@ -179,7 +187,8 @@ clog_res_e clog_interpolator_parse(const clog_interpolator_context_t *context, c
 }
 
 clog_res_e clog_interpolator_interpolate(const clog_interpolator_t *interpolator, void *param, char *buf, size_t size,
-                                         size_t *num) {
+                                         size_t *num)
+{
     CLOG_RET_IF_NULL_X(interpolator, CLOG_INVALID_PARAM, "interpolator is NULL");
     CLOG_RET_IF_NULL_X(buf, CLOG_INVALID_PARAM, "buf is NULL");
     CLOG_RET_IF_X(size <= 1, CLOG_INVALID_PARAM, "size is too small");
@@ -224,9 +233,11 @@ clog_res_e clog_interpolator_interpolate(const clog_interpolator_t *interpolator
     return CLOG_SUCCESS;
 }
 
-void clog_interpolator_clear(clog_interpolator_t *interpolator) {
+void clog_interpolator_clear(clog_interpolator_t **interpolator)
+{
     CLOG_RET_VOID_IF_NULL_X(interpolator, "interpolator is NULL");
-    clog_interpolator_t *head = interpolator->next;
+    CLOG_RET_VOID_IF_NULL_X(*interpolator, "interpolator is NULL");
+    clog_interpolator_t *head = (*interpolator)->next;
     while (head != NULL) {
         clog_interpolator_t *next = head->next;
         if (!head->should_handle) {
@@ -235,5 +246,6 @@ void clog_interpolator_clear(clog_interpolator_t *interpolator) {
         clog_free(head);
         head = next;
     }
-    clog_free(interpolator);
+    clog_free(*interpolator);
+    *interpolator = NULL;
 }

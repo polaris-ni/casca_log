@@ -39,6 +39,12 @@ clog_datetime_t;
  */
 void clog_datetime_now(clog_datetime_t *datetime);
 
+/**
+ * get current timestamp
+ * @return timestamp in ms
+ */
+uint64_t clog_timestamp_ms();
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

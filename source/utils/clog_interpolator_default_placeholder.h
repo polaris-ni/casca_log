@@ -1,0 +1,83 @@
+/**
+ * @author Polaris
+ * @date 2026/2/24
+ */
+
+#ifndef CASCA_LOG_CLOG_INTERPOLATOR_DEFAULT_PLACEHOLDER_H
+#define CASCA_LOG_CLOG_INTERPOLATOR_DEFAULT_PLACEHOLDER_H
+
+#include <stdio.h>
+#include "casca_log_base.h"
+#include "casca_log_config.h"
+#include "clog_datetime.h"
+#include "clog_error.h"
+#include "clog_file_system.h"
+#include "clog_hashmap.h"
+#include "clog_interpolator.h"
+#include "clog_secure_func.h"
+
+#if defined(__cplusplus) || defined(c_plusplus)
+extern "C" {
+#endif
+
+#define CLOG_DECLARE_INTERPOLATOR_DEFAULT_DATETIME_PLACEHOLDER(name, property)           \
+    static int clog_interpolator_placeholder_##name(void *param, char *buf, size_t size) \
+    {                                                                                    \
+        CLOG_UNUSED_VAR(param);                                                          \
+        clog_datetime_t now;                                                             \
+        clog_datetime_now(&now);                                                         \
+        const int ret = snprintf(buf, size, "%u", property);                             \
+        CLOG_RET_IF(ret <= 0, CLOG_FAIL);                                                \
+        CLOG_RET_IF(ret >= size, -CLOG_NO_MEMORY);                                       \
+        return ret;                                                                      \
+    }
+
+CLOG_DECLARE_INTERPOLATOR_DEFAULT_DATETIME_PLACEHOLDER(year, now.year)
+CLOG_DECLARE_INTERPOLATOR_DEFAULT_DATETIME_PLACEHOLDER(month, now.month)
+CLOG_DECLARE_INTERPOLATOR_DEFAULT_DATETIME_PLACEHOLDER(day, now.day)
+CLOG_DECLARE_INTERPOLATOR_DEFAULT_DATETIME_PLACEHOLDER(hour, now.hour)
+CLOG_DECLARE_INTERPOLATOR_DEFAULT_DATETIME_PLACEHOLDER(minute, now.minute)
+CLOG_DECLARE_INTERPOLATOR_DEFAULT_DATETIME_PLACEHOLDER(second, now.second)
+CLOG_DECLARE_INTERPOLATOR_DEFAULT_DATETIME_PLACEHOLDER(millisecond, now.millisecond)
+#undef CLOG_DECLARE_INTERPOLATOR_DEFAULT_DATETIME_PLACEHOLDER
+
+static int clog_interpolator_placeholder_cwd(void *param, char *buf, size_t size)
+{
+    CLOG_UNUSED_VAR(param);
+    char path[CLOG_FILEPATH_MAX_SIZE] = {0};
+    clog_res_e ret = clog_cwd(path, sizeof(path));
+    CLOG_RET_IF_X(ret == CLOG_SUCCESS, -ret, "clog_cwd failed, ret = %u", ret);
+    ret = clog_strcpy(buf, size, path);
+    CLOG_RET_IF_X(ret == CLOG_SUCCESS, -ret, "clog_strcpy failed, ret = %u", ret);
+    return (int)strlen(path);
+}
+
+static clog_hashmap_t *clog_interpolator_default_placeholders()
+{
+    clog_hashmap_t *map =
+        clog_hashmap_create(0, sizeof(clog_placeholder_handler_f), clog_hashmap_string_dup, clog_hashmap_string_free,
+                            NULL, NULL, clog_hashmap_string_cmp, clog_hashmap_string_size, 0);
+    CLOG_RET_IF_NULL_X(map, NULL, "clog_hashmap_create failed");
+    const char *default_placeholder_names[] = {"_year",   "_month",  "_day",         "_hour",
+                                               "_minute", "_second", "_millisecond", "_cwd"};
+    const clog_placeholder_handler_f default_placeholder_handlers[] = {
+        clog_interpolator_placeholder_year,        clog_interpolator_placeholder_month,
+        clog_interpolator_placeholder_day,         clog_interpolator_placeholder_hour,
+        clog_interpolator_placeholder_minute,      clog_interpolator_placeholder_second,
+        clog_interpolator_placeholder_millisecond, clog_interpolator_placeholder_cwd,
+    };
+    CLOG_ASSERT(CLOG_ARRAY_SIZE(default_placeholder_names) == CLOG_ARRAY_SIZE(default_placeholder_handlers));
+    const size_t default_placeholder_num = CLOG_ARRAY_SIZE(default_placeholder_names);
+    for (size_t i = 0; i < default_placeholder_num; i++) {
+        const clog_res_e ret = clog_hashmap_put(map, default_placeholder_names[i], &default_placeholder_handlers[i]);
+        CLOG_CLEAN_RET_IF_X(ret != CLOG_SUCCESS, clog_hashmap_destroy(&map), NULL,
+                            "add default log format placeholder %s failed, ret = %u", default_placeholder_names[i],
+                            ret);
+    }
+    return map;
+}
+
+#if defined(__cplusplus) || defined(c_plusplus)
+}
+#endif
+#endif /* CASCA_LOG_CLOG_INTERPOLATOR_DEFAULT_PLACEHOLDER_H */

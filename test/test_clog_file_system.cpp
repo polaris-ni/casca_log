@@ -3,11 +3,11 @@
  * @date 2026/2/13
  */
 
-#include <gtest/gtest.h>
-#include <fstream>
-#include <string>
-#include <filesystem>
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
+#include <gtest/gtest.h>
+#include <string>
 #include "clog_file_system.h"
 #include "test_util.h"
 
@@ -19,17 +19,21 @@
 #define ACCESS access
 #endif
 
-class CLogFileSystemComprehensiveTest : public testing::Test {
+class CLogFileSystemComprehensiveTest : public testing::Test
+{
 protected:
-    void SetUp() override {
+    void SetUp() override
+    {
         CLogTest::CLogMemLeakDetect::start(nullptr, nullptr);
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         CLogTest::CLogMemLeakDetect::end();
     }
 
-    static std::string GetTempFilePath() {
+    static std::string GetTempFilePath()
+    {
         static int counter = 0;
 #ifdef CLOG_PLATFORM_LINUX
         return "./temp_comprehensive_test_file_" + std::to_string(counter++) + ".txt";
@@ -38,7 +42,8 @@ protected:
 #endif
     }
 
-    static std::string GetTempDirPath() {
+    static std::string GetTempDirPath()
+    {
         static int counter = 0;
 #ifdef CLOG_PLATFORM_LINUX
         return "./temp_comprehensive_test_dir_" + std::to_string(counter++);
@@ -47,7 +52,8 @@ protected:
 #endif
     }
 
-    static void WriteTestDataToFile(const std::string &path, const std::string &data) {
+    static void WriteTestDataToFile(const std::string &path, const std::string &data)
+    {
         std::ofstream file(path, std::ios::out | std::ios::binary);
         if (file.is_open()) {
             file << data;
@@ -55,7 +61,8 @@ protected:
         }
     }
 
-    static std::string ReadDataFromFile(const std::string &path) {
+    static std::string ReadDataFromFile(const std::string &path)
+    {
         std::ifstream file(path, std::ios::in | std::ios::binary);
         std::string content;
         if (file.is_open()) {
@@ -66,12 +73,13 @@ protected:
     }
 };
 
-TEST_F(CLogFileSystemComprehensiveTest, OpenFileWithDifferentFlags) {
+TEST_F(CLogFileSystemComprehensiveTest, OpenFileWithDifferentFlags)
+{
     const std::string path = GetTempFilePath();
 
     clog_file_t *file = clog_file_open(path.c_str(), CLOG_FILE_WRITE | CLOG_FILE_CREATE, 0644);
     EXPECT_NE(file, nullptr);
-    clog_file_close(file);
+    clog_file_close(&file);
     std::remove(path.c_str());
 
     file = clog_file_open(path.c_str(), CLOG_FILE_READ, 0644);
@@ -79,12 +87,13 @@ TEST_F(CLogFileSystemComprehensiveTest, OpenFileWithDifferentFlags) {
 
     file = clog_file_open(path.c_str(), CLOG_FILE_WRITE | CLOG_FILE_READ | CLOG_FILE_CREATE, 0644);
     EXPECT_NE(file, nullptr);
-    clog_file_close(file);
+    clog_file_close(&file);
 
     std::remove(path.c_str());
 }
 
-TEST_F(CLogFileSystemComprehensiveTest, OpenFileWithTruncateFlag) {
+TEST_F(CLogFileSystemComprehensiveTest, OpenFileWithTruncateFlag)
+{
     const std::string path = GetTempFilePath();
     const std::string initial_data = "Initial data that should be truncated";
 
@@ -95,7 +104,7 @@ TEST_F(CLogFileSystemComprehensiveTest, OpenFileWithTruncateFlag) {
 
     const std::string new_data = "New data";
     clog_file_write(file, new_data.c_str(), new_data.length());
-    clog_file_close(file);
+    clog_file_close(&file);
 
     const std::string content = ReadDataFromFile(path);
     EXPECT_EQ(content, new_data);
@@ -103,7 +112,8 @@ TEST_F(CLogFileSystemComprehensiveTest, OpenFileWithTruncateFlag) {
     std::remove(path.c_str());
 }
 
-TEST_F(CLogFileSystemComprehensiveTest, OpenFileWithSyncFlag) {
+TEST_F(CLogFileSystemComprehensiveTest, OpenFileWithSyncFlag)
+{
     const std::string path = GetTempFilePath();
 
     clog_file_t *file = clog_file_open(path.c_str(), CLOG_FILE_WRITE | CLOG_FILE_CREATE | CLOG_FILE_SYNC, 0644);
@@ -113,7 +123,7 @@ TEST_F(CLogFileSystemComprehensiveTest, OpenFileWithSyncFlag) {
         const std::string data = "Sync test data";
         const clog_res_e result = clog_file_write(file, data.c_str(), data.length());
         EXPECT_EQ(result, CLOG_SUCCESS);
-        clog_file_close(file);
+        clog_file_close(&file);
 
         const std::string content = ReadDataFromFile(path);
         EXPECT_EQ(content, data);
@@ -122,7 +132,8 @@ TEST_F(CLogFileSystemComprehensiveTest, OpenFileWithSyncFlag) {
     std::remove(path.c_str());
 }
 
-TEST_F(CLogFileSystemComprehensiveTest, WriteFileVariousScenarios) {
+TEST_F(CLogFileSystemComprehensiveTest, WriteFileVariousScenarios)
+{
     const std::string path = GetTempFilePath();
     clog_file_t *file = clog_file_open(path.c_str(), CLOG_FILE_WRITE | CLOG_FILE_CREATE, 0644);
     ASSERT_NE(file, nullptr);
@@ -135,7 +146,7 @@ TEST_F(CLogFileSystemComprehensiveTest, WriteFileVariousScenarios) {
     result = clog_file_write(file, data2.c_str(), data2.length());
     EXPECT_EQ(result, CLOG_SUCCESS);
 
-    clog_file_close(file);
+    clog_file_close(&file);
 
     const std::string content = ReadDataFromFile(path);
     EXPECT_EQ(content, data1 + data2);
@@ -143,7 +154,8 @@ TEST_F(CLogFileSystemComprehensiveTest, WriteFileVariousScenarios) {
     std::remove(path.c_str());
 }
 
-TEST_F(CLogFileSystemComprehensiveTest, WriteFileEdgeCases) {
+TEST_F(CLogFileSystemComprehensiveTest, WriteFileEdgeCases)
+{
     const std::string path = GetTempFilePath();
     clog_file_t *file = clog_file_open(path.c_str(), CLOG_FILE_WRITE | CLOG_FILE_CREATE, 0644);
     ASSERT_NE(file, nullptr);
@@ -154,11 +166,12 @@ TEST_F(CLogFileSystemComprehensiveTest, WriteFileEdgeCases) {
     result = clog_file_write(file, nullptr, 10);
     EXPECT_EQ(result, CLOG_INVALID_PARAM);
 
-    clog_file_close(file);
+    clog_file_close(&file);
     std::remove(path.c_str());
 }
 
-TEST_F(CLogFileSystemComprehensiveTest, ReadFileVariousScenarios) {
+TEST_F(CLogFileSystemComprehensiveTest, ReadFileVariousScenarios)
+{
     const std::string path = GetTempFilePath();
     const std::string test_data = "This is test data for reading\nLine 2\nLine 3";
 
@@ -174,11 +187,12 @@ TEST_F(CLogFileSystemComprehensiveTest, ReadFileVariousScenarios) {
     EXPECT_EQ(read_size, test_data.length());
     EXPECT_EQ(std::string(buffer, read_size), test_data);
 
-    clog_file_close(file);
+    clog_file_close(&file);
     std::remove(path.c_str());
 }
 
-TEST_F(CLogFileSystemComprehensiveTest, ReadFileSmallBuffer) {
+TEST_F(CLogFileSystemComprehensiveTest, ReadFileSmallBuffer)
+{
     const std::string path = GetTempFilePath();
     const std::string test_data = "Large amount of test data that won't fit in small buffer";
 
@@ -194,11 +208,12 @@ TEST_F(CLogFileSystemComprehensiveTest, ReadFileSmallBuffer) {
     EXPECT_EQ(read_size, sizeof(small_buffer) - 1);
     EXPECT_EQ(std::string(small_buffer, read_size), test_data.substr(0, read_size));
 
-    clog_file_close(file);
+    clog_file_close(&file);
     std::remove(path.c_str());
 }
 
-TEST_F(CLogFileSystemComprehensiveTest, ReadFileEdgeCases) {
+TEST_F(CLogFileSystemComprehensiveTest, ReadFileEdgeCases)
+{
     const std::string path = GetTempFilePath();
     WriteTestDataToFile(path, "test");
 
@@ -213,11 +228,12 @@ TEST_F(CLogFileSystemComprehensiveTest, ReadFileEdgeCases) {
     result = clog_file_read(file, nullptr, 10, &read_size);
     EXPECT_EQ(result, CLOG_INVALID_PARAM);
 
-    clog_file_close(file);
+    clog_file_close(&file);
     std::remove(path.c_str());
 }
 
-TEST_F(CLogFileSystemComprehensiveTest, GetCurrentWorkingDirectory) {
+TEST_F(CLogFileSystemComprehensiveTest, GetCurrentWorkingDirectory)
+{
     char cwd_buffer[1024] = {0};
     clog_res_e result = clog_cwd(cwd_buffer, sizeof(cwd_buffer));
     EXPECT_EQ(result, CLOG_SUCCESS);
@@ -231,7 +247,8 @@ TEST_F(CLogFileSystemComprehensiveTest, GetCurrentWorkingDirectory) {
     EXPECT_EQ(result, CLOG_INVALID_PARAM);
 }
 
-TEST_F(CLogFileSystemComprehensiveTest, NormalizePath) {
+TEST_F(CLogFileSystemComprehensiveTest, NormalizePath)
+{
     char normalized_path[1024] = {};
 
 #ifdef CLOG_PLATFORM_WINDOWS
@@ -255,7 +272,8 @@ TEST_F(CLogFileSystemComprehensiveTest, NormalizePath) {
     EXPECT_NE(result, CLOG_SUCCESS);
 }
 
-TEST_F(CLogFileSystemComprehensiveTest, CreateDirectory) {
+TEST_F(CLogFileSystemComprehensiveTest, CreateDirectory)
+{
     const std::string dir_path = GetTempDirPath();
     std::remove(dir_path.c_str());
 
@@ -273,7 +291,8 @@ TEST_F(CLogFileSystemComprehensiveTest, CreateDirectory) {
 #endif
 }
 
-TEST_F(CLogFileSystemComprehensiveTest, CreateNestedDirectories) {
+TEST_F(CLogFileSystemComprehensiveTest, CreateNestedDirectories)
+{
     const std::string base_dir = GetTempDirPath();
     const std::string nested_dir = base_dir + "/level1/level2/level3";
 
@@ -295,7 +314,8 @@ TEST_F(CLogFileSystemComprehensiveTest, CreateNestedDirectories) {
 #endif
 }
 
-TEST_F(CLogFileSystemComprehensiveTest, LargeDataOperations) {
+TEST_F(CLogFileSystemComprehensiveTest, LargeDataOperations)
+{
     const std::string path = GetTempFilePath();
     constexpr size_t large_data_size = 1024 * 1024;
     const std::string large_data(large_data_size, 'A');
@@ -305,7 +325,7 @@ TEST_F(CLogFileSystemComprehensiveTest, LargeDataOperations) {
 
     clog_res_e result = clog_file_write(file, large_data.c_str(), large_data.length());
     EXPECT_EQ(result, CLOG_SUCCESS);
-    clog_file_close(file);
+    clog_file_close(&file);
 
     file = clog_file_open(path.c_str(), CLOG_FILE_READ, 0644);
     ASSERT_NE(file, nullptr);
@@ -317,6 +337,6 @@ TEST_F(CLogFileSystemComprehensiveTest, LargeDataOperations) {
     EXPECT_EQ(read_size, large_data_size);
     EXPECT_EQ(read_data, large_data);
 
-    clog_file_close(file);
+    clog_file_close(&file);
     std::remove(path.c_str());
 }

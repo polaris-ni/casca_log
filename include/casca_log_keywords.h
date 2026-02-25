@@ -28,6 +28,11 @@ extern "C" {
 #define CLOG_STR_CAPACITY "capacity"
 #define CLOG_STR_THRESHOLD "threshold"
 #define CLOG_STR_USE "use"
+#define CLOG_STR_INDEX "index"
+#define CLOG_STR_META_INFO "metainfo"
+#define CLOG_STR_DIRECTORY "directory"
+#define CLOG_STR_FILE "file"
+#define CLOG_STR_SPLIT "split"
 
 /* groups */
 #define CLOG_STR_FILTERS "Filters"
@@ -39,6 +44,7 @@ extern "C" {
 #define CLOG_STR_CHANNEL_ATOMIC_QUEUE "CLogAtomicQueue"
 #define CLOG_STR_RECORDERS "Recorders"
 #define CLOG_STR_RECORDER_STDOUT "ClogRecorderStdout"
+#define CLOG_STR_RECORDER_FILE "ClogRecorderFile"
 #define CLOG_STR_COLORS "Colors"
 #define CLOG_STR_PERFORMANCE "Performance"
 #define CLOG_STR_BUFFER_POOL "BufferPool"
