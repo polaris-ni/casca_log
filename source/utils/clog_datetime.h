@@ -45,6 +45,13 @@ void clog_datetime_now(clog_datetime_t *datetime);
  */
 uint64_t clog_timestamp_ms();
 
+/**
+ * get timestamp of datetime
+ * @param datetime #clog_datetime_t
+ * @return timestamp in ms
+ */
+uint64_t clog_timestamp_of_datetime(const clog_datetime_t *datetime);
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

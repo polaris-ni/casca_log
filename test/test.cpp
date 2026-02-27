@@ -40,7 +40,7 @@ TEST_F(CLogMainTest, CreateLog)
     EXPECT_EQ(fread(buf, 1, len, fp), len);
     EXPECT_EQ(fclose(fp), 0);
 
-    clog_err_setup(16, 128);
+    clog_err_setup(32, 256);
     clog_res_e ret = clog_init("casca_log_test", buf);
     if (ret != CLOG_SUCCESS) {
         clog_err_print(buffer, sizeof(buffer), nullptr);
@@ -78,6 +78,9 @@ TEST_F(CLogMainTest, CreateLog)
     EXPECT_EQ(ret, CLOG_SUCCESS);
     ret = clog_log("test", CLOG_RECORDER_ID_STDOUT, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_FETAL,
                    "test log print process fetal [%s]", clog_get_process());
+    EXPECT_EQ(ret, CLOG_SUCCESS);
+    ret = clog_log("test", CLOG_RECORDER_ID_FILE, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_FETAL,
+                   "test log print process to file fetal [%s]", clog_get_process());
     EXPECT_EQ(ret, CLOG_SUCCESS);
     clog_free(tmp);
     clog_thread_sleep(1000);

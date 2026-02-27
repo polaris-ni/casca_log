@@ -9,21 +9,21 @@
 
 #ifdef CLOG_PLATFORM_WINDOWS
 
-clog_res_e clog_mutex_init(clog_mutex_t* mutex)
+clog_res_e clog_mutex_init(clog_mutex_t *mutex)
 {
     CLOG_RET_IF_NULL(mutex, CLOG_INVALID_PARAM);
     InitializeCriticalSection(mutex);
     return CLOG_SUCCESS;
 }
 
-clog_res_e clog_mutex_lock(clog_mutex_t* mutex)
+clog_res_e clog_mutex_lock(clog_mutex_t *mutex)
 {
     CLOG_RET_IF_NULL(mutex, CLOG_INVALID_PARAM);
     EnterCriticalSection(mutex);
     return CLOG_SUCCESS;
 }
 
-clog_res_e clog_mutex_trylock(clog_mutex_t* mutex)
+clog_res_e clog_mutex_trylock(clog_mutex_t *mutex)
 {
     CLOG_RET_IF_NULL(mutex, CLOG_INVALID_PARAM);
     if (TryEnterCriticalSection(mutex)) {
@@ -32,14 +32,14 @@ clog_res_e clog_mutex_trylock(clog_mutex_t* mutex)
     return CLOG_BUSY;
 }
 
-clog_res_e clog_mutex_unlock(clog_mutex_t* mutex)
+clog_res_e clog_mutex_unlock(clog_mutex_t *mutex)
 {
     CLOG_RET_IF_NULL(mutex, CLOG_INVALID_PARAM);
     LeaveCriticalSection(mutex);
     return CLOG_SUCCESS;
 }
 
-clog_res_e clog_mutex_destroy(clog_mutex_t* mutex)
+clog_res_e clog_mutex_destroy(clog_mutex_t *mutex)
 {
     CLOG_RET_IF_NULL(mutex, CLOG_INVALID_PARAM);
     DeleteCriticalSection(mutex);
@@ -48,7 +48,7 @@ clog_res_e clog_mutex_destroy(clog_mutex_t* mutex)
 
 #elif defined(CLOG_PLATFORM_LINUX) || defined(CLOG_PLATFORM_MACOS)
 
-clog_res_e clog_mutex_init(clog_mutex_t* mutex)
+clog_res_e clog_mutex_init(clog_mutex_t *mutex)
 {
     CLOG_RET_IF_NULL(mutex, CLOG_INVALID_PARAM);
     const int result = pthread_mutex_init(mutex, NULL);
@@ -67,7 +67,7 @@ clog_res_e clog_mutex_init(clog_mutex_t* mutex)
     }
 }
 
-clog_res_e clog_mutex_lock(clog_mutex_t* mutex)
+clog_res_e clog_mutex_lock(clog_mutex_t *mutex)
 {
     CLOG_RET_IF_NULL(mutex, CLOG_INVALID_PARAM);
     const int result = pthread_mutex_lock(mutex);
@@ -88,7 +88,7 @@ clog_res_e clog_mutex_lock(clog_mutex_t* mutex)
     }
 }
 
-clog_res_e clog_mutex_trylock(clog_mutex_t* mutex)
+clog_res_e clog_mutex_trylock(clog_mutex_t *mutex)
 {
     CLOG_RET_IF_NULL(mutex, CLOG_INVALID_PARAM);
     const int result = pthread_mutex_trylock(mutex);
@@ -109,7 +109,7 @@ clog_res_e clog_mutex_trylock(clog_mutex_t* mutex)
     }
 }
 
-clog_res_e clog_mutex_unlock(clog_mutex_t* mutex)
+clog_res_e clog_mutex_unlock(clog_mutex_t *mutex)
 {
     CLOG_RET_IF_NULL(mutex, CLOG_INVALID_PARAM);
     const int result = pthread_mutex_unlock(mutex);
@@ -126,7 +126,7 @@ clog_res_e clog_mutex_unlock(clog_mutex_t* mutex)
     }
 }
 
-clog_res_e clog_mutex_destroy(clog_mutex_t* mutex)
+clog_res_e clog_mutex_destroy(clog_mutex_t *mutex)
 {
     CLOG_RET_IF_NULL(mutex, CLOG_INVALID_PARAM);
     const int result = pthread_mutex_destroy(mutex);

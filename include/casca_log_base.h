@@ -146,6 +146,8 @@ typedef struct clog_item {
     uint8_t minute;
     uint8_t second;
     uint16_t millisecond;
+    uint64_t timestamp;
+    uint16_t length;
     char content[CASCA_LOG_SINGLE_LOG_MAX_SIZE];
 }
 #if defined(CLOG_COMPILER_CLANG) || defined(CLOG_COMPILER_GCC)
