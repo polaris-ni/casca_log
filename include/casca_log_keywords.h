@@ -29,7 +29,7 @@ extern "C" {
 #define CLOG_STR_THRESHOLD "threshold"
 #define CLOG_STR_USE "use"
 #define CLOG_STR_INDEX "index"
-#define CLOG_STR_META_INFO "metainfo"
+#define CLOG_STR_METAINFO "metainfo"
 #define CLOG_STR_DIRECTORY "directory"
 #define CLOG_STR_FILE "file"
 #define CLOG_STR_SPLIT "split"

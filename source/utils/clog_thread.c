@@ -15,7 +15,7 @@
 
 typedef struct {
     clog_thread_routine_f routine;
-    void* args;
+    void *args;
     size_t size;
 } clog_thread_data_wrapper_t;
 
@@ -24,7 +24,7 @@ struct clog_thread_attr {
     int detach_state;
 };
 
-clog_res_e clog_thread_attr_init(clog_thread_attr_t* attr)
+clog_res_e clog_thread_attr_init(clog_thread_attr_t *attr)
 {
     CLOG_RET_IF_NULL(attr, CLOG_INVALID_PARAM);
     attr->stack_size = 0;
@@ -32,14 +32,14 @@ clog_res_e clog_thread_attr_init(clog_thread_attr_t* attr)
     return CLOG_SUCCESS;
 }
 
-void clog_thread_attr_destroy(clog_thread_attr_t* attr)
+void clog_thread_attr_destroy(clog_thread_attr_t *attr)
 {
     CLOG_RET_VOID_IF_NULL(attr);
     attr->detach_state = 0;
     attr->stack_size = 0;
 }
 
-clog_res_e clog_thread_attr_set_stack_size(clog_thread_attr_t* attr, size_t stack_size)
+clog_res_e clog_thread_attr_set_stack_size(clog_thread_attr_t *attr, size_t stack_size)
 {
     CLOG_RET_IF_NULL(attr, CLOG_INVALID_PARAM);
     attr->stack_size = stack_size;
@@ -66,7 +66,7 @@ clog_thread_id_t clog_thread_self(void)
 #ifdef CLOG_PLATFORM_WINDOWS
 static DWORD WINAPI thread_wrapper(LPVOID param)
 {
-    clog_thread_data_wrapper_t* data = param;
+    clog_thread_data_wrapper_t *data = param;
     void *args = data->args;
     const size_t size = data->size;
     const clog_thread_routine_f routine = data->routine;
@@ -75,9 +75,9 @@ static DWORD WINAPI thread_wrapper(LPVOID param)
     return CLOG_SUCCESS;
 }
 #else
-static void* thread_wrapper(void* param)
+static void *thread_wrapper(void *param)
 {
-    clog_thread_data_wrapper_t* data = param;
+    clog_thread_data_wrapper_t *data = param;
     void *args = data->args;
     const size_t size = data->size;
     const clog_thread_routine_f routine = data->routine;
@@ -87,12 +87,12 @@ static void* thread_wrapper(void* param)
 }
 #endif
 
-clog_res_e clog_thread_create(clog_thread_t* thread, const clog_thread_attr_t* attr, clog_thread_routine_f routine,
-                              void* arg, size_t size)
+clog_res_e clog_thread_create(clog_thread_t *thread, const clog_thread_attr_t *attr, clog_thread_routine_f routine,
+                              void *arg, size_t size)
 {
     CLOG_RET_IF_NULL(thread, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(routine, CLOG_INVALID_PARAM);
-    clog_thread_data_wrapper_t* wrapper = clog_malloc(sizeof(clog_thread_data_wrapper_t));
+    clog_thread_data_wrapper_t *wrapper = clog_malloc(sizeof(clog_thread_data_wrapper_t));
     CLOG_RET_IF_NULL_X(wrapper, CLOG_NO_MEMORY, "malloc clog_thread_data_wrapper_t failed");
     wrapper->routine = routine;
     wrapper->args = arg;
@@ -130,7 +130,7 @@ clog_res_e clog_thread_create(clog_thread_t* thread, const clog_thread_attr_t* a
 #endif
 }
 
-clog_res_e clog_thread_join(clog_thread_t thread, void** ret_val)
+clog_res_e clog_thread_join(clog_thread_t thread, void **ret_val)
 {
 #ifdef CLOG_PLATFORM_WINDOWS
     if (WaitForSingleObject(thread, INFINITE) == WAIT_FAILED) {
@@ -142,7 +142,7 @@ clog_res_e clog_thread_join(clog_thread_t thread, void** ret_val)
         if (GetExitCodeThread(thread, &exit_code)) {
             *ret_val = clog_malloc(sizeof(int));
             if (*ret_val != NULL) {
-                clog_res_e* tmp = *ret_val;
+                clog_res_e *tmp = *ret_val;
                 *tmp = (int)exit_code;
             }
         } else {
@@ -153,7 +153,7 @@ clog_res_e clog_thread_join(clog_thread_t thread, void** ret_val)
     CloseHandle(thread);
     return CLOG_SUCCESS;
 #else
-    void* result = NULL;
+    void *result = NULL;
     const int res = pthread_join(thread, &result);
     if (ret_val) {
         *ret_val = result;
@@ -192,10 +192,10 @@ clog_res_e clog_thread_detach(clog_thread_t thread)
 #endif
 }
 
-void clog_thread_exit(void* ret_val)
+void clog_thread_exit(void *ret_val)
 {
-#if defined(_WIN32) || defined(_WIN64)
-    const int* res = ret_val;
+#ifdef CLOG_PLATFORM_WINDOWS
+    const int *res = ret_val;
     DWORD code = -1;
     if (res != NULL) {
         code = *res;
@@ -208,7 +208,7 @@ void clog_thread_exit(void* ret_val)
 
 void clog_thread_yield(void)
 {
-#if defined(_WIN32) || defined(_WIN64)
+#ifdef CLOG_PLATFORM_WINDOWS
     SwitchToThread();
 #else
     CLOG_IGNORE_RES(sched_yield());
@@ -217,7 +217,7 @@ void clog_thread_yield(void)
 
 void clog_thread_sleep(unsigned int milliseconds)
 {
-#if defined(_WIN32) || defined(_WIN64)
+#ifdef CLOG_PLATFORM_WINDOWS
     Sleep(milliseconds);
 #else
     struct timespec ts;

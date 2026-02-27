@@ -58,3 +58,38 @@ uint64_t clog_timestamp_ms()
     return (uint64_t)tv.tv_sec * 1000ULL + (uint64_t)tv.tv_usec / 1000ULL;
 #endif
 }
+
+static inline int clog_datetime_is_leap_year(int year)
+{
+    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+}
+
+static int clog_datetime_days_in_month(int year, int month)
+{
+    const int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    if (month == 2 && clog_datetime_is_leap_year(year)) return 29;
+    return days[month - 1];
+}
+
+uint64_t clog_timestamp_of_datetime(const clog_datetime_t *datetime)
+{
+    CLOG_RET_IF_NULL(datetime, 0);
+    uint64_t total_days = 0;
+
+    for (uint16_t y = 1970; y < datetime->year; y++) {
+        total_days += clog_datetime_is_leap_year(y) ? 366LL : 365LL;
+    }
+
+    for (uint8_t m = 1; m < datetime->month; m++) {
+        total_days += clog_datetime_days_in_month(datetime->year, m);
+    }
+
+    total_days += (datetime->day - 1);
+
+    uint64_t timestamp_ms = total_days * 86400000LL;
+    timestamp_ms += datetime->hour * 3600000LL;
+    timestamp_ms += datetime->minute * 60000LL;
+    timestamp_ms += datetime->second * 1000LL;
+    timestamp_ms += datetime->millisecond;
+    return timestamp_ms;
+}

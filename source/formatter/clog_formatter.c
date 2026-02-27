@@ -10,12 +10,11 @@
 #include "clog_log_format_placeholder.h"
 #include "clog_secure_func.h"
 
-static clog_res_e clog_format_init_tags(const clog_config_group_t *group) {
+static clog_res_e clog_format_init_tags(const clog_config_group_t *group)
+{
     const char *tags[] = {"trace", "debug", "info", "warn", "error", "fetal"};
-    const clog_level_e levels[] = {
-        CLOG_LEVEL_TRACE, CLOG_LEVEL_DEBUG, CLOG_LEVEL_INFO,
-        CLOG_LEVEL_WARN, CLOG_LEVEL_ERROR, CLOG_LEVEL_FETAL
-    };
+    const clog_level_e levels[] = {CLOG_LEVEL_TRACE, CLOG_LEVEL_DEBUG, CLOG_LEVEL_INFO,
+                                   CLOG_LEVEL_WARN,  CLOG_LEVEL_ERROR, CLOG_LEVEL_FETAL};
     CLOG_ASSERT(CLOG_ARRAY_SIZE(tags) == CLOG_ARRAY_SIZE(levels));
     const size_t size = CLOG_ARRAY_SIZE(levels);
     for (size_t i = 0; i < size; i++) {
@@ -31,7 +30,8 @@ static clog_res_e clog_format_init_tags(const clog_config_group_t *group) {
     return CLOG_SUCCESS;
 }
 
-clog_res_e clog_formatter_setup(void) {
+clog_res_e clog_formatter_setup(void)
+{
     const clog_config_group_t *root = clog_get_config_root();
     CLOG_RET_IF_NULL_X(root, CLOG_TARGET_NOT_FOUND, "root group not found");
     const char *groups[] = {"Formatter"};
@@ -60,19 +60,22 @@ clog_res_e clog_formatter_setup(void) {
 }
 
 clog_res_e clog_format_log(const clog_interpolator_t *interpolator, const clog_item_wrapper_t *wrapper, char *content,
-                           size_t size) {
+                           size_t size, size_t *num)
+{
     CLOG_RET_IF_NULL(interpolator, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(wrapper, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(content, CLOG_INVALID_PARAM);
+    CLOG_RET_IF_NULL(num, CLOG_INVALID_PARAM);
     CLOG_RET_IF(size <= 1, CLOG_OVERSIZE);
     CLOG_IGNORE_RES(clog_strcpy(wrapper->log->process, sizeof(wrapper->log->process), wrapper->process));
     CLOG_IGNORE_RES(clog_strcpy(wrapper->log->module, sizeof(wrapper->log->module), wrapper->module));
     CLOG_IGNORE_RES(clog_strcpy(wrapper->log->filename, sizeof(wrapper->log->filename), wrapper->filename));
 
-    return clog_interpolator_interpolate(interpolator, (void *) wrapper, content, size, NULL);
+    return clog_interpolator_interpolate(interpolator, (void *)wrapper, content, size, num);
 }
 
-void clog_formatter_cleanup(void) {
+void clog_formatter_cleanup(void)
+{
     clog_log_format_placeholder_clear();
     clog_interpolator_t *interpolator = clog_get_interpolator();
     clog_set_interpolator(NULL);

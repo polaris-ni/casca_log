@@ -48,7 +48,7 @@ clog_res_e clog_interpolator_context_register(clog_interpolator_context_t *conte
     CLOG_RET_IF_NULL_X(context, CLOG_INVALID_PARAM, "context is NULL");
     CLOG_RET_IF_NULL_X(name, CLOG_INVALID_PARAM, "name is NULL");
     CLOG_RET_IF_NULL_X(handler, CLOG_INVALID_PARAM, "handler is NULL");
-    return clog_hashmap_put(context->map, name, handler);
+    return clog_hashmap_put(context->map, name, &handler);
 }
 
 void clog_interpolator_context_destroy(clog_interpolator_context_t *context)
@@ -181,7 +181,7 @@ clog_res_e clog_interpolator_parse(const clog_interpolator_context_t *context, c
     clog_interpolator_t *root = clog_malloc(sizeof(clog_interpolator_t));
     CLOG_RET_IF_NULL_X(root, CLOG_NO_MEMORY, "malloc root clog_interpolator_t failed");
     const clog_res_e ret = clog_interpolator_parse_format(context->map, fmt, root);
-    CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_interpolator_clear(root), "parse fmt %s failed, ret = %u", fmt, ret);
+    CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_interpolator_clear(&root), "parse fmt %s failed, ret = %u", fmt, ret);
     *interpolator = root;
     return CLOG_SUCCESS;
 }

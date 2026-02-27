@@ -68,12 +68,12 @@ clog_file_t *clog_file_open(const char *path, uint64_t flags, uint64_t modes)
         access |= GENERIC_WRITE;
         if (CLOG_FILE_CHECK_FLAG(flags, CLOG_FILE_CREATE)) {
             if (CLOG_FILE_CHECK_FLAG(flags, CLOG_FILE_EXIST)) {
-                disposition = CREATE_NEW;
+                disposition = OPEN_ALWAYS; /* open if existed, create if not */
             } else {
-                disposition = CREATE_ALWAYS;
+                disposition = CREATE_ALWAYS; /* create always, truncate if existed */
             }
         } else {
-            disposition = OPEN_EXISTING;
+            disposition = OPEN_EXISTING; /* open if existed, fail if not  */
         }
         flag |= FILE_FLAG_SEQUENTIAL_SCAN;
         if (CLOG_FILE_CHECK_FLAG(flags, CLOG_FILE_SHARED)) {
@@ -102,19 +102,21 @@ clog_file_t *clog_file_open(const char *path, uint64_t flags, uint64_t modes)
 
     HANDLE handle = CreateFileW(w_path, access, share, NULL, disposition, flag, NULL);
     CLOG_SAFE_FREE(w_path);
-    CLOG_RET_IF_X(handle == INVALID_HANDLE_VALUE, NULL, "CreateFileW failed, flags = 0x%llX err = 0x%llX", flags,
-                  (uint64_t)GetLastError());
+    CLOG_RET_IF_X(
+        handle == INVALID_HANDLE_VALUE, NULL,
+        "CreateFileW %s failed, access = 0x%llX, share = 0x%llX, disposition = 0x%llX flags = 0x%llX err = 0x%llX",
+        w_path, access, share, disposition, flags, (uint64_t)GetLastError());
 
     if (CLOG_FILE_CHECK_FLAG(flags, CLOG_FILE_WRITE)) {
         const DWORD move = CLOG_FILE_CHECK_FLAG(flags, CLOG_FILE_TRUNCATE) ? FILE_BEGIN : FILE_END;
         if (SetFilePointer(handle, 0, NULL, move) == INVALID_SET_FILE_POINTER) {
-            CLOG_ERR_ADD("SetFilePointer %u failed, err = 0x%llX", move, (uint64_t)GetLastError());
+            CLOG_ERR_ADD("SetFilePointer %s %u failed, err = 0x%llX", path, move, (uint64_t)GetLastError());
             CloseHandle(handle);
             return NULL;
         }
         if (CLOG_FILE_CHECK_FLAG(flags, CLOG_FILE_TRUNCATE)) {
             if (!SetEndOfFile(handle)) {
-                CLOG_ERR_ADD("SetEndOfFile failed, err = 0x%llX", (uint64_t)GetLastError());
+                CLOG_ERR_ADD("SetEndOfFile %s failed, err = 0x%llX", path, (uint64_t)GetLastError());
                 CloseHandle(handle);
                 return NULL;
             }
@@ -159,7 +161,7 @@ clog_file_t *clog_file_open(const char *path, uint64_t flags, uint64_t modes)
         flag |= O_SYNC;
     }
     const int fd = open(path, flag, (mode_t)modes);
-    CLOG_RET_IF_X(fd < 0, NULL, "open failed, err = %d", errno);
+    CLOG_RET_IF_X(fd < 0, NULL, "open %s failed, flag = 0x%x, err = %d", path, flag, errno);
     if (CLOG_FILE_CHECK_FLAG(flags, CLOG_FILE_WRITE) && !CLOG_FILE_CHECK_FLAG(flags, CLOG_FILE_SHARED)) {
         CLOG_IGNORE_RES(flock(fd, LOCK_EX | LOCK_NB));
     }
@@ -234,14 +236,13 @@ clog_res_e clog_file_seek(const clog_file_t *file, clog_file_seek_e whence, int 
     const DWORD move = whence == CLOG_FILE_SEEK_SET ? FILE_BEGIN
         : whence == CLOG_FILE_SEEK_CUR              ? FILE_CURRENT
                                                     : FILE_END;
-    const DWORD ret = SetFilePointer(file->handle, 0, NULL, move);
+    const DWORD ret = SetFilePointer(file->handle, offset, NULL, move);
     if (ret == INVALID_SET_FILE_POINTER) {
         const DWORD err = GetLastError();
         CLOG_RET_IF_X(err != NO_ERROR, CLOG_FAIL, "SetFilePointer failed, err = 0x%llX", err);
-        if (num != NULL) {
-            *num = ret;
-        }
-        return CLOG_FAIL;
+    }
+    if (num != NULL) {
+        *num = ret;
     }
     return CLOG_SUCCESS;
 #else
