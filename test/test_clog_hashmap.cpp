@@ -11,7 +11,7 @@
 class CLogHashMapTest : public testing::Test
 {
 protected:
-    clog_hashmap_t* map = nullptr;
+    clog_hashmap_t *map = nullptr;
 
     void SetUp() override
     {
@@ -40,7 +40,7 @@ TEST_F(CLogHashMapTest, PutAndGet)
 
     EXPECT_EQ(CLOG_SUCCESS, clog_hashmap_put(map, key, value));
 
-    const auto retrieved = static_cast<const char*>(clog_hashmap_get(map, key));
+    const auto retrieved = static_cast<const char *>(clog_hashmap_get(map, key));
     ASSERT_NE(nullptr, retrieved);
     EXPECT_STREQ(value, retrieved);
 }
@@ -49,7 +49,7 @@ TEST_F(CLogHashMapTest, GetNonExistentKey)
 {
     const auto key = "non_existent";
 
-    const auto retrieved = static_cast<const char*>(clog_hashmap_get(map, key));
+    const auto retrieved = static_cast<const char *>(clog_hashmap_get(map, key));
     EXPECT_EQ(nullptr, retrieved);
 }
 
@@ -62,7 +62,7 @@ TEST_F(CLogHashMapTest, ReplaceValue)
     EXPECT_EQ(CLOG_SUCCESS, clog_hashmap_put(map, key, value1));
     EXPECT_EQ(CLOG_SUCCESS, clog_hashmap_put(map, key, value2));
 
-    const auto retrieved = static_cast<const char*>(clog_hashmap_get(map, key));
+    const auto retrieved = static_cast<const char *>(clog_hashmap_get(map, key));
     ASSERT_NE(nullptr, retrieved);
     EXPECT_STREQ(value2, retrieved);
 }
@@ -75,7 +75,7 @@ TEST_F(CLogHashMapTest, RemoveKey)
     EXPECT_EQ(CLOG_SUCCESS, clog_hashmap_put(map, key, value));
     EXPECT_TRUE(clog_hashmap_remove(map, key));
 
-    const auto retrieved = static_cast<const char*>(clog_hashmap_get(map, key));
+    const auto retrieved = static_cast<const char *>(clog_hashmap_get(map, key));
     EXPECT_EQ(nullptr, retrieved);
 }
 
@@ -102,7 +102,7 @@ TEST_F(CLogHashMapTest, TakeValue)
 
     EXPECT_EQ(CLOG_SUCCESS, clog_hashmap_put(map, key, value));
 
-    const auto taken = static_cast<char*>(clog_hashmap_take(map, key));
+    const auto taken = static_cast<char *>(clog_hashmap_take(map, key));
     ASSERT_NE(nullptr, taken);
     EXPECT_STREQ(value, taken);
     clog_free(taken);
@@ -132,7 +132,7 @@ TEST_F(CLogHashMapTest, ResizeAutomatically)
 
     for (int i = 0; i < 32; ++i) {
         std::string key = "key" + std::to_string(i);
-        const auto retrieved = static_cast<const char*>(clog_hashmap_get(map, key.c_str()));
+        const auto retrieved = static_cast<const char *>(clog_hashmap_get(map, key.c_str()));
         ASSERT_NE(nullptr, retrieved);
         std::string expected = "value" + std::to_string(i);
         EXPECT_STREQ(expected.c_str(), retrieved);
@@ -140,7 +140,7 @@ TEST_F(CLogHashMapTest, ResizeAutomatically)
 
     for (int i = 0; i < 32; ++i) {
         std::string key = "key" + std::to_string(i);
-        const auto retrieved = static_cast<const char*>(clog_hashmap_get(map, key.c_str()));
+        const auto retrieved = static_cast<const char *>(clog_hashmap_get(map, key.c_str()));
         ASSERT_NE(nullptr, retrieved);
         std::string expected = "value" + std::to_string(i);
         EXPECT_STREQ(expected.c_str(), retrieved);

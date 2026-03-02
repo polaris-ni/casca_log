@@ -67,11 +67,13 @@ static inline int clog_datetime_is_leap_year(int year)
 static int clog_datetime_days_in_month(int year, int month)
 {
     const int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-    if (month == 2 && clog_datetime_is_leap_year(year)) return 29;
+    if (month == 2 && clog_datetime_is_leap_year(year)) {
+        return 29;
+    }
     return days[month - 1];
 }
 
-uint64_t clog_timestamp_of_datetime(const clog_datetime_t *datetime)
+uint64_t clog_timestamp_of_datetime(const clog_datetime_t *datetime, int tz_hour, int tz_minute)
 {
     CLOG_RET_IF_NULL(datetime, 0);
     uint64_t total_days = 0;
@@ -88,8 +90,11 @@ uint64_t clog_timestamp_of_datetime(const clog_datetime_t *datetime)
 
     uint64_t timestamp_ms = total_days * 86400000LL;
     timestamp_ms += datetime->hour * 3600000LL;
+    timestamp_ms -= tz_hour * 3600000LL;
     timestamp_ms += datetime->minute * 60000LL;
+    timestamp_ms -= tz_minute * 60000LL;
     timestamp_ms += datetime->second * 1000LL;
     timestamp_ms += datetime->millisecond;
+
     return timestamp_ms;
 }

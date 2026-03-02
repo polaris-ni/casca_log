@@ -13,7 +13,7 @@
 class CLogAtomicMpscQueueTest : public testing::Test
 {
 protected:
-    clog_atomic_mpsc_queue_t* queue = nullptr;
+    clog_atomic_mpsc_queue_t *queue = nullptr;
 
     void SetUp() override
     {
@@ -100,7 +100,7 @@ TEST_F(CLogAtomicMpscQueueTest, MultiProducerSingleConsumer)
             });
     }
 
-    for (auto& producer : producers) {
+    for (auto &producer : producers) {
         producer.join();
     }
 
@@ -148,7 +148,7 @@ TEST_F(CLogAtomicMpscQueueTest, HighConcurrencyStressTest)
             });
     }
 
-    for (auto& producer : producers) {
+    for (auto &producer : producers) {
         producer.join();
     }
 

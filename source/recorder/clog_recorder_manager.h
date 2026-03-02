@@ -20,7 +20,7 @@ extern "C" {
  * @param item log item
  * @return clog_res_e
  */
-clog_res_e clog_recoder_write(uint32_t id, const clog_item_t* item);
+clog_res_e clog_recoder_write(uint32_t id, const clog_item_t *item);
 
 /**
  * register customized recorders provider

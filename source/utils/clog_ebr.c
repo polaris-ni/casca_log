@@ -13,7 +13,7 @@
 #define CLOG_EBR_NUM_EPOCHS 3
 
 typedef struct clog_ebr_memory_node {
-    void* ptr;
+    void *ptr;
     atomic_uintptr_t next;
 } clog_ebr_memory_node_t;
 
@@ -24,24 +24,24 @@ typedef struct clog_ebr_retired_list {
 struct clog_ebr_global {
     _Alignas(CASCA_LOG_CACHE_LINE_SIZE) atomic_int state;
     _Alignas(CASCA_LOG_CACHE_LINE_SIZE) atomic_uint_fast64_t epoch;
-    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_ebr_thread_local_t* threads;
+    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_ebr_thread_local_t *threads;
     _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_mutex_t mutex;
     _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_ebr_retired_list_t memory[CLOG_EBR_NUM_EPOCHS];
     _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_deallocator_f free;
 };
 
 struct clog_ebr_thread_local {
-    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_ebr_global_t* global;
+    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_ebr_global_t *global;
     _Alignas(CASCA_LOG_CACHE_LINE_SIZE) atomic_uint_fast64_t epoch;
     _Alignas(CASCA_LOG_CACHE_LINE_SIZE) atomic_int state;
-    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_ebr_thread_local_t* next;
+    _Alignas(CASCA_LOG_CACHE_LINE_SIZE) clog_ebr_thread_local_t *next;
 };
 
-clog_res_e clog_ebr_create(clog_ebr_global_t** global, clog_deallocator_f free)
+clog_res_e clog_ebr_create(clog_ebr_global_t **global, clog_deallocator_f free)
 {
     CLOG_RET_IF_NULL(global, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(free, CLOG_INVALID_PARAM);
-    clog_ebr_global_t* tmp = (clog_ebr_global_t*)clog_malloc(sizeof(clog_ebr_global_t));
+    clog_ebr_global_t *tmp = (clog_ebr_global_t *)clog_malloc(sizeof(clog_ebr_global_t));
     CLOG_RET_IF_NULL(tmp, CLOG_NO_MEMORY);
     atomic_init(&tmp->state, CLOG_EBR_GLOBAL_STATE_ACTIVE_NORMAL);
     atomic_init(&tmp->epoch, 0U);
@@ -57,7 +57,7 @@ clog_res_e clog_ebr_create(clog_ebr_global_t** global, clog_deallocator_f free)
     return CLOG_SUCCESS;
 }
 
-clog_ebr_global_state_e clog_ebr_get_global_state(const clog_ebr_global_t* global)
+clog_ebr_global_state_e clog_ebr_get_global_state(const clog_ebr_global_t *global)
 {
     CLOG_RET_IF_NULL(global, CLOG_EBR_GLOBAL_STATE_UNKNOWN);
     const int state = atomic_load(&global->state);
@@ -67,7 +67,7 @@ clog_ebr_global_state_e clog_ebr_get_global_state(const clog_ebr_global_t* globa
     return CLOG_EBR_GLOBAL_STATE_UNKNOWN;
 }
 
-clog_ebr_local_state_e clog_ebr_get_local_state(const clog_ebr_thread_local_t* local)
+clog_ebr_local_state_e clog_ebr_get_local_state(const clog_ebr_thread_local_t *local)
 {
     CLOG_RET_IF_NULL(local, CLOG_EBR_LOCAL_STATE_UNKNOWN);
     const int state = atomic_load(&local->state);
@@ -77,14 +77,14 @@ clog_ebr_local_state_e clog_ebr_get_local_state(const clog_ebr_thread_local_t* l
     return CLOG_EBR_LOCAL_STATE_UNKNOWN;
 }
 
-clog_res_e clog_ebr_register(clog_ebr_global_t* global, clog_ebr_thread_local_t** local)
+clog_res_e clog_ebr_register(clog_ebr_global_t *global, clog_ebr_thread_local_t **local)
 {
     CLOG_RET_IF_NULL(global, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(local, CLOG_INVALID_PARAM);
 
     const clog_res_e ret = clog_mutex_lock(&global->mutex);
     CLOG_RET_IF_FAILED(ret);
-    clog_ebr_thread_local_t* tmp = (clog_ebr_thread_local_t*)clog_malloc(sizeof(clog_ebr_thread_local_t));
+    clog_ebr_thread_local_t *tmp = (clog_ebr_thread_local_t *)clog_malloc(sizeof(clog_ebr_thread_local_t));
     CLOG_CLEAN_RET_IF_NULL(tmp, clog_mutex_unlock(&global->mutex), CLOG_NO_MEMORY);
     tmp->global = global;
     const uint_fast64_t current_epoch = atomic_load(&global->epoch);
@@ -97,14 +97,14 @@ clog_res_e clog_ebr_register(clog_ebr_global_t* global, clog_ebr_thread_local_t*
     return CLOG_SUCCESS;
 }
 
-static clog_res_e clog_ebr_try_destroy(clog_ebr_global_t* global)
+static clog_res_e clog_ebr_try_destroy(clog_ebr_global_t *global)
 {
     const clog_ebr_global_state_e state = clog_ebr_get_global_state(global);
     if (state == CLOG_EBR_GLOBAL_STATE_ACTIVE_NORMAL || state == CLOG_EBR_GLOBAL_STATE_ACTIVE_GC) {
         return CLOG_ABNORMAL_STATE;
     }
     CLOG_RET_IF_FAILED(clog_mutex_lock(&global->mutex));
-    clog_ebr_thread_local_t* head = global->threads;
+    clog_ebr_thread_local_t *head = global->threads;
     while (head != NULL) {
         if (clog_ebr_get_local_state(head) != CLOG_EBR_LOCAL_STATE_RELEASED) {
             CLOG_IGNORE_RES(clog_mutex_unlock(&global->mutex));
@@ -114,10 +114,10 @@ static clog_res_e clog_ebr_try_destroy(clog_ebr_global_t* global)
     }
 
     for (size_t i = 0; i < CLOG_EBR_NUM_EPOCHS; ++i) {
-        clog_ebr_memory_node_t* entry = (clog_ebr_memory_node_t*)atomic_load(&global->memory[i].head);
+        clog_ebr_memory_node_t *entry = (clog_ebr_memory_node_t *)atomic_load(&global->memory[i].head);
         atomic_store(&global->memory[i].head, 0);
         while (entry != NULL) {
-            clog_ebr_memory_node_t* next = (clog_ebr_memory_node_t*)atomic_load(&entry->next);
+            clog_ebr_memory_node_t *next = (clog_ebr_memory_node_t *)atomic_load(&entry->next);
             global->free(entry->ptr);
             clog_free(entry);
             entry = next;
@@ -126,7 +126,7 @@ static clog_res_e clog_ebr_try_destroy(clog_ebr_global_t* global)
 
     head = global->threads;
     while (head != NULL) {
-        clog_ebr_thread_local_t* next = head->next;
+        clog_ebr_thread_local_t *next = head->next;
         clog_free(head);
         head = next;
     }
@@ -137,7 +137,7 @@ static clog_res_e clog_ebr_try_destroy(clog_ebr_global_t* global)
     return CLOG_SUCCESS;
 }
 
-void clog_ebr_unregister(clog_ebr_thread_local_t* local)
+void clog_ebr_unregister(clog_ebr_thread_local_t *local)
 {
     CLOG_RET_VOID_IF_NULL(local);
 
@@ -148,7 +148,7 @@ void clog_ebr_unregister(clog_ebr_thread_local_t* local)
     CLOG_IGNORE_RES(clog_ebr_try_destroy(local->global));
 }
 
-clog_res_e clog_ebr_enter(clog_ebr_thread_local_t* local)
+clog_res_e clog_ebr_enter(clog_ebr_thread_local_t *local)
 {
     CLOG_RET_IF_NULL(local, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(local->global, CLOG_INVALID_PARAM);
@@ -169,7 +169,7 @@ clog_res_e clog_ebr_enter(clog_ebr_thread_local_t* local)
     return CLOG_SUCCESS;
 }
 
-void clog_ebr_exit(clog_ebr_thread_local_t* local)
+void clog_ebr_exit(clog_ebr_thread_local_t *local)
 {
     CLOG_RET_VOID_IF_NULL(local);
 
@@ -179,16 +179,16 @@ void clog_ebr_exit(clog_ebr_thread_local_t* local)
     } while (!atomic_compare_exchange_strong(&local->state, &state, CLOG_EBR_LOCAL_STATE_INACTIVE));
 }
 
-void clog_ebr_defer_release_global(clog_ebr_global_t* global, void* ptr)
+void clog_ebr_defer_release_global(clog_ebr_global_t *global, void *ptr)
 {
     CLOG_RET_VOID_IF_NULL(global);
     CLOG_RET_VOID_IF_NULL(ptr);
-    clog_ebr_memory_node_t* entry = (clog_ebr_memory_node_t*)clog_malloc(sizeof(clog_ebr_memory_node_t));
+    clog_ebr_memory_node_t *entry = (clog_ebr_memory_node_t *)clog_malloc(sizeof(clog_ebr_memory_node_t));
     CLOG_CLEAN_RET_VOID_IF_NULL(entry, global->free(ptr));
     entry->ptr = ptr;
 
     uintptr_t old_head;
-    clog_ebr_retired_list_t* list;
+    clog_ebr_retired_list_t *list;
     do {
         const uint_fast64_t current_epoch = atomic_load(&global->epoch);
         const uint_fast64_t index = current_epoch % CLOG_EBR_NUM_EPOCHS;
@@ -198,13 +198,13 @@ void clog_ebr_defer_release_global(clog_ebr_global_t* global, void* ptr)
     } while (!atomic_compare_exchange_strong(&list->head, &old_head, (uintptr_t)entry));
 }
 
-void clog_ebr_defer_release_local(const clog_ebr_thread_local_t* local, void* ptr)
+void clog_ebr_defer_release_local(const clog_ebr_thread_local_t *local, void *ptr)
 {
     CLOG_RET_VOID_IF_NULL(local);
     clog_ebr_defer_release_global(local->global, ptr);
 }
 
-void clog_ebr_poll(clog_ebr_global_t* global)
+void clog_ebr_poll(clog_ebr_global_t *global)
 {
     CLOG_RET_VOID_IF_NULL(global);
 
@@ -216,9 +216,9 @@ void clog_ebr_poll(clog_ebr_global_t* global)
 
     uint_fast64_t current_epoch = atomic_load_explicit(&global->epoch, memory_order_acquire);
     const uint_fast64_t index = (current_epoch - 2 + CLOG_EBR_NUM_EPOCHS) % CLOG_EBR_NUM_EPOCHS;
-    clog_ebr_memory_node_t* entry_head = (clog_ebr_memory_node_t*)global->memory[index].head;
+    clog_ebr_memory_node_t *entry_head = (clog_ebr_memory_node_t *)global->memory[index].head;
     while (entry_head != NULL) {
-        clog_ebr_memory_node_t* next = (clog_ebr_memory_node_t*)entry_head->next;
+        clog_ebr_memory_node_t *next = (clog_ebr_memory_node_t *)entry_head->next;
         global->free(entry_head->ptr);
         clog_free(entry_head);
         entry_head = next;
@@ -226,7 +226,7 @@ void clog_ebr_poll(clog_ebr_global_t* global)
     atomic_store(&global->memory[index].head, 0);
 
     CLOG_RET_VOID_IF_FAILED(clog_mutex_lock(&global->mutex));
-    const clog_ebr_thread_local_t* local = global->threads;
+    const clog_ebr_thread_local_t *local = global->threads;
     if (local == NULL) {
         atomic_store(&global->state, CLOG_EBR_GLOBAL_STATE_ACTIVE_NORMAL);
         CLOG_IGNORE_RES(clog_mutex_unlock(&global->mutex));
@@ -246,13 +246,13 @@ void clog_ebr_poll(clog_ebr_global_t* global)
     CLOG_IGNORE_RES(clog_mutex_unlock(&global->mutex));
 }
 
-void clog_ebr_local_poll(clog_ebr_thread_local_t* local)
+void clog_ebr_local_poll(clog_ebr_thread_local_t *local)
 {
     CLOG_RET_VOID_IF_NULL(local);
     clog_ebr_poll(local->global);
 }
 
-clog_res_e clog_ebr_destroy(clog_ebr_global_t* global)
+clog_res_e clog_ebr_destroy(clog_ebr_global_t *global)
 {
     CLOG_RET_IF_NULL(global, CLOG_INVALID_PARAM);
     int state;

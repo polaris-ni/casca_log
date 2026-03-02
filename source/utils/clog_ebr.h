@@ -35,21 +35,21 @@ typedef struct clog_ebr_thread_local clog_ebr_thread_local_t;
  * @param free deallocator
  * @return #clog_res_e
  */
-clog_res_e clog_ebr_create(clog_ebr_global_t** global, clog_deallocator_f free);
+clog_res_e clog_ebr_create(clog_ebr_global_t **global, clog_deallocator_f free);
 
 /**
  * get global state
  * @param global global EBR
  * @return #clog_ebr_global_state_e
  */
-clog_ebr_global_state_e clog_ebr_get_global_state(const clog_ebr_global_t* global);
+clog_ebr_global_state_e clog_ebr_get_global_state(const clog_ebr_global_t *global);
 
 /**
  * get thread local state
  * @param local thread local EBR
  * @return #clog_ebr_local_state_e
  */
-clog_ebr_local_state_e clog_ebr_get_local_state(const clog_ebr_thread_local_t* local);
+clog_ebr_local_state_e clog_ebr_get_local_state(const clog_ebr_thread_local_t *local);
 
 /**
  * register thread itself to #global
@@ -57,13 +57,13 @@ clog_ebr_local_state_e clog_ebr_get_local_state(const clog_ebr_thread_local_t* l
  * @param local thread local EBR
  * @return #clog_res_e
  */
-clog_res_e clog_ebr_register(clog_ebr_global_t* global, clog_ebr_thread_local_t** local);
+clog_res_e clog_ebr_register(clog_ebr_global_t *global, clog_ebr_thread_local_t **local);
 
 /**
  * register thread in global, it must be called after the thread leave the critical section
  * @param local thread local EBR
  */
-void clog_ebr_unregister(clog_ebr_thread_local_t* local);
+void clog_ebr_unregister(clog_ebr_thread_local_t *local);
 
 /**
  * thread entry critical section
@@ -73,41 +73,41 @@ void clog_ebr_unregister(clog_ebr_thread_local_t* local);
  * #CLOG_ALREADY_EXISTED if local state is CLOG_EBR_LOCAL_STATE_ACTIVE(NOTE: local epoch will be updated)
  * #CLOG_SUCCESS otherwise
  */
-clog_res_e clog_ebr_enter(clog_ebr_thread_local_t* local);
+clog_res_e clog_ebr_enter(clog_ebr_thread_local_t *local);
 
 /**
  * thread exit critical section
  * @param local thread local EBR
  */
-void clog_ebr_exit(clog_ebr_thread_local_t* local);
+void clog_ebr_exit(clog_ebr_thread_local_t *local);
 
 /**
  * deferred memory release
  * @param global global EBR
  * @param ptr memory to be released
  */
-void clog_ebr_defer_release_global(clog_ebr_global_t* global, void* ptr);
+void clog_ebr_defer_release_global(clog_ebr_global_t *global, void *ptr);
 
 /**
  * deferred memory release
  * @param local thread local EBR
  * @param ptr memory to be released
  */
-void clog_ebr_defer_release_local(const clog_ebr_thread_local_t* local, void* ptr);
+void clog_ebr_defer_release_local(const clog_ebr_thread_local_t *local, void *ptr);
 
 /**
  * release memory by checking the status of all registered threads
  * memory that has passed the grace period will be released
  * @param global global EBR
  */
-void clog_ebr_poll(clog_ebr_global_t* global);
+void clog_ebr_poll(clog_ebr_global_t *global);
 
 /**
  * release memory by checking the status of all registered threads by the thread itself
  * memory that has passed the grace period will be released
  * @param local thread local EBR
  */
-void clog_ebr_local_poll(clog_ebr_thread_local_t* local);
+void clog_ebr_local_poll(clog_ebr_thread_local_t *local);
 
 /**
  * destroy a global EBR state, must be called when all threads have performed #clog_ebr_unregister.
@@ -118,7 +118,7 @@ void clog_ebr_local_poll(clog_ebr_thread_local_t* local);
  * #CLOG_ALREADY_EXISTED if clog_ebr_destroy has been called
  * #CLOG_SUCCESS otherwise
  */
-clog_res_e clog_ebr_destroy(clog_ebr_global_t* global);
+clog_res_e clog_ebr_destroy(clog_ebr_global_t *global);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

@@ -13,9 +13,9 @@ static clog_deallocator_f g_deallocator = free;
 static clog_post_allocate_callback_f g_allocate_callback = NULL;
 static clog_post_deallocate_callback_f g_deallocate_callback = NULL;
 
-void* clog_hook_malloc(uintptr_t trace, const char* file, const char* function, int line, size_t size)
+void *clog_hook_malloc(uintptr_t trace, const char *file, const char *function, int line, size_t size)
 {
-    void* ptr = NULL;
+    void *ptr = NULL;
     if (size > 0) {
         ptr = g_allocator(size);
     }
@@ -25,7 +25,7 @@ void* clog_hook_malloc(uintptr_t trace, const char* file, const char* function, 
     return ptr;
 }
 
-void clog_hook_free(uintptr_t trace, const char* file, const char* function, int line, void* ptr)
+void clog_hook_free(uintptr_t trace, const char *file, const char *function, int line, void *ptr)
 {
     if (g_deallocate_callback != NULL) {
         g_deallocate_callback(trace, file, function, line, ptr);

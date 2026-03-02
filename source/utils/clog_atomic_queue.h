@@ -22,7 +22,7 @@ typedef enum clog_atomic_queue_bias {
 
 typedef struct clog_atomic_queue clog_atomic_queue_t;
 
-typedef struct clog_atomic_queue_handle* clog_atomic_queue_handle_t;
+typedef struct clog_atomic_queue_handle *clog_atomic_queue_handle_t;
 
 /**
  * create atomic queue
@@ -30,7 +30,7 @@ typedef struct clog_atomic_queue_handle* clog_atomic_queue_handle_t;
  * @param deallocator when the queue is destroyed and the queue is not empty, the deallocator will be called
  * @return #clog_res_e
  */
-clog_res_e clog_atomic_queue_create(clog_atomic_queue_t** queue, clog_deallocator_f deallocator);
+clog_res_e clog_atomic_queue_create(clog_atomic_queue_t **queue, clog_deallocator_f deallocator);
 
 /**
  * get thread local atomic queue handle
@@ -38,7 +38,7 @@ clog_res_e clog_atomic_queue_create(clog_atomic_queue_t** queue, clog_deallocato
  * @param bias atomic queue GC bias
  * @return #clog_atomic_queue_handle_t
  */
-clog_atomic_queue_handle_t clog_atomic_queue_attach(clog_atomic_queue_t* queue, clog_atomic_queue_bias_e bias);
+clog_atomic_queue_handle_t clog_atomic_queue_attach(clog_atomic_queue_t *queue, clog_atomic_queue_bias_e bias);
 
 /**
  * enqueue data
@@ -55,7 +55,7 @@ clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_handle_t handle, uintptr_
  * @param data buffer to store data
  * @return #clog_res_e
  */
-clog_res_e clog_atomic_queue_dequeue(clog_atomic_queue_handle_t handle, uintptr_t* data);
+clog_res_e clog_atomic_queue_dequeue(clog_atomic_queue_handle_t handle, uintptr_t *data);
 
 /**
  * check if queue is empty
@@ -75,7 +75,7 @@ void clog_atomic_queue_detach(clog_atomic_queue_handle_t handle);
  * @param queue atomic queue to be destroyed
  * @return CLOG_SUCCESS if all nodes are released successfully, CLOG_NOT_COMPLETED if not
  */
-clog_res_e clog_atomic_queue_destroy(clog_atomic_queue_t* queue);
+clog_res_e clog_atomic_queue_destroy(clog_atomic_queue_t *queue);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

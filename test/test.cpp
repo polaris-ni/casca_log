@@ -28,12 +28,12 @@ protected:
 
 TEST_F(CLogMainTest, CreateLog)
 {
-    FILE* fp = fopen("../../casca_log_config_template.toml", "rb");
+    FILE *fp = fopen("../../casca_log_config_template.toml", "rb");
     char buffer[1024] = {};
     EXPECT_NE(fp, nullptr);
     EXPECT_EQ(fseek(fp, 0, SEEK_END), 0);
     const long len = ftell(fp);
-    const auto buf = static_cast<char*>(clog_malloc(len + 1));
+    const auto buf = static_cast<char *>(clog_malloc(len + 1));
     EXPECT_NE(buf, nullptr);
     EXPECT_EQ(clog_memset(buf, len + 1, 0, len + 1), CLOG_SUCCESS);
     EXPECT_EQ(fseek(fp, 0, SEEK_SET), 0);
@@ -56,9 +56,9 @@ TEST_F(CLogMainTest, CreateLog)
     }
     EXPECT_EQ(ret, CLOG_SUCCESS);
 
-    const auto tmp = static_cast<char*>(clog_malloc(len));
+    const auto tmp = static_cast<char *>(clog_malloc(len));
     EXPECT_NE(buf, nullptr);
-    const clog_config_group_t* root = clog_get_config_root();
+    const clog_config_group_t *root = clog_get_config_root();
     EXPECT_TRUE(clog_config_dump_group(root, tmp, len, "  "));
 
     ret = clog_log("test", CLOG_RECORDER_ID_STDOUT, CLOG_FILENAME, __FUNCTION__, __LINE__, CLOG_LEVEL_TRACE,

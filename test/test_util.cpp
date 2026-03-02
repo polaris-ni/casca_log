@@ -7,21 +7,24 @@
 
 #include <random>
 
-namespace CLogTest {
+namespace CLogTest
+{
     std::unordered_map<void *, CLogMemoryInfo> CLogMemLeakDetect::memory;
-    std::vector<std::shared_ptr<std::string> > CLogMemLeakDetect::logs;
+    std::vector<std::shared_ptr<std::string>> CLogMemLeakDetect::logs;
     std::mutex CLogMemLeakDetect::mutex;
 
-    std::shared_ptr<std::string> CLogMemoryInfo::info(const std::string_view &prefix) const {
+    std::shared_ptr<std::string> CLogMemoryInfo::info(const std::string_view &prefix) const
+    {
         std::stringstream ss;
         ss << prefix;
         ss << "ptr: " << ptr << ", size: " << size << ", allocated at " << file << ":" << line << ", func: " << func
-                << ", tid: " << tid;
+           << ", tid: " << tid;
         return std::make_shared<std::string>(ss.str());
     }
 
     void CLogMemLeakDetect::clog_allocate_callback(uintptr_t trace, const char *file, const char *function, int line,
-                                                   size_t size, void *ptr) {
+                                                   size_t size, void *ptr)
+    {
         CLOG_UNUSED_VAR(trace);
         if (ptr == nullptr) {
             return;
@@ -31,7 +34,7 @@ namespace CLogTest {
         const auto tmp = memory.find(ptr);
         if (tmp != memory.end()) {
             logs.push_back(info.info("[ Memory Allocated ]\t"));
-            for (const auto &str: logs) {
+            for (const auto &str : logs) {
                 std::cout << *str << std::endl;
             }
         }
@@ -42,7 +45,8 @@ namespace CLogTest {
     }
 
     void CLogMemLeakDetect::clog_deallocate_callback(uintptr_t trace, const char *file, const char *function, int line,
-                                                     void *ptr) {
+                                                     void *ptr)
+    {
         CLOG_UNUSED_VAR(trace);
         if (ptr == nullptr) {
             return;
@@ -55,14 +59,16 @@ namespace CLogTest {
         memory.erase(tmp);
     }
 
-    void CLogMemLeakDetect::start(clog_allocator_f allocator, clog_deallocator_f deallocator) {
+    void CLogMemLeakDetect::start(clog_allocator_f allocator, clog_deallocator_f deallocator)
+    {
         memory.clear();
         logs.clear();
         clog_register_memory_hook_func(allocator, deallocator, clog_allocate_callback, clog_deallocate_callback);
     }
 
-    void CLogMemLeakDetect::end() {
-        for (const auto &[_, info]: memory) {
+    void CLogMemLeakDetect::end()
+    {
+        for (const auto &[_, info] : memory) {
             std::cout << info.info("[ LEAK ]\t")->c_str() << std::endl;
         }
         ASSERT_TRUE(memory.empty());
@@ -72,7 +78,8 @@ namespace CLogTest {
         logs.clear();
     }
 
-    int GenerateRandomNumber(int min, int max) {
+    int GenerateRandomNumber(int min, int max)
+    {
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_int_distribution dis(min, max);

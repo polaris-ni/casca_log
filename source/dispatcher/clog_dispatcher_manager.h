@@ -17,7 +17,7 @@ extern "C" {
  * @param num the num of customized dispatchers
  * @return #clog_res_e
  */
-clog_res_e clog_dispatcher_register(const clog_dispatcher_t* dispatchers, size_t num);
+clog_res_e clog_dispatcher_register(const clog_dispatcher_t *dispatchers, size_t num);
 
 /**
  * setup dispatchers

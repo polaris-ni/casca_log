@@ -44,7 +44,7 @@ struct mem_block {
         uint32_t type : 4; /* refer to #clog_heap_type_e */
         uint32_t reserved : 24; /* reserved */
     };
-    mem_block_t* next; /* next #mem_block_t */
+    mem_block_t *next; /* next #mem_block_t */
     char data[0]; /* memory for use */
 };
 
@@ -53,15 +53,15 @@ typedef struct mem_heap {
     uint32_t state; /* #CLOG_MP_NOT_INIT #CLOG_MP_RUNNING #CLOG_MP_STOP */
     uint32_t used; /* the number of memory that allocated from #mem_heap_t */
     uint32_t allocated; /* the number of memory that allocated from system */
-    mem_block_t* head;
-    mem_block_t* tail;
+    mem_block_t *head;
+    mem_block_t *tail;
 } mem_heap_t;
 
 static mem_heap_t g_mem_heap[CLOG_MP_HEAP_TYPE_MAX] = {0};
 
-static mem_block_t* clog_mp_malloc_block(const size_t size)
+static mem_block_t *clog_mp_malloc_block(const size_t size)
 {
-    mem_block_t* block = clog_malloc(sizeof(mem_block_t) + size);
+    mem_block_t *block = clog_malloc(sizeof(mem_block_t) + size);
     CLOG_RET_IF_NULL(block, NULL);
     block->next = NULL;
     block->reserved = 0;
@@ -69,28 +69,28 @@ static mem_block_t* clog_mp_malloc_block(const size_t size)
     return block;
 }
 
-static void* clog_malloc_system_block(const size_t size)
+static void *clog_malloc_system_block(const size_t size)
 {
-    mem_block_t* block = clog_mp_malloc_block(size);
+    mem_block_t *block = clog_mp_malloc_block(size);
     CLOG_RET_IF_NULL(block, NULL);
     block->where = CLOG_MEM_BLOCK_SYSTEM;
     block->type = CLOG_MP_HEAP_TYPE_MAX;
     return block->data;
 }
 
-static mem_block_t* clog_malloc_heap_block(const clog_heap_type_e type)
+static mem_block_t *clog_malloc_heap_block(const clog_heap_type_e type)
 {
-    mem_block_t* block = clog_mp_malloc_block(CLOG_GET_HEAP_SIZE(type));
+    mem_block_t *block = clog_mp_malloc_block(CLOG_GET_HEAP_SIZE(type));
     CLOG_RET_IF_NULL(block, NULL);
     block->where = CLOG_MEM_BLOCK_HEAP;
     block->type = type;
     return block;
 }
 
-static void clog_mp_pre_allocated(mem_heap_t* heap, const size_t num)
+static void clog_mp_pre_allocated(mem_heap_t *heap, const size_t num)
 {
     for (size_t i = 0; i < num; i++) {
-        mem_block_t* block = clog_malloc_heap_block(heap->type);
+        mem_block_t *block = clog_malloc_heap_block(heap->type);
         CLOG_RET_VOID_IF_NULL(block);
         if (heap->head == NULL) {
             heap->head = block;
@@ -107,7 +107,7 @@ void clog_mp_init(const size_t level)
 {
     const size_t cnt = CLOG_ARRAY_SIZE(g_mem_heap);
     for (size_t i = 0; i < cnt; i++) {
-        mem_heap_t* heap = &g_mem_heap[i];
+        mem_heap_t *heap = &g_mem_heap[i];
         heap->type = i;
         heap->used = 0;
         heap->allocated = 0;
@@ -130,7 +130,7 @@ void clog_mp_init(const size_t level)
     }
 }
 
-static mem_heap_t* clog_get_mem_heap(const size_t size)
+static mem_heap_t *clog_get_mem_heap(const size_t size)
 {
     for (size_t i = 0; i < CLOG_MP_HEAP_TYPE_MAX; i++) {
         if (size <= CLOG_GET_HEAP_SIZE(i)) {
@@ -140,16 +140,16 @@ static mem_heap_t* clog_get_mem_heap(const size_t size)
     return NULL;
 }
 
-void* clog_mp_acquire(const size_t size)
+void *clog_mp_acquire(const size_t size)
 {
     CLOG_RET_IF(size == 0, NULL);
-    mem_heap_t* heap = clog_get_mem_heap(size);
+    mem_heap_t *heap = clog_get_mem_heap(size);
     if (heap == NULL || heap->state != CLOG_MP_HEAP_STATE_RUNNING) {
         return clog_malloc_system_block(size);
     }
 
     if (heap->head == NULL) {
-        mem_block_t* block = clog_malloc_heap_block(heap->type);
+        mem_block_t *block = clog_malloc_heap_block(heap->type);
         CLOG_RET_IF_NULL(block, NULL);
         heap->allocated++;
         heap->used++;
@@ -157,7 +157,7 @@ void* clog_mp_acquire(const size_t size)
     }
 
     heap->used++;
-    mem_block_t* block = heap->head;
+    mem_block_t *block = heap->head;
     heap->head = block->next;
     if (heap->head == NULL) {
         heap->tail = NULL;
@@ -165,15 +165,15 @@ void* clog_mp_acquire(const size_t size)
     return block->data;
 }
 
-void clog_mp_release(void* ptr)
+void clog_mp_release(void *ptr)
 {
     CLOG_RET_VOID_IF_NULL(ptr);
-    mem_block_t* block = (mem_block_t*)((uintptr_t)ptr - offsetof(mem_block_t, data));
+    mem_block_t *block = (mem_block_t *)((uintptr_t)ptr - offsetof(mem_block_t, data));
     if (block->where == CLOG_MEM_BLOCK_SYSTEM) {
         clog_free(block);
         return;
     }
-    mem_heap_t* heap = &g_mem_heap[block->type];
+    mem_heap_t *heap = &g_mem_heap[block->type];
     if (heap->state != CLOG_MP_HEAP_STATE_RUNNING) {
         if (heap->used == 0) {
             heap->state = CLOG_MP_HEAP_STATE_TERMINATED;
@@ -207,10 +207,10 @@ size_t clog_mp_get_allocated_size(void)
     return size;
 }
 
-static void clog_mp_clear(mem_heap_t* heap)
+static void clog_mp_clear(mem_heap_t *heap)
 {
-    mem_block_t* block = heap->head;
-    mem_block_t* next = NULL;
+    mem_block_t *block = heap->head;
+    mem_block_t *next = NULL;
     while (block != NULL) {
         next = block->next;
         clog_free(block);

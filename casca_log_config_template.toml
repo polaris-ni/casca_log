@@ -32,7 +32,7 @@ enabled = false # main is not allowed to output log, if not set, default value i
 enabled = true
 priority = 1
 type = 1 # 0 - prefilter, 1 - postfilter
-keywords = "pw,password,ip\\,,dns" # if a keyword contains ',', use escape char '\\'
+keywords = ["password", "ip"]
 
 [Channels]
 use = 1

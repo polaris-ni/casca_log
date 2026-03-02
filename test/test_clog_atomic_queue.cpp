@@ -11,7 +11,7 @@
 class CLogAtomicQueueTest : public testing::Test
 {
 protected:
-    clog_atomic_queue_t* queue = nullptr;
+    clog_atomic_queue_t *queue = nullptr;
 
     void SetUp() override
     {
@@ -28,7 +28,7 @@ protected:
         CLogTest::CLogMemLeakDetect::end();
     }
 
-    static void CLogAtomicQueueTestNoFree(void* ptr)
+    static void CLogAtomicQueueTestNoFree(void *ptr)
     {
         CLOG_UNUSED_VAR(ptr);
     }
@@ -206,7 +206,7 @@ TEST_F(CLogAtomicQueueTest, MultiProducerSingleConsumer)
             clog_atomic_queue_detach(handle);
         });
 
-    for (auto& producer : producers) {
+    for (auto &producer : producers) {
         producer.join();
     }
     consumer.join();
@@ -270,7 +270,7 @@ TEST_F(CLogAtomicQueueTest, SingleProducerMultiConsumer)
         });
 
     producer.join();
-    for (auto& consumer : consumers) {
+    for (auto &consumer : consumers) {
         consumer.join();
     }
 
@@ -350,10 +350,10 @@ TEST_F(CLogAtomicQueueTest, MultiProducerMultiConsumer)
 
     start_flag.store(true);
 
-    for (auto& producer : producers) {
+    for (auto &producer : producers) {
         producer.join();
     }
-    for (auto& consumer : consumers) {
+    for (auto &consumer : consumers) {
         consumer.join();
     }
 
@@ -410,7 +410,7 @@ TEST_F(CLogAtomicQueueTest, MultiThreadsWithDifferentBiases)
 
     start_flag.store(true);
 
-    for (auto& thread : threads) {
+    for (auto &thread : threads) {
         thread.join();
     }
 
@@ -478,7 +478,7 @@ TEST_F(CLogAtomicQueueTest, HighConcurrencyPerformance)
 
     start_flag.store(true);
 
-    for (auto& thread : threads) {
+    for (auto &thread : threads) {
         thread.join();
     }
 

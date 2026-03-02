@@ -64,23 +64,27 @@ struct clog_recorder {
     void *extra;
 };
 
-static clog_res_e clog_recorder_empty_open(clog_recorder_t *self, const clog_config_group_t *group) {
+static clog_res_e clog_recorder_empty_open(clog_recorder_t *self, const clog_config_group_t *group)
+{
     CLOG_UNUSED_VAR(self);
     return CLOG_SUCCESS;
 }
 
-static clog_res_e clog_recorder_empty_write(clog_recorder_t *self, const clog_item_t *log) {
+static clog_res_e clog_recorder_empty_write(clog_recorder_t *self, const clog_item_t *log)
+{
     CLOG_UNUSED_VAR(self);
     CLOG_UNUSED_VAR(log);
     return CLOG_SUCCESS;
 }
 
-static clog_res_e clog_recorder_empty_flush(clog_recorder_t *self) {
+static clog_res_e clog_recorder_empty_flush(clog_recorder_t *self)
+{
     CLOG_UNUSED_VAR(self);
     return CLOG_SUCCESS;
 }
 
-static void clog_recorder_empty_close(clog_recorder_t *self) {
+static void clog_recorder_empty_close(clog_recorder_t *self)
+{
     CLOG_UNUSED_VAR(self);
 }
 

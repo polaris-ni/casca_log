@@ -18,22 +18,22 @@ namespace CLogTest
 
     class CLogMemoryInfo
     {
-        void* ptr;
+        void *ptr;
         size_t size;
-        const char* file;
+        const char *file;
         int line;
-        const char* func;
+        const char *func;
         std::thread::id tid;
 
     public:
         CLogMemoryInfo() : ptr(nullptr), size(0), file(nullptr), line(0), func(nullptr) {}
 
-        CLogMemoryInfo(void* ptr, size_t size, const char* file, int line, const char* func, std::thread::id tid) :
+        CLogMemoryInfo(void *ptr, size_t size, const char *file, int line, const char *func, std::thread::id tid) :
             ptr(ptr), size(size), file(file), line(line), func(func), tid(tid)
         {
         }
 
-        CLogMemoryInfo(const CLogMemoryInfo& other) = default;
+        CLogMemoryInfo(const CLogMemoryInfo &other) = default;
 
         ~CLogMemoryInfo()
         {
@@ -44,21 +44,21 @@ namespace CLogTest
             func = nullptr;
         }
 
-        [[nodiscard]] std::shared_ptr<std::string> info(const std::string_view& prefix) const;
+        [[nodiscard]] std::shared_ptr<std::string> info(const std::string_view &prefix) const;
     };
 
     class CLogMemLeakDetect
     {
-        static std::unordered_map<void*, CLogMemoryInfo> memory;
+        static std::unordered_map<void *, CLogMemoryInfo> memory;
         static std::mutex mutex;
         static std::vector<std::shared_ptr<std::string>> logs;
 
     public:
-        static void clog_allocate_callback(uintptr_t trace, const char* file, const char* function, int line,
-                                           size_t size, void* ptr);
+        static void clog_allocate_callback(uintptr_t trace, const char *file, const char *function, int line,
+                                           size_t size, void *ptr);
 
-        static void clog_deallocate_callback(uintptr_t trace, const char* file, const char* function, int line,
-                                             void* ptr);
+        static void clog_deallocate_callback(uintptr_t trace, const char *file, const char *function, int line,
+                                             void *ptr);
 
         static void start(clog_allocator_f allocator, clog_deallocator_f deallocator);
 
@@ -85,7 +85,7 @@ namespace CLogTest
 
         void Produce(std::size_t who, T what)
         {
-            auto& map = produced_values.at(who);
+            auto &map = produced_values.at(who);
             auto res = map.find(what);
             if (res == map.end()) {
                 map[what] = 1;
@@ -96,7 +96,7 @@ namespace CLogTest
 
         void Consume(std::size_t who, T what)
         {
-            auto& vec = consumed_values.at(who);
+            auto &vec = consumed_values.at(who);
             vec.push_back(what);
         }
 
@@ -104,7 +104,7 @@ namespace CLogTest
         {
             std::unordered_map<T, std::size_t> total;
             std::size_t num = 0;
-            for (auto& map : produced_values) {
+            for (auto &map : produced_values) {
                 for (auto element : map) {
                     auto res = total.find(element.first);
                     if (res == total.end()) {
@@ -120,7 +120,7 @@ namespace CLogTest
                 ASSERT_EQ(expected_num, num);
             }
 
-            for (auto& vec : consumed_values) {
+            for (auto &vec : consumed_values) {
                 for (T element : vec) {
                     auto res = total.find(element);
                     ASSERT_NE(res, total.end()) << "Value not found: " << element;

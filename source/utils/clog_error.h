@@ -103,14 +103,14 @@ void clog_err_setup(unsigned short num, unsigned short size);
  * @param fmt msg format
  * @param ... vararg
  */
-void clog_err_put(const char* file, int line, const char* fmt, ...);
+void clog_err_put(const char *file, int line, const char *fmt, ...);
 
 /**
  * get raw error message
  * @param num the num of message
  * @return error message
  */
-const char** clog_err_get(unsigned int* num);
+const char **clog_err_get(unsigned int *num);
 
 /**
  * print log to buf
@@ -118,7 +118,7 @@ const char** clog_err_get(unsigned int* num);
  * @param size size of buffer
  * @param separator separator of line, using new line if separator is NULL
  */
-void clog_err_print(char* buf, unsigned int size, const char* separator);
+void clog_err_print(char *buf, unsigned int size, const char *separator);
 
 /**
  * clear error message

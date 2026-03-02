@@ -10,7 +10,7 @@
 #include "test_util.h"
 
 static std::atomic freed_count(0);
-void test_deallocator(void* ptr)
+void test_deallocator(void *ptr)
 {
     freed_count.fetch_add(1);
     clog_free(ptr);
@@ -19,7 +19,7 @@ void test_deallocator(void* ptr)
 class CLogEbrTest : public testing::Test
 {
 protected:
-    clog_ebr_global_t* global = nullptr;
+    clog_ebr_global_t *global = nullptr;
 
     void SetUp() override
     {
@@ -54,7 +54,7 @@ TEST_F(CLogEbrTest, BasicCreateAndState)
 
 TEST_F(CLogEbrTest, SingleThreadRegisterUnregister)
 {
-    clog_ebr_thread_local_t* local;
+    clog_ebr_thread_local_t *local;
     EXPECT_EQ(clog_ebr_register(global, &local), CLOG_SUCCESS);
     EXPECT_NE(local, nullptr);
     EXPECT_EQ(clog_ebr_get_local_state(local), CLOG_EBR_LOCAL_STATE_INACTIVE);
@@ -64,7 +64,7 @@ TEST_F(CLogEbrTest, SingleThreadRegisterUnregister)
 
 TEST_F(CLogEbrTest, SingleThreadEnterExit)
 {
-    clog_ebr_thread_local_t* local;
+    clog_ebr_thread_local_t *local;
     EXPECT_EQ(clog_ebr_register(global, &local), CLOG_SUCCESS);
 
     EXPECT_EQ(clog_ebr_enter(local), CLOG_SUCCESS);
@@ -78,10 +78,10 @@ TEST_F(CLogEbrTest, SingleThreadEnterExit)
 
 TEST_F(CLogEbrTest, SingleThreadDeferRelease)
 {
-    clog_ebr_thread_local_t* local;
+    clog_ebr_thread_local_t *local;
     EXPECT_EQ(clog_ebr_register(global, &local), CLOG_SUCCESS);
 
-    void* ptr = clog_malloc(10);
+    void *ptr = clog_malloc(10);
     EXPECT_EQ(clog_ebr_enter(local), CLOG_SUCCESS);
     EXPECT_NE(ptr, nullptr);
     clog_ebr_exit(local);
@@ -99,14 +99,14 @@ TEST_F(CLogEbrTest, MultiThreadRegister)
 {
     constexpr int num_threads = 10;
     std::vector<std::thread> threads;
-    std::vector<clog_ebr_thread_local_t*> locals(num_threads);
+    std::vector<clog_ebr_thread_local_t *> locals(num_threads);
     threads.reserve(num_threads);
     for (int i = 0; i < num_threads; ++i) {
         threads.emplace_back([this, i, &locals]
                              { EXPECT_EQ(clog_ebr_register(this->global, &locals[i]), CLOG_SUCCESS); });
     }
 
-    for (auto& t : threads) {
+    for (auto &t : threads) {
         t.join();
     }
 
@@ -118,7 +118,7 @@ TEST_F(CLogEbrTest, MultiThreadRegister)
 
 TEST_F(CLogEbrTest, MultiThreadEnterExit)
 {
-    clog_ebr_thread_local_t* local;
+    clog_ebr_thread_local_t *local;
     EXPECT_EQ(clog_ebr_register(global, &local), CLOG_SUCCESS);
 
     constexpr int num_threads = 10;
@@ -140,7 +140,7 @@ TEST_F(CLogEbrTest, MultiThreadEnterExit)
             });
     }
 
-    for (auto& t : threads) {
+    for (auto &t : threads) {
         t.join();
     }
 
@@ -152,7 +152,7 @@ TEST_F(CLogEbrTest, MultiThreadDeferRelease)
 {
     constexpr int num_threads = 10;
     std::vector<std::thread> threads;
-    std::vector<clog_ebr_thread_local_t*> locals(num_threads);
+    std::vector<clog_ebr_thread_local_t *> locals(num_threads);
 
     for (int i = 0; i < num_threads; ++i) {
         EXPECT_EQ(clog_ebr_register(global, &locals[i]), CLOG_SUCCESS);
@@ -166,7 +166,7 @@ TEST_F(CLogEbrTest, MultiThreadDeferRelease)
             {
                 for (int j = 0; j < 100; ++j) {
                     EXPECT_EQ(clog_ebr_enter(locals[i]), CLOG_SUCCESS);
-                    void* ptr = clog_malloc(10);
+                    void *ptr = clog_malloc(10);
                     ASSERT_NE(ptr, nullptr);
                     total_allocated.fetch_add(1);
                     clog_ebr_exit(locals[i]);
@@ -179,7 +179,7 @@ TEST_F(CLogEbrTest, MultiThreadDeferRelease)
             });
     }
 
-    for (auto& t : threads) {
+    for (auto &t : threads) {
         t.join();
     }
 
@@ -192,14 +192,14 @@ TEST_F(CLogEbrTest, MultiThreadDeferRelease)
 
 TEST_F(CLogEbrTest, ErrorHandling)
 {
-    clog_ebr_thread_local_t* local;
+    clog_ebr_thread_local_t *local;
 
     EXPECT_EQ(clog_ebr_register(nullptr, &local), CLOG_INVALID_PARAM);
     EXPECT_EQ(clog_ebr_register(global, nullptr), CLOG_INVALID_PARAM);
 
     EXPECT_EQ(clog_ebr_register(global, &local), CLOG_SUCCESS);
 
-    clog_ebr_thread_local_t* local2;
+    clog_ebr_thread_local_t *local2;
     EXPECT_EQ(clog_ebr_register(global, &local2), CLOG_SUCCESS);
 
     clog_ebr_destroy(global);

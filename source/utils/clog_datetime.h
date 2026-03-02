@@ -33,14 +33,16 @@ clog_datetime_t;
 #pragma pack(pop)
 #endif
 
+#define CLOG_TIMEZONE_OF(offset, hour, minute) offset hour, offset minute
+
 /**
- * get current datatime
+ * get current local datetime
  * @param datetime #clog_datetime_t
  */
 void clog_datetime_now(clog_datetime_t *datetime);
 
 /**
- * get current timestamp
+ * get current local timestamp
  * @return timestamp in ms
  */
 uint64_t clog_timestamp_ms();
@@ -48,9 +50,11 @@ uint64_t clog_timestamp_ms();
 /**
  * get timestamp of datetime
  * @param datetime #clog_datetime_t
+ * @param tz_hour timezone hour part
+ * @param tz_minute timezone minute part
  * @return timestamp in ms
  */
-uint64_t clog_timestamp_of_datetime(const clog_datetime_t *datetime);
+uint64_t clog_timestamp_of_datetime(const clog_datetime_t *datetime, int tz_hour, int tz_minute);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
