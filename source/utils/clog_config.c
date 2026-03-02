@@ -819,9 +819,6 @@ const clog_config_item_t *clog_config_find_item(const clog_config_group_t *root,
 {
     CLOG_RET_IF_NULL(root, NULL);
     CLOG_RET_IF_NULL(key, NULL);
-#if CASCA_LOG_DEBUG == 0
-    CLOG_RET_IF(count > 1024, NULL); /* attention stack overflow */
-#endif
     if (count == 0) { /* find key in root itself */
         const clog_config_item_t *item = root->content;
         while (item != NULL) {
