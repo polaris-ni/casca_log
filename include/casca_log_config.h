@@ -9,15 +9,13 @@
 extern "C" {
 #endif
 
-#define CASCA_LOG_DEBUG 1 /* 0 means debug mode disabled, other values mean enabled */
-
 #define CLOG_HOOK_MODE_DISABLED 0 /* hook is disabled */
 #define CLOG_HOOK_MODE_DEBUG_ONLY 1 /* hook is only enabled when CASCA_LOG_DEBUG defined */
 #define CLOG_HOOK_MODE_ALWAYS 2 /* hook is always enabled */
 #ifndef CASCA_LOG_HOOK_MODE
 #ifdef CASCA_LOG_DEBUG
 #define CASCA_LOG_HOOK_MODE CLOG_HOOK_MODE_DEBUG_ONLY
-#elif
+#else
 #define CASCA_LOG_HOOK_MODE CLOG_HOOK_MODE_DISABLED
 #endif
 #endif
@@ -31,35 +29,6 @@ extern "C" {
 /* if CASCA_LOG_HOOK_MODE is CLOG_HOOK_MODE_DISABLED, not define CASCA_LOG_HOOK_ENABLED */
 #else
 #error "CASCA_LOG_HOOK_MODE is invalid"
-#endif
-
-#define CASCA_LOG_MEM_POOL 1 /* enable mem pool to improve memory allocator performance */
-#ifndef CASCA_LOG_ERR_BUF_SIZE
-#define CASCA_LOG_ERR_BUF_SIZE 256
-#endif
-#ifndef CASCA_LOG_SINGLE_LOG_MAX_SIZE
-#define CASCA_LOG_SINGLE_LOG_MAX_SIZE 256
-#endif
-#ifndef CASCA_LOG_TARGET_RECORDER_MAX_NUM
-#define CASCA_LOG_TARGET_RECORDER_MAX_NUM 8
-#endif
-#ifndef CASCA_LOG_CACHE_LINE_SIZE
-#define CASCA_LOG_CACHE_LINE_SIZE 64
-#endif
-#ifndef CASCA_LOG_PROCESS_NAME_SIZE
-#define CASCA_LOG_PROCESS_NAME_SIZE 64
-#endif
-#ifndef CASCA_LOG_MODULE_NAME_SIZE
-#define CASCA_LOG_MODULE_NAME_SIZE 64
-#endif
-#ifndef CASCA_LOG_RECORDER_SIZE
-#define CASCA_LOG_RECORDER_SIZE 4
-#endif
-#ifndef CASCA_FILENAME_MAX_SIZE
-#define CASCA_FILENAME_MAX_SIZE 64
-#endif
-#ifndef CLOG_FILEPATH_MAX_SIZE
-#define CLOG_FILEPATH_MAX_SIZE 256
 #endif
 
 #ifndef CLOG_FILENAME
