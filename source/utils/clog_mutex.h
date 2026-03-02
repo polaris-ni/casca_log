@@ -37,7 +37,7 @@ typedef pthread_mutex_t clog_mutex_t;
  *      the process-shared attribute being set
  * #CLOG_FAIL otherwise
  */
-clog_res_e clog_mutex_init(clog_mutex_t* mutex);
+clog_res_e clog_mutex_init(clog_mutex_t *mutex);
 
 /**
  * lock mutex
@@ -54,7 +54,7 @@ clog_res_e clog_mutex_init(clog_mutex_t* mutex);
  * #CLOG_ALREADY_EXISTED if the mutex type is PTHREAD_MUTEX_ERRORCHECK and the current thread already owns the mutex
  * #CLOG_FAIL otherwise
  */
-clog_res_e clog_mutex_lock(clog_mutex_t* mutex);
+clog_res_e clog_mutex_lock(clog_mutex_t *mutex);
 
 /**
  * try to lock mutex
@@ -71,7 +71,7 @@ clog_res_e clog_mutex_lock(clog_mutex_t* mutex);
  * #CLOG_BUSY if the mutex could not be acquired because it was already locked
  * #CLOG_FAIL otherwise
  */
-clog_res_e clog_mutex_trylock(clog_mutex_t* mutex);
+clog_res_e clog_mutex_trylock(clog_mutex_t *mutex);
 
 /**
  * unlock mutex
@@ -82,7 +82,7 @@ clog_res_e clog_mutex_trylock(clog_mutex_t* mutex);
  * #CLOG_NOT_PERMITTED if the current thread does not own the mutex
  * #CLOG_FAIL otherwise
  */
-clog_res_e clog_mutex_unlock(clog_mutex_t* mutex);
+clog_res_e clog_mutex_unlock(clog_mutex_t *mutex);
 
 /**
  * destroy mutex
@@ -92,7 +92,7 @@ clog_res_e clog_mutex_unlock(clog_mutex_t* mutex);
  * #CLOG_BUSY if the mutex is currently locked
  * #CLOG_FAIL otherwise
  */
-clog_res_e clog_mutex_destroy(clog_mutex_t* mutex);
+clog_res_e clog_mutex_destroy(clog_mutex_t *mutex);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-const clog_recorder_t* clog_recorder_stdout(void);
+const clog_recorder_t *clog_recorder_stdout(void);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

@@ -27,7 +27,8 @@ clog_res_e clog_formatter_setup(void);
  * @param num number of log character
  * @return #clog_res_e
  */
-clog_res_e clog_format_log(const clog_interpolator_t* interpolator, const clog_item_wrapper_t* wrapper, char* content, size_t size, size_t *num);
+clog_res_e clog_format_log(const clog_interpolator_t *interpolator, const clog_item_wrapper_t *wrapper, char *content,
+                           size_t size, size_t *num);
 
 /**
  * cleanup formatter resource

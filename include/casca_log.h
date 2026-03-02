@@ -39,7 +39,7 @@ typedef struct clog_module {
  * @param config config string, nonnull
  * @return #clog_res_e
  */
-clog_res_e clog_init(const char* process, const char* config);
+clog_res_e clog_init(const char *process, const char *config);
 
 /**
  * setup clog, submodule's setup functions will be called, must be called after clog_init
@@ -47,99 +47,99 @@ clog_res_e clog_init(const char* process, const char* config);
  * @param num number of funcs, 0 if there is no customized setup function
  * @return #clog_res_e
  */
-clog_res_e clog_setup(const clog_setup_f* funcs, size_t num);
+clog_res_e clog_setup(const clog_setup_f *funcs, size_t num);
 
 /**
  * get pared clog_config_group_t from config file
  * @return parsed clog_config_group_t, NULL if clog_init failed or clog_setup called
  */
-const clog_config_group_t* clog_get_config_root(void);
+const clog_config_group_t *clog_get_config_root(void);
 
 /**
  * get current process name
  * @return process, return "NULL" if process is not set
  */
-const char* clog_get_process(void);
+const char *clog_get_process(void);
 
 /**
  * get tag by level
  * @param level log level
  * @return tag
  */
-const char* clog_get_level_tag(clog_level_e level);
+const char *clog_get_level_tag(clog_level_e level);
 
 /**
  * set tag by level
  * @param level log level
  * @param tag tag
  */
-void clog_set_level_tag(clog_level_e level, const char* tag);
+void clog_set_level_tag(clog_level_e level, const char *tag);
 
 /**
  * get interpolator
  * @return interpolator
  */
-clog_interpolator_t* clog_get_interpolator(void);
+clog_interpolator_t *clog_get_interpolator(void);
 
 /**
  * set interpolator to context, attention that interpolator will not be copy in a new memory
  * @param interpolator interpolator
  */
-void clog_set_interpolator(clog_interpolator_t* interpolator);
+void clog_set_interpolator(clog_interpolator_t *interpolator);
 
 /**
  * get pre-filters
  * @param type #clog_filter_type_e
  * @return #clog_filter_t, NULL if there is no filter
  */
-const clog_filter_t* clog_get_filters(clog_filter_type_e type);
+const clog_filter_t *clog_get_filters(clog_filter_type_e type);
 
 /**
  * set prefilter and postfilter
  * @param pre prefilter chain
  * @param post postfilter chain
  */
-void clog_set_filters(const clog_filter_t* pre, const clog_filter_t* post);
+void clog_set_filters(const clog_filter_t *pre, const clog_filter_t *post);
 
 /**
  * get module config
  * @param module module name
  * @return #clog_module_t, NULL if module is not existed or not enabled
  */
-const clog_module_t* clog_get_module_info(const char* module);
+const clog_module_t *clog_get_module_info(const char *module);
 
 #ifdef CASCA_LOG_MEM_POOL
 /**
  * get log buffer pool
  * @return #clog_buffer_pool_t
  */
-clog_buffer_pool_t* clog_get_buffer_pool(void);
+clog_buffer_pool_t *clog_get_buffer_pool(void);
 #endif
 
 /**
  * get log item memory
  * @return return buffered item if CASCA_LOG_MEM_POOL if enabled, item malloced from heap otherwise
  */
-clog_item_t* clog_acquire_log_item(void);
+clog_item_t *clog_acquire_log_item(void);
 
 /**
  * release log item acquired from #clog_acquire_log_item
  * @param item log item
  */
-void clog_release_log_item(clog_item_t* item);
+void clog_release_log_item(clog_item_t *item);
 
 /**
  * get current using channel
  * @return clog_channel_t
  */
-clog_channel_t* clog_get_channel(void);
+clog_channel_t *clog_get_channel(void);
 
 /**
  * destroy clog
  * @param funcs customized cleanup functions, NULL if there is no customized cleanup function
  * @param num number of funcs, 0 if there is no customized cleanup function
  */
-void clog_destroy(const clog_cleanup_f* funcs, size_t num);
+void clog_destroy(const clog_cleanup_f *funcs, size_t num);
 
 /**
  * record a log
@@ -153,8 +153,8 @@ void clog_destroy(const clog_cleanup_f* funcs, size_t num);
  * @param ... var args
  * @return #clog_res_e
  */
-clog_res_e clog_log(const char* module, uint32_t recorder, const char* file, const char* function, int line,
-                    clog_level_e level, const char* fmt, ...);
+clog_res_e clog_log(const char *module, uint32_t recorder, const char *file, const char *function, int line,
+                    clog_level_e level, const char *fmt, ...);
 
 /**
  * record a log using recoders that configured
@@ -167,8 +167,8 @@ clog_res_e clog_log(const char* module, uint32_t recorder, const char* file, con
  * @param ... var args
  * @return #clog_res_e
  */
-clog_res_e clog_module_log(const char* module, const char* file, const char* function, int line, clog_level_e level,
-                           const char* fmt, ...);
+clog_res_e clog_module_log(const char *module, const char *file, const char *function, int line, clog_level_e level,
+                           const char *fmt, ...);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

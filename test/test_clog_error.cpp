@@ -25,7 +25,7 @@ protected:
 TEST_F(CLogErrorTest, Initialization)
 {
     unsigned int num = 0;
-    const char** errors = clog_err_get(&num);
+    const char **errors = clog_err_get(&num);
 
     EXPECT_EQ(errors, nullptr);
     EXPECT_EQ(num, 0);
@@ -36,7 +36,7 @@ TEST_F(CLogErrorTest, PutSingleError)
     clog_err_put(__FILE__, __LINE__, "Test error message");
 
     unsigned int num = 0;
-    const char** errors = clog_err_get(&num);
+    const char **errors = clog_err_get(&num);
 
     ASSERT_NE(errors, nullptr);
     EXPECT_EQ(num, 1);
@@ -49,7 +49,7 @@ TEST_F(CLogErrorTest, PutMultipleErrors)
     }
 
     unsigned int num = 0;
-    const char** errors = clog_err_get(&num);
+    const char **errors = clog_err_get(&num);
 
     ASSERT_NE(errors, nullptr);
     EXPECT_EQ(num, 5);
@@ -62,7 +62,7 @@ TEST_F(CLogErrorTest, CircularOverwrite)
     }
 
     unsigned int num = 0;
-    const char** errors = clog_err_get(&num);
+    const char **errors = clog_err_get(&num);
 
     ASSERT_NE(errors, nullptr);
     EXPECT_EQ(num, 10);
@@ -79,7 +79,7 @@ TEST_F(CLogErrorTest, ClearErrors)
     clog_err_clear();
 
     num = 0;
-    const char** errors = clog_err_get(&num);
+    const char **errors = clog_err_get(&num);
     EXPECT_EQ(errors, nullptr);
     EXPECT_EQ(num, 0);
 }
@@ -103,7 +103,7 @@ TEST(CLogErrorBoundaryTest, ZeroSizeSetup)
     clog_err_setup(10, 0);
 
     unsigned int num = 0;
-    const char** errors = clog_err_get(&num);
+    const char **errors = clog_err_get(&num);
 
     EXPECT_EQ(errors, nullptr);
     EXPECT_EQ(num, 0);

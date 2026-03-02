@@ -28,7 +28,7 @@ clog_res_e clog_channel_register_provider(clog_channel_id_t id, clog_channel_pro
  * @param channel channel
  * @return #CLOG_SUCCESS if success, #CLOG_TARGET_NOT_FOUND if channel not found, #CLOG_INVALID_PARAM if channel is NULL
  */
-clog_res_e clog_channel_get(clog_channel_id_t id, clog_channel_t* channel);
+clog_res_e clog_channel_get(clog_channel_id_t id, clog_channel_t *channel);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

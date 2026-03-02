@@ -31,7 +31,7 @@ typedef pthread_t clog_thread_id_t;
 /**
  * work function
  */
-typedef void (*clog_thread_routine_f)(void* arg, size_t size);
+typedef void (*clog_thread_routine_f)(void *arg, size_t size);
 
 typedef struct clog_thread_attr clog_thread_attr_t;
 
@@ -40,13 +40,13 @@ typedef struct clog_thread_attr clog_thread_attr_t;
  * @param attr #clog_thread_attr_t
  * @return #clog_res_e
  */
-clog_res_e clog_thread_attr_init(clog_thread_attr_t* attr);
+clog_res_e clog_thread_attr_init(clog_thread_attr_t *attr);
 
 /**
  * destroy thread attribute
  * @param attr #clog_thread_attr_t
  */
-void clog_thread_attr_destroy(clog_thread_attr_t* attr);
+void clog_thread_attr_destroy(clog_thread_attr_t *attr);
 
 /**
  * set thread stack size
@@ -54,7 +54,7 @@ void clog_thread_attr_destroy(clog_thread_attr_t* attr);
  * @param stack_size size of stack
  * @return #clog_res_e
  */
-clog_res_e clog_thread_attr_set_stack_size(clog_thread_attr_t* attr, size_t stack_size);
+clog_res_e clog_thread_attr_set_stack_size(clog_thread_attr_t *attr, size_t stack_size);
 
 /**
  * get current thread id
@@ -71,8 +71,8 @@ clog_thread_id_t clog_thread_self(void);
  * @param size size of args
  * @return #clog_res_e
  */
-clog_res_e clog_thread_create(clog_thread_t* thread, const clog_thread_attr_t* attr, clog_thread_routine_f routine,
-                              void* arg, size_t size);
+clog_res_e clog_thread_create(clog_thread_t *thread, const clog_thread_attr_t *attr, clog_thread_routine_f routine,
+                              void *arg, size_t size);
 
 /**
  * wait thread shutdown
@@ -80,7 +80,7 @@ clog_res_e clog_thread_create(clog_thread_t* thread, const clog_thread_attr_t* a
  * @param ret_val return value
  * @return #clog_res_e
  */
-clog_res_e clog_thread_join(clog_thread_t thread, void** ret_val);
+clog_res_e clog_thread_join(clog_thread_t thread, void **ret_val);
 
 /**
  * detach thread
@@ -93,7 +93,7 @@ clog_res_e clog_thread_detach(clog_thread_t thread);
  * exit thread
  * @param ret_val return value
  */
-void clog_thread_exit(void* ret_val);
+void clog_thread_exit(void *ret_val);
 
 /**
  * yield thread

@@ -406,7 +406,7 @@ static void clog_item_init_datetime(clog_item_t *item)
     item->minute = time.minute;
     item->second = time.second;
     item->millisecond = time.millisecond;
-    item->timestamp = clog_timestamp_of_datetime(&time);
+    item->timestamp = clog_timestamp_of_datetime(&time, CLOG_TIMEZONE_OF(+, 8, 0));
 }
 
 static bool clog_module_check(const clog_module_t *info, clog_level_e level, uint32_t recorder)

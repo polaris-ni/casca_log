@@ -15,7 +15,8 @@ static size_t g_customized_dispatcher_num = 0;
 
 static clog_dispatcher_t g_dispatcher = {CLOG_DISPATCHER_ID_INVALID, NULL, NULL, NULL, NULL};
 
-clog_res_e clog_dispatcher_register(const clog_dispatcher_t *dispatchers, size_t num) {
+clog_res_e clog_dispatcher_register(const clog_dispatcher_t *dispatchers, size_t num)
+{
     CLOG_RET_IF_NULL_X(dispatchers, CLOG_INVALID_PARAM, "customized dispatcher is NULL");
     CLOG_RET_IF_X(num == 0, CLOG_INVALID_PARAM, "customized dispatcher num is 0");
     const size_t size = sizeof(clog_dispatcher_t) * num;
@@ -23,14 +24,15 @@ clog_res_e clog_dispatcher_register(const clog_dispatcher_t *dispatchers, size_t
     CLOG_RET_IF_NULL_X(g_customized_dispatchers, CLOG_NO_MEMORY, "malloc g_customized_dispatchers failed");
     for (size_t i = 0; i < num; ++i) {
         CLOG_IGNORE_RES(clog_memcpy(&g_customized_dispatchers[i], sizeof(clog_dispatcher_t), &dispatchers[i],
-            sizeof(clog_dispatcher_t)));
+                                    sizeof(clog_dispatcher_t)));
         g_customized_dispatchers[i].extra = NULL;
     }
     g_customized_dispatcher_num = num;
     return CLOG_SUCCESS;
 }
 
-static clog_res_e clog_dispatcher_get_origin_by_id(const char *name, uint32_t id, clog_dispatcher_t *dispatcher) {
+static clog_res_e clog_dispatcher_get_origin_by_id(const char *name, uint32_t id, clog_dispatcher_t *dispatcher)
+{
     CLOG_RET_IF_X(id == 0, CLOG_INVALID_PARAM, "the id of dispatcher %s is invalid", name);
     if (id > CLOG_DISPATCHER_ID_RESERVED) {
         CLOG_RET_IF_NULL_X(g_customized_dispatchers, CLOG_TARGET_NOT_FOUND,
@@ -57,7 +59,8 @@ static clog_res_e clog_dispatcher_get_origin_by_id(const char *name, uint32_t id
     return CLOG_SUCCESS;
 }
 
-clog_res_e clog_dispatcher_setup(void) {
+clog_res_e clog_dispatcher_setup(void)
+{
     const clog_config_group_t *root = clog_get_config_root();
     CLOG_RET_IF_NULL_X(root, CLOG_INVALID_PARAM, "root config is NULL");
     const char *names[] = {CLOG_STR_DISPATCHERS};
@@ -94,13 +97,15 @@ clog_res_e clog_dispatcher_setup(void) {
     return CLOG_NOT_SUPPORTED;
 }
 
-void clog_dispatcher_notify(clog_dispatcher_event_e event) {
+void clog_dispatcher_notify(clog_dispatcher_event_e event)
+{
     if (g_dispatcher.notify != NULL) {
         g_dispatcher.notify(&g_dispatcher, event);
     }
 }
 
-void clog_dispatcher_cleanup(void) {
+void clog_dispatcher_cleanup(void)
+{
     CLOG_SAFE_FREE(g_customized_dispatchers);
     g_customized_dispatcher_num = 0;
     clog_dispatcher_notify(CLOG_DISPATCHER_EVENT_END);

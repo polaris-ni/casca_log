@@ -18,12 +18,12 @@ extern "C" {
 
 typedef struct clog_channel clog_channel_t;
 typedef uint32_t clog_channel_id_t;
-typedef void(*clog_channel_provider_f)(clog_channel_t* channel);
+typedef void (*clog_channel_provider_f)(clog_channel_t *channel);
 
-typedef clog_res_e (*clog_channel_open_f)(clog_channel_t* self, const clog_config_group_t* config);
-typedef clog_res_e (*clog_channel_write_f)(clog_channel_t* self, const clog_item_t* item);
-typedef clog_res_e (*clog_channel_read_f)(clog_channel_t* self, const clog_item_t** item);
-typedef void (*clog_channel_close_f)(clog_channel_t* self);
+typedef clog_res_e (*clog_channel_open_f)(clog_channel_t *self, const clog_config_group_t *config);
+typedef clog_res_e (*clog_channel_write_f)(clog_channel_t *self, const clog_item_t *item);
+typedef clog_res_e (*clog_channel_read_f)(clog_channel_t *self, const clog_item_t **item);
+typedef void (*clog_channel_close_f)(clog_channel_t *self);
 
 struct clog_channel {
     clog_channel_id_t id;
@@ -31,7 +31,7 @@ struct clog_channel {
     clog_channel_write_f write;
     clog_channel_read_f read;
     clog_channel_close_f close;
-    void* param;
+    void *param;
 };
 
 #if defined(__cplusplus) || defined(c_plusplus)

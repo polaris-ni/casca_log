@@ -14,7 +14,8 @@ static clog_hashmap_t *g_recorders = NULL;
 
 static clog_recorder_provider_f g_customized_provider = NULL;
 
-clog_res_e clog_recoder_write(uint32_t id, const clog_item_t *item) {
+clog_res_e clog_recoder_write(uint32_t id, const clog_item_t *item)
+{
     CLOG_RET_IF_NULL(item, CLOG_INVALID_PARAM);
     clog_recorder_t *recorder = clog_hashmap_get(g_recorders, &id);
     CLOG_RET_IF_NULL(recorder, CLOG_TARGET_NOT_FOUND);
@@ -33,11 +34,13 @@ clog_res_e clog_recoder_write(uint32_t id, const clog_item_t *item) {
     return CLOG_SUCCESS;
 }
 
-void clog_recorder_register_provider(clog_recorder_provider_f provider) {
+void clog_recorder_register_provider(clog_recorder_provider_f provider)
+{
     g_customized_provider = provider;
 }
 
-static void *clog_recoder_dup(const void *ptr) {
+static void *clog_recoder_dup(const void *ptr)
+{
     clog_recorder_t *tmp = clog_malloc(sizeof(clog_recorder_t));
     CLOG_RET_IF_NULL(tmp, NULL);
     const clog_recorder_t *src = ptr;
@@ -50,13 +53,15 @@ static void *clog_recoder_dup(const void *ptr) {
     return tmp;
 }
 
-static void clog_recoder_free(void *ptr) {
+static void clog_recoder_free(void *ptr)
+{
     clog_recorder_t *tmp = ptr;
     tmp->close(tmp);
     clog_free(tmp);
 }
 
-static clog_res_e clog_recorder_get_origin_by_id(const char *name, uint32_t id, clog_recorder_t *recorder) {
+static clog_res_e clog_recorder_get_origin_by_id(const char *name, uint32_t id, clog_recorder_t *recorder)
+{
     CLOG_RET_IF_X(id == CLOG_RECORDER_ID_INVALID, CLOG_INVALID_PARAM, "the id of recoder %s is invalid", name);
     if (id < CLOG_RECORDER_ID_RESERVED) {
         uint32_t ids[] = {CLOG_RECORDER_ID_STDOUT, CLOG_RECORDER_ID_FILE};
@@ -79,9 +84,10 @@ static clog_res_e clog_recorder_get_origin_by_id(const char *name, uint32_t id, 
     return ret;
 }
 
-clog_res_e clog_recorder_setup(void) {
-    g_recorders = clog_hashmap_create(sizeof(uint32_t), 0, NULL, NULL,
-                                      clog_recoder_dup, clog_recoder_free, NULL, NULL, 0);
+clog_res_e clog_recorder_setup(void)
+{
+    g_recorders =
+        clog_hashmap_create(sizeof(uint32_t), 0, NULL, NULL, clog_recoder_dup, clog_recoder_free, NULL, NULL, 0);
     CLOG_RET_IF_NULL_X(g_recorders, CLOG_NO_MEMORY, "clog_hashmap_create failed");
     const char *groups[] = {CLOG_STR_RECORDERS};
     const clog_config_group_t *group = clog_config_find_group(clog_get_config_root(), groups, CLOG_ARRAY_SIZE(groups));
@@ -113,7 +119,8 @@ clog_res_e clog_recorder_setup(void) {
     return CLOG_SUCCESS;
 }
 
-void clog_recorder_cleanup(void) {
+void clog_recorder_cleanup(void)
+{
     g_customized_provider = NULL;
     clog_hashmap_destroy(&g_recorders);
 }

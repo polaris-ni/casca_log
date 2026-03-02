@@ -12,7 +12,7 @@ typedef uint64_t clog_hashmap_hash_t;
 typedef uint32_t clog_hashmap_hash_t;
 #endif
 
-typedef clog_hashmap_hash_t (*clog_hashmap_hash_f)(const clog_hashmap_t* map, const void* key);
+typedef clog_hashmap_hash_t (*clog_hashmap_hash_f)(const clog_hashmap_t *map, const void *key);
 
 struct clog_hashmap {
     size_t key_size; /* if size of key is fixed, #key_size indicates the exact size, will be set to 0 otherwise */
@@ -20,7 +20,7 @@ struct clog_hashmap {
     size_t data_size; /* the num of key-value */
     size_t buckets_size; /* the num of buckets */
     uint32_t seed; /* seed used in hash func */
-    clog_hashmap_entry_t* buckets; /* buckets, first key-value entry will be stored in buckets[i].next  */
+    clog_hashmap_entry_t *buckets; /* buckets, first key-value entry will be stored in buckets[i].next  */
     clog_hashmap_hash_f hash; /* hash func */
     clog_hashmap_cmp_f cmp; /* key compare func */
     clog_hashmap_dup_f key_dup; /* key duplicated func */
@@ -30,7 +30,7 @@ struct clog_hashmap {
     clog_hashmap_size_f size_of; /* calculate the size of key, if #size_of is NULL, #key_size will be used instead */
 };
 
-static void* clog_hashmap_dup_key(const clog_hashmap_t* map, const void* key)
+static void *clog_hashmap_dup_key(const clog_hashmap_t *map, const void *key)
 {
     if (map->key_dup != NULL) {
         return map->key_dup(key);
@@ -38,7 +38,7 @@ static void* clog_hashmap_dup_key(const clog_hashmap_t* map, const void* key)
     if (map->key_size == 0) {
         return NULL;
     }
-    void* tmp = clog_malloc(map->key_size);
+    void *tmp = clog_malloc(map->key_size);
     CLOG_RET_IF_NULL(tmp, NULL);
     const clog_res_e ret = clog_memcpy(tmp, map->key_size, key, map->key_size);
     if (ret != CLOG_SUCCESS) {
@@ -48,7 +48,7 @@ static void* clog_hashmap_dup_key(const clog_hashmap_t* map, const void* key)
     return tmp;
 }
 
-static void* clog_hashmap_dup_value(const clog_hashmap_t* map, const void* value)
+static void *clog_hashmap_dup_value(const clog_hashmap_t *map, const void *value)
 {
     if (map->value_dup != NULL) {
         return map->value_dup(value);
@@ -56,7 +56,7 @@ static void* clog_hashmap_dup_value(const clog_hashmap_t* map, const void* value
     if (map->value_size == 0) {
         return NULL;
     }
-    void* tmp = clog_malloc(map->value_size);
+    void *tmp = clog_malloc(map->value_size);
     CLOG_RET_IF_NULL(tmp, NULL);
     const clog_res_e ret = clog_memcpy(tmp, map->value_size, value, map->value_size);
     if (ret != CLOG_SUCCESS) {
@@ -66,7 +66,7 @@ static void* clog_hashmap_dup_value(const clog_hashmap_t* map, const void* value
     return tmp;
 }
 
-static void clog_hashmap_free_key(const clog_hashmap_t* map, void* key)
+static void clog_hashmap_free_key(const clog_hashmap_t *map, void *key)
 {
     if (map->key_free != NULL) {
         map->key_free(key);
@@ -75,7 +75,7 @@ static void clog_hashmap_free_key(const clog_hashmap_t* map, void* key)
     }
 }
 
-static void clog_hashmap_free_value(const clog_hashmap_t* map, void* value)
+static void clog_hashmap_free_value(const clog_hashmap_t *map, void *value)
 {
     if (map->value_free != NULL) {
         map->value_free(value);
@@ -84,7 +84,7 @@ static void clog_hashmap_free_value(const clog_hashmap_t* map, void* value)
     }
 }
 
-static bool clog_hashmap_cmp(const clog_hashmap_t* map, const void* key1, const void* key2)
+static bool clog_hashmap_cmp(const clog_hashmap_t *map, const void *key1, const void *key2)
 {
     if (map->cmp != NULL) {
         return map->cmp(key1, key2);
@@ -97,7 +97,7 @@ static bool clog_hashmap_cmp(const clog_hashmap_t* map, const void* key1, const 
     return memcmp(key1, key2, map->key_size) == 0;
 }
 
-static size_t clog_hashmap_size_of_key(const clog_hashmap_t* map, const void* key)
+static size_t clog_hashmap_size_of_key(const clog_hashmap_t *map, const void *key)
 {
     if (map->size_of != NULL) {
         return map->size_of(key);
@@ -106,21 +106,21 @@ static size_t clog_hashmap_size_of_key(const clog_hashmap_t* map, const void* ke
     return map->key_size;
 }
 
-static uint32_t clog_hashmap_get_index(const clog_hashmap_t* map, const void* key)
+static uint32_t clog_hashmap_get_index(const clog_hashmap_t *map, const void *key)
 {
     return (uint32_t)(map->hash(map, key) & (map->buckets_size - 1));
 }
 
-static clog_hashmap_hash_t murmur3_32(const clog_hashmap_t* map, const void* key)
+static clog_hashmap_hash_t murmur3_32(const clog_hashmap_t *map, const void *key)
 {
-    const uint8_t* data = key;
+    const uint8_t *data = key;
     const size_t len = clog_hashmap_size_of_key(map, key);
     const size_t num = len / 4;
     uint32_t h1 = map->seed;
     const uint32_t c1 = 0xcc9e2d51;
     const uint32_t c2 = 0x1b873593;
 
-    const uint32_t* blocks = (const uint32_t*)(data + num * 4);
+    const uint32_t *blocks = (const uint32_t *)(data + num * 4);
     for (size_t i = 0; i < num; ++i) {
         uint32_t k1 = blocks[-(int)i - 1]; /* little-endian read */
         k1 *= c1;
@@ -131,7 +131,7 @@ static clog_hashmap_hash_t murmur3_32(const clog_hashmap_t* map, const void* key
         h1 = h1 * 5 + 0xe6546b64;
     }
 
-    const uint8_t* tail = data + num * 4;
+    const uint8_t *tail = data + num * 4;
     uint32_t k1 = 0;
     switch (len & 3) {
         case 3:
@@ -158,21 +158,21 @@ static clog_hashmap_hash_t murmur3_32(const clog_hashmap_t* map, const void* key
     return h1;
 }
 
-static clog_hashmap_entry_t* clog_hashmap_create_empty_buckets(const size_t size)
+static clog_hashmap_entry_t *clog_hashmap_create_empty_buckets(const size_t size)
 {
     const size_t len = size * sizeof(clog_hashmap_entry_t);
-    clog_hashmap_entry_t* res = clog_malloc(len);
+    clog_hashmap_entry_t *res = clog_malloc(len);
     CLOG_RET_IF_NULL(res, NULL);
     CLOG_IGNORE_RES(clog_memset(res, len, 0, len));
     return res;
 }
 
-clog_hashmap_t* clog_hashmap_create(const size_t key_size, const size_t value_size, const clog_hashmap_dup_f key_dup,
+clog_hashmap_t *clog_hashmap_create(const size_t key_size, const size_t value_size, const clog_hashmap_dup_f key_dup,
                                     const clog_hashmap_free_f key_free, const clog_hashmap_dup_f value_dup,
                                     const clog_hashmap_free_f value_free, const clog_hashmap_cmp_f cmp,
                                     const clog_hashmap_size_f size_of_key, const uint32_t seed)
 {
-    clog_hashmap_t* map = clog_malloc(sizeof(clog_hashmap_t));
+    clog_hashmap_t *map = clog_malloc(sizeof(clog_hashmap_t));
     CLOG_RET_IF_NULL(map, NULL);
     map->key_size = key_size;
     map->value_size = value_size;
@@ -198,19 +198,19 @@ clog_hashmap_t* clog_hashmap_create(const size_t key_size, const size_t value_si
     return map;
 }
 
-static void clog_hashmap_free_entry(const clog_hashmap_t* map, clog_hashmap_entry_t* entry)
+static void clog_hashmap_free_entry(const clog_hashmap_t *map, clog_hashmap_entry_t *entry)
 {
     clog_hashmap_free_key(map, entry->key);
     clog_hashmap_free_value(map, entry->value);
     clog_free(entry);
 }
 
-static void clog_hashmap_free_buckets(const clog_hashmap_t* map, clog_hashmap_entry_t* buckets, const size_t size)
+static void clog_hashmap_free_buckets(const clog_hashmap_t *map, clog_hashmap_entry_t *buckets, const size_t size)
 {
     for (size_t i = 0; i < size; ++i) {
-        clog_hashmap_entry_t* entry = buckets[i].next;
+        clog_hashmap_entry_t *entry = buckets[i].next;
         while (entry != NULL) {
-            clog_hashmap_entry_t* next = entry->next;
+            clog_hashmap_entry_t *next = entry->next;
             clog_hashmap_free_entry(map, entry);
             entry = next;
         }
@@ -218,10 +218,10 @@ static void clog_hashmap_free_buckets(const clog_hashmap_t* map, clog_hashmap_en
     clog_free(buckets);
 }
 
-static clog_res_e clog_hashmap_put_internal(clog_hashmap_t* map, void* key, void* value, bool* is_replace)
+static clog_res_e clog_hashmap_put_internal(clog_hashmap_t *map, void *key, void *value, bool *is_replace)
 {
-    clog_hashmap_entry_t* bucket = &map->buckets[clog_hashmap_get_index(map, key)];
-    clog_hashmap_entry_t* entry = bucket->next;
+    clog_hashmap_entry_t *bucket = &map->buckets[clog_hashmap_get_index(map, key)];
+    clog_hashmap_entry_t *entry = bucket->next;
     while (entry != NULL) {
         if (clog_hashmap_cmp(map, key, entry->key)) {
             /* replace and free old value */
@@ -234,7 +234,7 @@ static clog_res_e clog_hashmap_put_internal(clog_hashmap_t* map, void* key, void
     }
 
     /* insert new entry */
-    clog_hashmap_entry_t* new_entry = clog_malloc(sizeof(clog_hashmap_entry_t));
+    clog_hashmap_entry_t *new_entry = clog_malloc(sizeof(clog_hashmap_entry_t));
     CLOG_RET_IF_NULL(new_entry, CLOG_NO_MEMORY);
     new_entry->key = key;
     new_entry->value = value;
@@ -248,13 +248,13 @@ static clog_res_e clog_hashmap_put_internal(clog_hashmap_t* map, void* key, void
     return CLOG_SUCCESS;
 }
 
-static clog_res_e clog_hashmap_resize(clog_hashmap_t* map, const size_t new_size)
+static clog_res_e clog_hashmap_resize(clog_hashmap_t *map, const size_t new_size)
 {
-    clog_hashmap_entry_t* new_entries = clog_hashmap_create_empty_buckets(new_size);
+    clog_hashmap_entry_t *new_entries = clog_hashmap_create_empty_buckets(new_size);
     CLOG_RET_IF_NULL(new_entries, CLOG_NO_MEMORY);
 
     /* store old bucket, rollback if resize failed */
-    clog_hashmap_entry_t* old_entries = map->buckets;
+    clog_hashmap_entry_t *old_entries = map->buckets;
     const size_t old_size = map->buckets_size;
     const size_t old_data_size = map->data_size;
     /* setup new buckets */
@@ -263,7 +263,7 @@ static clog_res_e clog_hashmap_resize(clog_hashmap_t* map, const size_t new_size
     map->data_size = 0;
     /* put old buckets into new buckets */
     for (size_t i = 0; i < old_size; ++i) {
-        clog_hashmap_entry_t* entry = old_entries[i].next;
+        clog_hashmap_entry_t *entry = old_entries[i].next;
         if (entry == NULL) {
             continue;
         }
@@ -280,9 +280,9 @@ static clog_res_e clog_hashmap_resize(clog_hashmap_t* map, const size_t new_size
                 map->buckets_size = old_size;
                 map->data_size = old_data_size;
                 for (size_t j = 0; j < new_size; ++j) {
-                    clog_hashmap_entry_t* tmp = new_entries[j].next;
+                    clog_hashmap_entry_t *tmp = new_entries[j].next;
                     while (tmp != NULL) {
-                        clog_hashmap_entry_t* next = tmp->next;
+                        clog_hashmap_entry_t *next = tmp->next;
                         clog_free(tmp);
                         tmp = next;
                     }
@@ -296,9 +296,9 @@ static clog_res_e clog_hashmap_resize(clog_hashmap_t* map, const size_t new_size
 
     /* the entries of old buckets have been moved to new buckets, so just free old_entries */
     for (size_t j = 0; j < old_size; ++j) {
-        clog_hashmap_entry_t* tmp = old_entries[j].next;
+        clog_hashmap_entry_t *tmp = old_entries[j].next;
         while (tmp != NULL) {
-            clog_hashmap_entry_t* next = tmp->next;
+            clog_hashmap_entry_t *next = tmp->next;
             clog_free(tmp);
             tmp = next;
         }
@@ -307,14 +307,14 @@ static clog_res_e clog_hashmap_resize(clog_hashmap_t* map, const size_t new_size
     return CLOG_SUCCESS;
 }
 
-clog_res_e clog_hashmap_put(clog_hashmap_t* map, const void* key, const void* value)
+clog_res_e clog_hashmap_put(clog_hashmap_t *map, const void *key, const void *value)
 {
     CLOG_RET_IF_NULL(map, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(key, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(value, CLOG_INVALID_PARAM);
-    void* new_key = clog_hashmap_dup_key(map, key);
+    void *new_key = clog_hashmap_dup_key(map, key);
     CLOG_RET_IF_NULL(new_key, CLOG_NO_MEMORY);
-    void* new_value = clog_hashmap_dup_value(map, value);
+    void *new_value = clog_hashmap_dup_value(map, value);
     if (new_value == NULL) {
         clog_hashmap_free_key(map, new_key);
         return CLOG_NO_MEMORY;
@@ -338,14 +338,14 @@ clog_res_e clog_hashmap_put(clog_hashmap_t* map, const void* key, const void* va
     return ret;
 }
 
-void* clog_hashmap_get(const clog_hashmap_t* map, const void* key)
+void *clog_hashmap_get(const clog_hashmap_t *map, const void *key)
 {
     CLOG_RET_IF_NULL(map, NULL);
     CLOG_RET_IF_NULL(key, NULL);
 
-    clog_hashmap_entry_t* bucket = &map->buckets[clog_hashmap_get_index(map, key)];
-    clog_hashmap_entry_t* last = bucket;
-    clog_hashmap_entry_t* entry = last->next;
+    clog_hashmap_entry_t *bucket = &map->buckets[clog_hashmap_get_index(map, key)];
+    clog_hashmap_entry_t *last = bucket;
+    clog_hashmap_entry_t *entry = last->next;
     while ((entry != NULL) && (!clog_hashmap_cmp(map, entry->key, key))) {
         last = entry;
         entry = entry->next;
@@ -359,20 +359,20 @@ void* clog_hashmap_get(const clog_hashmap_t* map, const void* key)
     return entry->value;
 }
 
-void* clog_hashmap_take(clog_hashmap_t* map, const void* key)
+void *clog_hashmap_take(clog_hashmap_t *map, const void *key)
 {
     CLOG_RET_IF_NULL(map, NULL);
     CLOG_RET_IF_NULL(key, NULL);
 
-    clog_hashmap_entry_t* bucket = &map->buckets[clog_hashmap_get_index(map, key)];
-    clog_hashmap_entry_t* last = bucket;
-    clog_hashmap_entry_t* entry = last->next;
+    clog_hashmap_entry_t *bucket = &map->buckets[clog_hashmap_get_index(map, key)];
+    clog_hashmap_entry_t *last = bucket;
+    clog_hashmap_entry_t *entry = last->next;
     while ((entry != NULL) && (!clog_hashmap_cmp(map, entry->key, key))) {
         last = entry;
         entry = entry->next;
     }
     CLOG_RET_IF_NULL(entry, NULL);
-    void* value = entry->value;
+    void *value = entry->value;
     last->next = entry->next; /* remove this entry */
     clog_hashmap_free_key(map, entry->key);
     clog_free(entry);
@@ -380,20 +380,20 @@ void* clog_hashmap_take(clog_hashmap_t* map, const void* key)
     return value;
 }
 
-void* clog_hashmap_get_dup(const clog_hashmap_t* map, const void* key)
+void *clog_hashmap_get_dup(const clog_hashmap_t *map, const void *key)
 {
-    const void* value = clog_hashmap_get(map, key);
+    const void *value = clog_hashmap_get(map, key);
     CLOG_RET_IF_NULL(value, NULL);
     return clog_hashmap_dup_value(map, value);
 }
 
-bool clog_hashmap_remove(clog_hashmap_t* map, const void* key)
+bool clog_hashmap_remove(clog_hashmap_t *map, const void *key)
 {
     if (map == NULL || map->data_size == 0) {
         return false;
     }
-    clog_hashmap_entry_t* last = &map->buckets[clog_hashmap_get_index(map, key)];
-    clog_hashmap_entry_t* entry = last->next;
+    clog_hashmap_entry_t *last = &map->buckets[clog_hashmap_get_index(map, key)];
+    clog_hashmap_entry_t *entry = last->next;
     CLOG_RET_IF_NULL(entry, false);
 
     while (entry != NULL && !clog_hashmap_cmp(map, entry->key, key)) {
@@ -415,13 +415,13 @@ bool clog_hashmap_remove(clog_hashmap_t* map, const void* key)
     return true;
 }
 
-bool clog_hashmap_is_exists(const clog_hashmap_t* map, const void* key)
+bool clog_hashmap_is_exists(const clog_hashmap_t *map, const void *key)
 {
     if (map == NULL) {
         return false;
     }
 
-    const clog_hashmap_entry_t* entry = map->buckets[clog_hashmap_get_index(map, key)].next;
+    const clog_hashmap_entry_t *entry = map->buckets[clog_hashmap_get_index(map, key)].next;
     CLOG_RET_IF_NULL(entry, false);
 
     while ((entry != NULL) && (!clog_hashmap_cmp(map, entry->key, key))) {
@@ -431,19 +431,19 @@ bool clog_hashmap_is_exists(const clog_hashmap_t* map, const void* key)
     return entry != NULL;
 }
 
-size_t clog_hashmap_size(const clog_hashmap_t* map)
+size_t clog_hashmap_size(const clog_hashmap_t *map)
 {
     CLOG_RET_IF_NULL(map, 0);
     return map->data_size;
 }
 
-void clog_hashmap_clear(clog_hashmap_t* map)
+void clog_hashmap_clear(clog_hashmap_t *map)
 {
     CLOG_RET_VOID_IF_NULL(map);
 
     for (int i = 0; i < map->buckets_size; i++) {
-        clog_hashmap_entry_t* entry = map->buckets[i].next;
-        clog_hashmap_entry_t* next = NULL;
+        clog_hashmap_entry_t *entry = map->buckets[i].next;
+        clog_hashmap_entry_t *next = NULL;
         while (entry != NULL) {
             next = entry->next;
             clog_hashmap_free_entry(map, entry);
@@ -455,7 +455,7 @@ void clog_hashmap_clear(clog_hashmap_t* map)
     map->data_size = 0;
 }
 
-void clog_hashmap_destroy(clog_hashmap_t** map)
+void clog_hashmap_destroy(clog_hashmap_t **map)
 {
     if (map == NULL || *map == NULL) {
         return;

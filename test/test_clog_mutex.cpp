@@ -68,7 +68,7 @@ TEST_F(CLogMutexTest, RaceConditionInMultiThread)
         threads.emplace_back(worker);
     }
 
-    for (auto& t : threads) {
+    for (auto &t : threads) {
         t.join();
     }
 
@@ -102,7 +102,7 @@ TEST_F(CLogMutexTest, TryLockInMultiThread)
 
     start_flag.store(true);
 
-    for (auto& t : threads) {
+    for (auto &t : threads) {
         t.join();
     }
 
@@ -133,7 +133,7 @@ TEST_F(CLogMutexTest, LongHoldInMultiThread)
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     EXPECT_EQ(clog_mutex_unlock(&mutex), CLOG_SUCCESS);
 
-    for (auto& t : threads) {
+    for (auto &t : threads) {
         t.join();
     }
 

@@ -32,7 +32,7 @@ typedef struct clog_buffer_pool clog_buffer_pool_t;
  * @param threshold auto shrinking threshold, 0 ~ 100
  * @return #clog_res_e
  */
-clog_res_e clog_buffer_pool_initialize(clog_buffer_pool_t** pool, size_t item_size, size_t init_capacity,
+clog_res_e clog_buffer_pool_initialize(clog_buffer_pool_t **pool, size_t item_size, size_t init_capacity,
                                        bool auto_manager, uint8_t threshold);
 
 /**
@@ -41,7 +41,7 @@ clog_res_e clog_buffer_pool_initialize(clog_buffer_pool_t** pool, size_t item_si
  * @param pool buffer pool
  * @return buffer
  */
-void* clog_buffer_pool_acquire(clog_buffer_pool_t* pool);
+void *clog_buffer_pool_acquire(clog_buffer_pool_t *pool);
 
 /**
  * release buffer to pool
@@ -51,35 +51,35 @@ void* clog_buffer_pool_acquire(clog_buffer_pool_t* pool);
  * @param entry buffer to be released
  * @return NULL if buffer pool is finalizing and last buffer is released, otherwise #pool itself
  */
-clog_buffer_pool_t* clog_buffer_pool_release(clog_buffer_pool_t* pool, void* entry);
+clog_buffer_pool_t *clog_buffer_pool_release(clog_buffer_pool_t *pool, void *entry);
 
 /**
  * shutdown buffer pool
  * @param pool buffer pool to be cleanup
  * @return CLOG_SUCCESS if all buffers are released successfully, CLOG_NOT_COMPLETED if not
  */
-clog_res_e clog_buffer_pool_finalize(clog_buffer_pool_t* pool);
+clog_res_e clog_buffer_pool_finalize(clog_buffer_pool_t *pool);
 
 /**
  * get current buffer pool state
  * @param pool buffer pool
  * @return buffer pool state
  */
-int32_t clog_buffer_pool_get_state(const clog_buffer_pool_t* pool);
+int32_t clog_buffer_pool_get_state(const clog_buffer_pool_t *pool);
 
 /**
  * get current buffer pool capacity
  * @param pool buffer pool
  * @return current buffer pool capacity
  */
-size_t clog_buffer_pool_get_current_capacity(const clog_buffer_pool_t* pool);
+size_t clog_buffer_pool_get_current_capacity(const clog_buffer_pool_t *pool);
 
 /**
  * check whether buffer pool is auto manager
  * @param pool buffer pool
  * @return true if auto manager, false otherwise
  */
-bool clog_buffer_pool_is_auto_manager(const clog_buffer_pool_t* pool);
+bool clog_buffer_pool_is_auto_manager(const clog_buffer_pool_t *pool);
 
 
 #if defined(__cplusplus) || defined(c_plusplus)

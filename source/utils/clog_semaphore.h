@@ -50,4 +50,4 @@ clog_res_e clog_sem_post(clog_sem_t *sem);
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif
-#endif //CASCA_LOG_CLOG_SEMAPHORE_H
+#endif // CASCA_LOG_CLOG_SEMAPHORE_H

@@ -23,16 +23,16 @@ typedef enum clog_filter_res {
     CLOG_FILTER_REJECT, /* reject and the log will be abandoned */
 } clog_filter_res_e;
 
-typedef clog_filter_res_e (*clog_filter_f)(const clog_item_wrapper_t* item);
+typedef clog_filter_res_e (*clog_filter_f)(const clog_item_wrapper_t *item);
 
 typedef struct clog_filter clog_filter_t;
 
 struct clog_filter {
-    const char* name; /* filter name, it should be the same as the filter defined in config file */
+    const char *name; /* filter name, it should be the same as the filter defined in config file */
     uint32_t priority; /* filter priority, if same, the order defined in the configuration file will be applied */
     clog_filter_type_e type; /* pre-filter or post-filter */
     clog_filter_f filter; /* filter function */
-    const clog_filter_t* next;
+    const clog_filter_t *next;
 };
 
 /**
@@ -42,7 +42,7 @@ struct clog_filter {
  * @param filter #clog_filter_f
  * @return #clog_res_e
  */
-clog_res_e clog_filter_register(const char* name, clog_filter_type_e type, clog_filter_f filter);
+clog_res_e clog_filter_register(const char *name, clog_filter_type_e type, clog_filter_f filter);
 
 /**
  * filter setup
@@ -59,7 +59,7 @@ void clog_filter_cleanup(void);
  * free filter chain
  * @param filter filter chain
  */
-void clog_filter_free(clog_filter_t* filter);
+void clog_filter_free(clog_filter_t *filter);
 
 /**
  * execute filter
@@ -67,7 +67,7 @@ void clog_filter_free(clog_filter_t* filter);
  * @param wrapper log item
  * @return true if item is allowed to be output, false otherwise
  */
-bool clog_filter_log(const clog_filter_t* filters, const clog_item_wrapper_t* wrapper);
+bool clog_filter_log(const clog_filter_t *filters, const clog_item_wrapper_t *wrapper);
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

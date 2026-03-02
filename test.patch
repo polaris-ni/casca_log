@@ -1,0 +1,452 @@
+Subject: [PATCH] demo
+---
+Index: source/utils/clog_datetime.h
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/source/utils/clog_datetime.h b/source/utils/clog_datetime.h
+--- a/source/utils/clog_datetime.h	(revision e3178822e0adfca03a3177720aeead30d17c7490)
++++ b/source/utils/clog_datetime.h	(date 1772355475141)
+@@ -33,14 +33,16 @@
+ #pragma pack(pop)
+ #endif
+ 
++#define CLOG_TIMEZONE_OF(offset, hour, minute) offset hour, offset minute
++
+ /**
+- * get current datatime
++ * get current local datetime
+  * @param datetime #clog_datetime_t
+  */
+ void clog_datetime_now(clog_datetime_t *datetime);
+ 
+ /**
+- * get current timestamp
++ * get current local timestamp
+  * @return timestamp in ms
+  */
+ uint64_t clog_timestamp_ms();
+@@ -48,9 +50,11 @@
+ /**
+  * get timestamp of datetime
+  * @param datetime #clog_datetime_t
++ * @param tz_hour timezone hour part
++ * @param tz_minute timezone minute part
+  * @return timestamp in ms
+  */
+-uint64_t clog_timestamp_of_datetime(const clog_datetime_t *datetime);
++uint64_t clog_timestamp_of_datetime(const clog_datetime_t *datetime, int tz_hour, int tz_minute);
+ 
+ #if defined(__cplusplus) || defined(c_plusplus)
+ }
+Index: source/utils/clog_datetime.c
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/source/utils/clog_datetime.c b/source/utils/clog_datetime.c
+--- a/source/utils/clog_datetime.c	(revision e3178822e0adfca03a3177720aeead30d17c7490)
++++ b/source/utils/clog_datetime.c	(date 1772419316141)
+@@ -13,7 +13,7 @@
+ #include <time.h>
+ #endif
+ 
+-void clog_datetime_now(clog_datetime_t *datetime)
++void clog_datetime_now(clog_datetime_t* datetime)
+ {
+     CLOG_RET_VOID_IF_NULL(datetime);
+ #ifdef CLOG_PLATFORM_WINDOWS
+@@ -67,11 +67,13 @@
+ static int clog_datetime_days_in_month(int year, int month)
+ {
+     const int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+-    if (month == 2 && clog_datetime_is_leap_year(year)) return 29;
++    if (month == 2 && clog_datetime_is_leap_year(year)) {
++        return 29;
++    }
+     return days[month - 1];
+ }
+ 
+-uint64_t clog_timestamp_of_datetime(const clog_datetime_t *datetime)
++uint64_t clog_timestamp_of_datetime(const clog_datetime_t* datetime, int tz_hour, int tz_minute)
+ {
+     CLOG_RET_IF_NULL(datetime, 0);
+     uint64_t total_days = 0;
+@@ -88,8 +90,11 @@
+ 
+     uint64_t timestamp_ms = total_days * 86400000LL;
+     timestamp_ms += datetime->hour * 3600000LL;
++    timestamp_ms -= tz_hour * 3600000LL;
+     timestamp_ms += datetime->minute * 60000LL;
++    timestamp_ms -= tz_minute * 60000LL;
+     timestamp_ms += datetime->second * 1000LL;
+     timestamp_ms += datetime->millisecond;
++
+     return timestamp_ms;
+ }
+Index: source/recorder/clog_recorder_file.c
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/source/recorder/clog_recorder_file.c b/source/recorder/clog_recorder_file.c
+--- a/source/recorder/clog_recorder_file.c	(revision e3178822e0adfca03a3177720aeead30d17c7490)
++++ b/source/recorder/clog_recorder_file.c	(date 1772419316134)
+@@ -78,7 +78,8 @@
+     ret = clog_dir_create(directory, 0770);
+     CLOG_RET_IF_X(ret != CLOG_SUCCESS && ret != CLOG_ALREADY_EXISTED, ret, "clog_dir_create %s failed, ret = %u",
+                   directory, ret);
+-    param->log = clog_file_open(file, CLOG_FILE_WRITE | CLOG_FILE_CREATE | CLOG_FILE_EXIST | CLOG_FILE_SHARED, 0660);
++    param->log = clog_file_open(
++        file, CLOG_FILE_READ | CLOG_FILE_WRITE | CLOG_FILE_CREATE | CLOG_FILE_EXIST | CLOG_FILE_SHARED, 0660);
+     CLOG_RET_IF_NULL_X(param->log, CLOG_FAIL, "open log file %s failed", file);
+     switch (param->split_type) {
+         case CLOG_RECORDER_FILE_SPLIT_NONE:
+@@ -97,13 +98,17 @@
+         case CLOG_RECORDER_FILE_SPLIT_NUMBER:
+             CLOG_IGNORE_RES(clog_file_seek(param->log, CLOG_FILE_SEEK_SET, 0, NULL));
+             param->current_item_num = 0;
+-            uint8_t data = 0;
+-            ret = clog_file_read(param->log, &data, sizeof(data), NULL);
+-            while (ret == CLOG_SUCCESS) {
++            while (true) {
++                uint8_t data = 0;
++                size_t num = 0;
++                ret = clog_file_read(param->log, &data, sizeof(data), &num);
++                if (ret != CLOG_SUCCESS || num != sizeof(data)) {
++                    break;
++                }
+                 if (data == '\n') {
+                     param->current_item_num++;
++                    CLOG_ERR_ADD("detect new line");
+                 }
+-                ret = clog_file_read(param->log, &data, sizeof(data), NULL);
+             }
+             CLOG_IGNORE_RES(clog_file_seek(param->log, CLOG_FILE_SEEK_END, 0, NULL));
+             return CLOG_SUCCESS;
+@@ -165,7 +170,24 @@
+     return CLOG_SUCCESS;
+ } 
+-static clog_res_e clog_recorder_file_init_param(const clog_config_group_t *group, clog_recorder_file_param_t *param)
++static bool clog_recorder_file_need_flash(clog_recorder_file_param_t* param)
++{
++    switch (param->split_type) {
++        case CLOG_RECORDER_FILE_SPLIT_NONE:
++            return false;
++        case CLOG_RECORDER_FILE_SPLIT_SIZE:
++            return param->current_file_size >= param->max_file_size;
++        case CLOG_RECORDER_FILE_SPLIT_TIME:
++            return clog_timestamp_ms() - param->start_time >= param->max_interval;
++        case CLOG_RECORDER_FILE_SPLIT_NUMBER:
++            return param->current_item_num >= param->max_item_num;
++        default:
++            CLOG_ERR_ADD("split type %u is invalid", param->split_type);
++            return false;
++    }
++}
++
++static clog_res_e clog_recorder_file_init_param(const clog_config_group_t* group, clog_recorder_file_param_t* param)
+ {
+     clog_hashmap_t *default_placeholders = clog_interpolator_default_placeholders();
+     CLOG_RET_IF_NULL_X(default_placeholders, CLOG_FAIL, "clog_interpolator_default_placeholders failed");
+@@ -195,7 +217,9 @@
+     res = clog_recoder_file_open_file(param);
+     if (res != CLOG_SUCCESS) {
+         CLOG_ERR_ADD("clog_recoder_file_open_file failed, ret = %u", res);
++        goto RESULT_HANDLER;
+     }
++    res = CLOG_SUCCESS;
+ 
+ RESULT_HANDLER:
+     clog_interpolator_context_destroy(context);
+@@ -226,7 +250,7 @@
+             param->max_file_size = value;
+             return CLOG_SUCCESS;
+         case CLOG_RECORDER_FILE_SPLIT_TIME:
+-            param->max_interval = value;
++            param->max_interval = value * 1000U;
+             return CLOG_SUCCESS;
+         case CLOG_RECORDER_FILE_SPLIT_NUMBER:
+             param->max_item_num = value;
+@@ -256,6 +280,11 @@
+     CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_file_clear_param(param), "init file recorder param failed, ret = %u",
+                                ret);
+     self->extra = param;
++    if (clog_recorder_file_need_flash(param)) {
++        ret = self->flush(self);
++        CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_file_clear_param(param),
++                                   "clog file recorder flush on open failed, ret = %u", ret);
++    }
+     return CLOG_SUCCESS;
+ } 
+Index: source/filter/clog_filter.c
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/source/filter/clog_filter.c b/source/filter/clog_filter.c
+--- a/source/filter/clog_filter.c	(revision e3178822e0adfca03a3177720aeead30d17c7490)
++++ b/source/filter/clog_filter.c	(date 1772357486247)
+@@ -5,6 +5,7 @@
+ #include "clog_filter.h"
+ #include "casca_log.h"
+ #include "casca_log_keywords.h"
++#include "clog_error.h"
+ #include "clog_hooks.h"
+ #include "clog_secure_func.h"
+ 
+@@ -24,96 +25,30 @@
+     CLOG_SAFE_FREE(keywords);
+ }
+ 
+-static clog_res_e clog_filter_keywords_get_num(const char* keywords, uint32_t* count)
++static clog_res_e clog_filter_keywords_get_num(const clog_config_item_t* item, uint32_t* count)
+ {
+     uint32_t num = 0;
+-    bool is_escape = false;
+-    const char* start = keywords;
+-    while (*keywords != '\0') {
+-        if (is_escape) {
+-            CLOG_RET_IF(*keywords != ',', CLOG_ERROR_FORMAT); /* there must be a ',' after \ */
+-            is_escape = false;
+-            keywords++;
+-            continue;
+-        }
+-        if (*keywords == '\\') {
+-            is_escape = true;
+-            keywords++;
+-            continue;
+-        }
+-        if (*keywords == ',') {
+-            CLOG_RET_IF(is_escape, CLOG_ERROR_FORMAT);
+-            CLOG_RET_IF(start == keywords, CLOG_ERROR_FORMAT); /* string like "xx,," is not allowed */
+-            num++;
+-            keywords++;
+-            start = keywords;
+-        } else {
+-            keywords++;
+-        }
++    const clog_config_item_t* tmp = item;
++    while (tmp != NULL) {
++        CLOG_RET_IF_X(tmp->type != CLOG_CONFIG_TYPE_STRING, CLOG_ERROR_FORMAT,
++                      "clog keywords contains item type other than string");
++        num++;
++        tmp = tmp->next;
+     }
+-    CLOG_RET_IF(is_escape, CLOG_ERROR_FORMAT); /* there must be a ',' after \ */
+-    CLOG_RET_IF(start == keywords, CLOG_ERROR_FORMAT); /* string like "xx,," is not allowed */
+-    *count = num + 1;
++    *count = num;
+     return CLOG_SUCCESS;
+ }
+ 
+-static char* clog_filter_keywords_copy(const char* start, const char* end, const bool has_escape)
++static clog_res_e clog_filter_keywords_parse(const clog_config_item_t* item, char** target, const uint32_t count)
+ {
+-    if (!has_escape) {
+-        return clog_strndup(start, end - start);
+-    }
+-    char* buf = clog_malloc(end - start + 1);
+-    CLOG_RET_IF_NULL(buf, NULL);
+-    const char* tmp = start;
+-    char* cur = buf;
+-    while (tmp != end) {
+-        if (*tmp != '\\') {
+-            *cur = *tmp;
+-            cur++;
+-        }
+-        tmp++;
+-    }
+-    *cur = '\0';
+-    return buf;
+-}
+-
+-static clog_res_e clog_filter_keywords_parse(const char* keywords, char** target, const uint32_t count)
+-{
++    const clog_config_item_t* tmp = item;
+     uint32_t num = 0;
+-    bool has_escape = false;
+-    bool is_escape = false;
+-    const char* start = keywords;
+-    while (*keywords != '\0') {
+-        if (is_escape) {
+-            CLOG_RET_IF(*keywords != ',', CLOG_ERROR_FORMAT); /* there must be a ',' after \ */
+-            is_escape = false;
+-            keywords++;
+-            continue;
+-        }
+-        if (*keywords == '\\') {
+-            is_escape = true;
+-            has_escape = true;
+-            keywords++;
+-            continue;
+-        }
+-        if (*keywords == ',') {
+-            CLOG_RET_IF(is_escape, CLOG_ERROR_FORMAT);
+-            CLOG_RET_IF(start == keywords, CLOG_ERROR_FORMAT); /* string like "xx,," is not allowed */
+-            target[num] = clog_filter_keywords_copy(start, keywords, has_escape);
+-            CLOG_RET_IF_NULL(target[num], CLOG_NO_MEMORY);
+-            has_escape = false;
+-            num++;
+-            keywords++;
+-            start = keywords;
+-        } else {
+-            keywords++;
+-        }
++    while (tmp != NULL) {
++        target[num] = clog_strdup(tmp->value.str);
++        CLOG_RET_IF_NULL_X(target[num], CLOG_FAIL, "clog_strdup keyword %s failed", tmp->value.str);
++        num++;
++        tmp = tmp->next;
+     }
+-    CLOG_RET_IF(is_escape, CLOG_ERROR_FORMAT); /* there must be a ',' after \ */
+-    CLOG_RET_IF(start == keywords, CLOG_ERROR_FORMAT); /* string like "xx,," is not allowed */
+-    target[num] = clog_filter_keywords_copy(start, keywords, has_escape);
+-    CLOG_RET_IF_NULL(target[num], CLOG_NO_MEMORY);
+-    CLOG_ASSERT(count == num + 1);
+     return CLOG_SUCCESS;
+ }
+ 
+-static char* clog_filter_keywords_copy(const char* start, const char* end, const bool has_escape)
++static clog_res_e clog_filter_keywords_parse(const clog_config_item_t* item, char** target, const uint32_t count)
+ {
+-    if (!has_escape) {
+-        return clog_strndup(start, end - start);
+-    }
+-    char* buf = clog_malloc(end - start + 1);
+-    CLOG_RET_IF_NULL(buf, NULL);
+-    const char* tmp = start;
+-    char* cur = buf;
+-    while (tmp != end) {
+-        if (*tmp != '\\') {
+-            *cur = *tmp;
+-            cur++;
+-        }
+-        tmp++;
+-    }
+-    *cur = '\0';
+-    return buf;
+-}
+-
+-static clog_res_e clog_filter_keywords_parse(const char* keywords, char** target, const uint32_t count)
+-{
++    const clog_config_item_t* tmp = item;
+     uint32_t num = 0;
+-    bool has_escape = false;
+-    bool is_escape = false;
+-    const char* start = keywords;
+-    while (*keywords != '\0') {
+-        if (is_escape) {
+-            CLOG_RET_IF(*keywords != ',', CLOG_ERROR_FORMAT); /* there must be a ',' after \ */
+-            is_escape = false;
+-            keywords++;
+-            continue;
+-        }
+-        if (*keywords == '\\') {
+-            is_escape = true;
+-            has_escape = true;
+-            keywords++;
+-            continue;
+-        }
+-        if (*keywords == ',') {
+-            CLOG_RET_IF(is_escape, CLOG_ERROR_FORMAT);
+-            CLOG_RET_IF(start == keywords, CLOG_ERROR_FORMAT); /* string like "xx,," is not allowed */
+-            target[num] = clog_filter_keywords_copy(start, keywords, has_escape);
+-            CLOG_RET_IF_NULL(target[num], CLOG_NO_MEMORY);
+-            has_escape = false;
+-            num++;
+-            keywords++;
+-            start = keywords;
+-        } else {
+-            keywords++;
+-        }
++    while (tmp != NULL) {
++        target[num] = clog_strdup(tmp->value.str);
++        CLOG_RET_IF_NULL_X(target[num], CLOG_FAIL, "clog_strdup keyword %s failed", tmp->value.str);
++        num++;
++        tmp = tmp->next;
+     }
+-    CLOG_RET_IF(is_escape, CLOG_ERROR_FORMAT); /* there must be a ',' after \ */
+-    CLOG_RET_IF(start == keywords, CLOG_ERROR_FORMAT); /* string like "xx,," is not allowed */
+-    target[num] = clog_filter_keywords_copy(start, keywords, has_escape);
+-    CLOG_RET_IF_NULL(target[num], CLOG_NO_MEMORY);
+-    CLOG_ASSERT(count == num + 1);
+     return CLOG_SUCCESS;
+ }
+ @@ -131,19 +66,20 @@
+         CLOG_RET_IF(!enabled, CLOG_SUCCESS); /* keywords filter is not enabled */
+     }
+ 
+-    const char* keywords = NULL;
+-    ret = clog_config_find_item_in_group_string(filter, CLOG_STR_KEYWORDS, &keywords);
++    const clog_config_item_t* keywords = NULL;
++    ret = clog_config_find_item_in_group_array(filter, CLOG_STR_KEYWORDS, &keywords);
+     CLOG_RET_IF_FAILED(ret); /* "keywords" is not configured */
+-    CLOG_RET_IF_NULL(keywords, CLOG_TARGET_NOT_FOUND); /* keywords not found */
++    CLOG_RET_IF_NULL_X(keywords, CLOG_TARGET_NOT_FOUND, CLOG_STR_KEYWORDS " not found"); /* keywords not found */
+     uint32_t num = 0;
+     ret = clog_filter_keywords_get_num(keywords, &num);
+-    CLOG_RET_IF_FAILED(ret);
++    CLOG_RET_IF_FAILED_X(ret, "clog_filter_keywords_get_num failed, ret = %u", ret);
+     const size_t size = num * sizeof(char*);
+     char** arr = clog_malloc(size);
+-    CLOG_RET_IF_NULL(arr, CLOG_NO_MEMORY);
++    CLOG_RET_IF_NULL_X(arr, CLOG_NO_MEMORY, "malloc keywords failed");
+     CLOG_IGNORE_RES(clog_memset(arr, size, 0, size));
+     ret = clog_filter_keywords_parse(keywords, arr, num);
+-    CLOG_CLEAN_RET_IF_FAILED(ret, clog_filter_keywords_free(arr, num));
++    CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_filter_keywords_free(arr, num), "clog_filter_keywords_parse failed, ret = %u",
++                               ret);
+     g_keywords = arr;
+     g_keywords_count = num;
+     return CLOG_SUCCESS;
+Index: source/formatter/clog_log_format_placeholder.c
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/source/formatter/clog_log_format_placeholder.c b/source/formatter/clog_log_format_placeholder.c
+--- a/source/formatter/clog_log_format_placeholder.c	(revision e3178822e0adfca03a3177720aeead30d17c7490)
++++ b/source/formatter/clog_log_format_placeholder.c	(date 1772418351625)
+@@ -46,15 +46,15 @@
+     return i;
+ }
+ -#define CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(name, max, num, is_padding)                                    \
+-    static int clog_placeholder_##name(void *param, char *buf, size_t size)                                         \
+-    {                                                                                                               \
+-        CLOG_RET_IF(size < (num), -CLOG_INVALID_PARAM);                                                             \
+-        CLOG_ASSERT(param != NULL);                                                                                 \
+-        CLOG_ASSERT(buf != NULL);                                                                                   \
+-        clog_item_wrapper_t *wrapper = (clog_item_wrapper_t *) param;                                               \
+-        CLOG_ASSERT(wrapper->log->name <= (max));                                                                   \
+-        return clog_num_to_str(wrapper->log->name, (num), buf, size, (is_padding));                                 \
++#define CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(name, max, num, is_padding)    \
++    static int clog_placeholder_##name(void *param, char *buf, size_t size)         \
++    {                                                                               \
++        CLOG_RET_IF(size < (num), -CLOG_INVALID_PARAM);                             \
++        CLOG_ASSERT(param != NULL);                                                 \
++        CLOG_ASSERT(buf != NULL);                                                   \
++        clog_item_wrapper_t* wrapper = (clog_item_wrapper_t*)param;                 \
++        CLOG_ASSERT(wrapper->log->name <= (max));                                   \
++        return clog_num_to_str(wrapper->log->name, (num), buf, size, (is_padding)); \
+     }
+ 
+ CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(year, 9999, 4, true)
+Index: casca_log_config_template.toml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/casca_log_config_template.toml b/casca_log_config_template.toml
+--- a/casca_log_config_template.toml	(revision e3178822e0adfca03a3177720aeead30d17c7490)
++++ b/casca_log_config_template.toml	(date 1772357091658)
+@@ -32,7 +32,7 @@
+ enabled = true
+ priority = 1
+ type = 1 # 0 - prefilter, 1 - postfilter
+-keywords = "pw,password,ip\\,,dns" # if a keyword contains ',', use escape char '\\'
++keywords = ["password", "ip"]
+ 
+ [Channels]
+ use = 1

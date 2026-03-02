@@ -35,24 +35,24 @@ struct clog_buffer_pool {
     size_t item_size;
 };
 
-static clog_buffer_t* clog_buffer_pool_malloc_single(size_t size, int type)
+static clog_buffer_t *clog_buffer_pool_malloc_single(size_t size, int type)
 {
-    clog_buffer_t* buffer = clog_malloc(sizeof(clog_buffer_t) + size);
+    clog_buffer_t *buffer = clog_malloc(sizeof(clog_buffer_t) + size);
     CLOG_RET_IF_NULL(buffer, NULL);
     buffer->type = type;
     clog_atomic_set(&buffer->next, 0);
     return buffer;
 }
 
-static clog_buffer_t* clog_buffer_pool_malloc_pool_batch(size_t num, size_t size)
+static clog_buffer_t *clog_buffer_pool_malloc_pool_batch(size_t num, size_t size)
 {
     size_t count = 0;
-    clog_buffer_t* head = NULL;
+    clog_buffer_t *head = NULL;
     while (count < num) {
-        clog_buffer_t* buffer = clog_buffer_pool_malloc_single(size, CLOG_BUFFER_TYPE_POOL);
+        clog_buffer_t *buffer = clog_buffer_pool_malloc_single(size, CLOG_BUFFER_TYPE_POOL);
         if (buffer == NULL) {
             while (head != NULL) {
-                clog_buffer_t* next = (clog_buffer_t*)clog_atomic_get(&head->next);
+                clog_buffer_t *next = (clog_buffer_t *)clog_atomic_get(&head->next);
                 clog_free(head);
                 head = next;
             }
@@ -71,7 +71,7 @@ static clog_buffer_t* clog_buffer_pool_malloc_pool_batch(size_t num, size_t size
     return head;
 }
 
-clog_res_e clog_buffer_pool_initialize(clog_buffer_pool_t** pool, size_t item_size, size_t init_capacity,
+clog_res_e clog_buffer_pool_initialize(clog_buffer_pool_t **pool, size_t item_size, size_t init_capacity,
                                        bool auto_manager, uint8_t threshold)
 {
     CLOG_RET_IF_NULL_X(pool, CLOG_INVALID_PARAM, "buffer pool is NULL");
@@ -79,7 +79,7 @@ clog_res_e clog_buffer_pool_initialize(clog_buffer_pool_t** pool, size_t item_si
         CLOG_ERR_ADD("buffer pool is auto-manager, but threshold is %u, it should be (0, 100)", threshold);
         return CLOG_INVALID_PARAM;
     }
-    clog_buffer_pool_t* tmp = clog_malloc(sizeof(clog_buffer_pool_t));
+    clog_buffer_pool_t *tmp = clog_malloc(sizeof(clog_buffer_pool_t));
     CLOG_RET_IF_NULL_X(tmp, CLOG_NO_MEMORY, "buffer pool is NULL");
     clog_atomic_set(&tmp->head, 0);
     clog_atomic_set(&tmp->state, CLOG_BUFFER_POOL_STATE_RUNNING);
@@ -89,28 +89,28 @@ clog_res_e clog_buffer_pool_initialize(clog_buffer_pool_t** pool, size_t item_si
     tmp->init_capacity = (size_t)init_capacity;
     tmp->auto_manager = auto_manager;
     tmp->threshold = threshold;
-    clog_buffer_t* buffer = clog_buffer_pool_malloc_pool_batch(init_capacity, tmp->item_size);
+    clog_buffer_t *buffer = clog_buffer_pool_malloc_pool_batch(init_capacity, tmp->item_size);
     CLOG_CLEAN_RET_IF_NULL(buffer, clog_buffer_pool_finalize(tmp), CLOG_NO_MEMORY);
     clog_atomic_set(&tmp->head, (clog_atomic_basic_t)buffer);
     *pool = tmp;
     return CLOG_SUCCESS;
 }
 
-void* clog_buffer_pool_acquire(clog_buffer_pool_t* pool)
+void *clog_buffer_pool_acquire(clog_buffer_pool_t *pool)
 {
     CLOG_RET_IF_NULL_X(pool, NULL, "buffer pool is NULL");
     if (clog_buffer_pool_get_state(pool) != CLOG_BUFFER_POOL_STATE_RUNNING) {
-        clog_buffer_t* tmp = clog_buffer_pool_malloc_single(pool->item_size, CLOG_BUFFER_TYPE_TMP);
+        clog_buffer_t *tmp = clog_buffer_pool_malloc_single(pool->item_size, CLOG_BUFFER_TYPE_TMP);
         CLOG_RET_IF_NULL(tmp, NULL);
         return tmp->entry;
     }
 
     clog_atomic_basic_t old_head = clog_atomic_get(&pool->head);
     while (old_head != 0) {
-        clog_buffer_t* buffer = (clog_buffer_t*)old_head;
+        clog_buffer_t *buffer = (clog_buffer_t *)old_head;
         const clog_atomic_basic_t new_head = clog_atomic_get(&buffer->next);
         if (clog_buffer_pool_get_state(pool) != CLOG_BUFFER_POOL_STATE_RUNNING) {
-            clog_buffer_t* tmp = clog_buffer_pool_malloc_single(pool->item_size, CLOG_BUFFER_TYPE_TMP);
+            clog_buffer_t *tmp = clog_buffer_pool_malloc_single(pool->item_size, CLOG_BUFFER_TYPE_TMP);
             CLOG_RET_IF_NULL(tmp, NULL);
             return tmp->entry;
         }
@@ -123,22 +123,22 @@ void* clog_buffer_pool_acquire(clog_buffer_pool_t* pool)
     }
 
     if (pool->auto_manager) {
-        clog_buffer_t* buffer = clog_buffer_pool_malloc_single(pool->item_size, CLOG_BUFFER_TYPE_POOL);
+        clog_buffer_t *buffer = clog_buffer_pool_malloc_single(pool->item_size, CLOG_BUFFER_TYPE_POOL);
         CLOG_RET_IF_NULL(buffer, NULL);
         clog_atomic_fetch_add(&pool->capacity, 1);
         return buffer->entry;
     }
 
     /* not support auto expand, just malloc from system */
-    clog_buffer_t* buffer = clog_buffer_pool_malloc_single(pool->item_size, CLOG_BUFFER_TYPE_TMP);
+    clog_buffer_t *buffer = clog_buffer_pool_malloc_single(pool->item_size, CLOG_BUFFER_TYPE_TMP);
     CLOG_RET_IF_NULL(buffer, NULL);
     return buffer->entry;
 }
 
-clog_buffer_pool_t* clog_buffer_pool_release(clog_buffer_pool_t* pool, void* entry)
+clog_buffer_pool_t *clog_buffer_pool_release(clog_buffer_pool_t *pool, void *entry)
 {
     CLOG_RET_IF_NULL_X(entry, NULL, "entry is NULL");
-    clog_buffer_t* buffer = (clog_buffer_t*)((uintptr_t)entry - offsetof(clog_buffer_t, entry));
+    clog_buffer_t *buffer = (clog_buffer_t *)((uintptr_t)entry - offsetof(clog_buffer_t, entry));
     if (buffer->type == CLOG_BUFFER_TYPE_TMP) {
         clog_free(buffer);
         return pool;
@@ -188,7 +188,7 @@ clog_buffer_pool_t* clog_buffer_pool_release(clog_buffer_pool_t* pool, void* ent
     return pool;
 }
 
-clog_res_e clog_buffer_pool_finalize(clog_buffer_pool_t* pool)
+clog_res_e clog_buffer_pool_finalize(clog_buffer_pool_t *pool)
 {
     CLOG_RET_IF_NULL(pool, CLOG_INVALID_PARAM);
     clog_atomic_basic_t state = CLOG_BUFFER_POOL_STATE_RUNNING;
@@ -197,9 +197,9 @@ clog_res_e clog_buffer_pool_finalize(clog_buffer_pool_t* pool)
     while (!clog_atomic_cas(&pool->head, &addr, 0)) {
         addr = clog_atomic_get(&pool->head);
     }
-    clog_buffer_t* buffer = (clog_buffer_t*)addr;
+    clog_buffer_t *buffer = (clog_buffer_t *)addr;
     while (buffer != NULL) {
-        clog_buffer_t* next = (clog_buffer_t*)clog_atomic_get(&buffer->next);
+        clog_buffer_t *next = (clog_buffer_t *)clog_atomic_get(&buffer->next);
         clog_free(buffer);
         buffer = next;
         clog_atomic_fetch_sub(&pool->free_count, 1);
@@ -216,7 +216,7 @@ clog_res_e clog_buffer_pool_finalize(clog_buffer_pool_t* pool)
     return CLOG_NOT_COMPLETED;
 }
 
-int32_t clog_buffer_pool_get_state(const clog_buffer_pool_t* pool)
+int32_t clog_buffer_pool_get_state(const clog_buffer_pool_t *pool)
 {
     CLOG_RET_IF_NULL_X(pool, CLOG_BUFFER_POOL_STATE_DISABLED, "buffer pool is NULL");
     const clog_atomic_basic_t tmp = clog_atomic_get(&pool->state);
@@ -226,7 +226,7 @@ int32_t clog_buffer_pool_get_state(const clog_buffer_pool_t* pool)
     return CLOG_BUFFER_POOL_STATE_DISABLED;
 }
 
-size_t clog_buffer_pool_get_current_capacity(const clog_buffer_pool_t* pool)
+size_t clog_buffer_pool_get_current_capacity(const clog_buffer_pool_t *pool)
 {
     CLOG_RET_IF_NULL(pool, 0);
     const clog_atomic_basic_t tmp = clog_atomic_get(&pool->capacity);
@@ -236,7 +236,7 @@ size_t clog_buffer_pool_get_current_capacity(const clog_buffer_pool_t* pool)
     return tmp;
 }
 
-bool clog_buffer_pool_is_auto_manager(const clog_buffer_pool_t* pool)
+bool clog_buffer_pool_is_auto_manager(const clog_buffer_pool_t *pool)
 {
     CLOG_RET_IF_NULL(pool, false);
     return pool->auto_manager;

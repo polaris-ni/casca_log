@@ -7,12 +7,12 @@
 #include <errno.h>
 #endif
 #include "casca_log.h"
-#include "clog_semaphore.h"
-#include "clog_thread.h"
 #include "clog_atomic_types.h"
 #include "clog_error.h"
 #include "clog_recorder_manager.h"
 #include "clog_secure_func.h"
+#include "clog_semaphore.h"
+#include "clog_thread.h"
 
 typedef struct clog_dispatcher_async_thread_param {
     clog_thread_t thread;
@@ -27,7 +27,8 @@ typedef enum clog_async_thread_dispatcher_state {
     CLOG_ASYNC_THREAD_DISPATCHER_CLOSED,
 } clog_async_thread_dispatcher_state_e;
 
-static void clog_async_thread_handler(void *args, size_t size) {
+static void clog_async_thread_handler(void *args, size_t size)
+{
     CLOG_ASSERT(size == sizeof(clog_dispatcher_t));
     CLOG_ASSERT(args != NULL);
     const clog_dispatcher_t *dispatcher = args;
@@ -57,18 +58,19 @@ static void clog_async_thread_handler(void *args, size_t size) {
                 }
                 CLOG_IGNORE_RES(clog_recoder_write(item->recorder[i], item));
             }
-            clog_release_log_item((clog_item_t *) item);
+            clog_release_log_item((clog_item_t *)item);
             item = NULL;
             res = channel->read(channel, &item);
         }
         if (item != NULL) {
-            clog_release_log_item((clog_item_t *) item);
+            clog_release_log_item((clog_item_t *)item);
             item = NULL;
         }
     }
 }
 
-static clog_res_e clog_dispatcher_async_thread_open(clog_dispatcher_t *self, const clog_config_group_t *group) {
+static clog_res_e clog_dispatcher_async_thread_open(clog_dispatcher_t *self, const clog_config_group_t *group)
+{
     CLOG_UNUSED_VAR(group);
     clog_dispatcher_async_thread_param_t *param = clog_malloc(sizeof(clog_dispatcher_async_thread_param_t));
     CLOG_RET_IF_NULL_X(param, CLOG_NO_MEMORY, "malloc async thread param failed");
@@ -81,7 +83,7 @@ static clog_res_e clog_dispatcher_async_thread_open(clog_dispatcher_t *self, con
     clog_atomic_set(&param->state, CLOG_ASYNC_THREAD_DISPATCHER_IDLE);
     self->extra = param;
     const clog_res_e res =
-            clog_thread_create(&param->thread, NULL, clog_async_thread_handler, self, sizeof(clog_dispatcher_t));
+        clog_thread_create(&param->thread, NULL, clog_async_thread_handler, self, sizeof(clog_dispatcher_t));
     if (res != CLOG_SUCCESS) {
         CLOG_ERR_ADD("clog_thread_create failed, ret = %u", res);
         CLOG_IGNORE_RES(clog_sem_destroy(param->sem));
@@ -94,7 +96,8 @@ static clog_res_e clog_dispatcher_async_thread_open(clog_dispatcher_t *self, con
     return res;
 }
 
-static void clog_dispatcher_async_thread_notify(clog_dispatcher_t *self, clog_dispatcher_event_e event) {
+static void clog_dispatcher_async_thread_notify(clog_dispatcher_t *self, clog_dispatcher_event_e event)
+{
     clog_dispatcher_async_thread_param_t *param = self->extra;
     CLOG_ASSERT(param != NULL);
     switch (event) {
@@ -115,7 +118,8 @@ static void clog_dispatcher_async_thread_notify(clog_dispatcher_t *self, clog_di
     }
 }
 
-static void clog_dispatcher_async_thread_close(clog_dispatcher_t *self) {
+static void clog_dispatcher_async_thread_close(clog_dispatcher_t *self)
+{
     clog_dispatcher_async_thread_param_t *param = self->extra;
     const clog_async_thread_dispatcher_state_e state = clog_atomic_get(&param->state);
     if (state == CLOG_ASYNC_THREAD_DISPATCHER_RUNNING) {
@@ -123,8 +127,7 @@ static void clog_dispatcher_async_thread_close(clog_dispatcher_t *self) {
         CLOG_IGNORE_RES(clog_sem_post(param->sem));
     }
     /* wait thread process over */
-    while (clog_atomic_get(&param->state) != CLOG_ASYNC_THREAD_DISPATCHER_CLOSED) {
-    }
+    while (clog_atomic_get(&param->state) != CLOG_ASYNC_THREAD_DISPATCHER_CLOSED) {}
     CLOG_IGNORE_RES(clog_sem_destroy(param->sem));
     CLOG_IGNORE_RES(clog_memset(&param->thread, sizeof(param->thread), 0, sizeof(param->thread)));
     clog_atomic_set(&param->state, CLOG_ASYNC_THREAD_DISPATCHER_IDLE);
@@ -132,7 +135,8 @@ static void clog_dispatcher_async_thread_close(clog_dispatcher_t *self) {
     self->extra = NULL;
 }
 
-void clog_dispatcher_async_thread(clog_dispatcher_t *dispatcher) {
+void clog_dispatcher_async_thread(clog_dispatcher_t *dispatcher)
+{
     dispatcher->id = CLOG_DISPATCHER_ID_ASYNC_THREAD;
     dispatcher->open = clog_dispatcher_async_thread_open;
     dispatcher->notify = clog_dispatcher_async_thread_notify;

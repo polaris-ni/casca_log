@@ -15,20 +15,20 @@ extern "C" {
 typedef struct clog_hashmap_entry clog_hashmap_entry_t;
 
 struct clog_hashmap_entry {
-    void* key;
-    void* value;
-    clog_hashmap_entry_t* next;
+    void *key;
+    void *value;
+    clog_hashmap_entry_t *next;
 };
 
 typedef struct clog_hashmap clog_hashmap_t;
 
-typedef bool (*clog_hashmap_cmp_f)(const void* key1, const void* key2);
+typedef bool (*clog_hashmap_cmp_f)(const void *key1, const void *key2);
 
-typedef void* (*clog_hashmap_dup_f)(const void* ptr);
+typedef void *(*clog_hashmap_dup_f)(const void *ptr);
 
-typedef void (*clog_hashmap_free_f)(void* ptr);
+typedef void (*clog_hashmap_free_f)(void *ptr);
 
-typedef size_t (*clog_hashmap_size_f)(const void* ptr);
+typedef size_t (*clog_hashmap_size_f)(const void *ptr);
 
 /**
  * create hashmap
@@ -43,7 +43,7 @@ typedef size_t (*clog_hashmap_size_f)(const void* ptr);
  * @param seed seed used in hash function, if seed is 0, default seed 0xAA6F3B22 will be applied
  * @return created hashmap
  */
-clog_hashmap_t* clog_hashmap_create(size_t key_size, size_t value_size, clog_hashmap_dup_f key_dup,
+clog_hashmap_t *clog_hashmap_create(size_t key_size, size_t value_size, clog_hashmap_dup_f key_dup,
                                     clog_hashmap_free_f key_free, clog_hashmap_dup_f value_dup,
                                     clog_hashmap_free_f value_free, clog_hashmap_cmp_f cmp,
                                     clog_hashmap_size_f size_of_key, uint32_t seed);
@@ -55,7 +55,7 @@ clog_hashmap_t* clog_hashmap_create(size_t key_size, size_t value_size, clog_has
  * @param value value
  * @return #clog_res_e
  */
-clog_res_e clog_hashmap_put(clog_hashmap_t* map, const void* key, const void* value);
+clog_res_e clog_hashmap_put(clog_hashmap_t *map, const void *key, const void *value);
 
 /**
  * get value by key, not thread safe
@@ -63,7 +63,7 @@ clog_res_e clog_hashmap_put(clog_hashmap_t* map, const void* key, const void* va
  * @param key key
  * @return the original value ptr of key, the caller should not free it, and there may be concurrent conflicts
  */
-void* clog_hashmap_get(const clog_hashmap_t* map, const void* key);
+void *clog_hashmap_get(const clog_hashmap_t *map, const void *key);
 
 /**
  * get value by key, and the key-value will be removed
@@ -71,7 +71,7 @@ void* clog_hashmap_get(const clog_hashmap_t* map, const void* key);
  * @param key key
  * @return the original value ptr of key, the caller should free it by appropriate #clog_hashmap_free_f
  */
-void* clog_hashmap_take(clog_hashmap_t* map, const void* key);
+void *clog_hashmap_take(clog_hashmap_t *map, const void *key);
 
 /**
  * get duplicated value by key
@@ -79,7 +79,7 @@ void* clog_hashmap_take(clog_hashmap_t* map, const void* key);
  * @param key key
  * @return the duplicated value, the caller should free it by appropriate #clog_hashmap_free_f
  */
-void* clog_hashmap_get_dup(const clog_hashmap_t* map, const void* key);
+void *clog_hashmap_get_dup(const clog_hashmap_t *map, const void *key);
 
 /**
  * remove key-value pair
@@ -87,7 +87,7 @@ void* clog_hashmap_get_dup(const clog_hashmap_t* map, const void* key);
  * @param key key
  * @return true if remove success, false if key does not exist
  */
-bool clog_hashmap_remove(clog_hashmap_t* map, const void* key);
+bool clog_hashmap_remove(clog_hashmap_t *map, const void *key);
 
 /**
  * check if key exists
@@ -95,42 +95,42 @@ bool clog_hashmap_remove(clog_hashmap_t* map, const void* key);
  * @param key key
  * @return true if key exists, false otherwise
  */
-bool clog_hashmap_is_exists(const clog_hashmap_t* map, const void* key);
+bool clog_hashmap_is_exists(const clog_hashmap_t *map, const void *key);
 
 /**
  * get size of hashmap
  * @param map #clog_hashmap_t
  * @return size of hashmap
  */
-size_t clog_hashmap_size(const clog_hashmap_t* map);
+size_t clog_hashmap_size(const clog_hashmap_t *map);
 
 /**
  * clear all key-value pairs
  * @param map #clog_hashmap_t
  */
-void clog_hashmap_clear(clog_hashmap_t* map);
+void clog_hashmap_clear(clog_hashmap_t *map);
 
 /**
  * destroy hashmap
  * @param map #clog_hashmap_t, *map will be set to NULL
  */
-void clog_hashmap_destroy(clog_hashmap_t** map);
+void clog_hashmap_destroy(clog_hashmap_t **map);
 
 /**
  * duplicate string
  * @param str string to duplicate
  * @return duplicated string
  */
-static void* clog_hashmap_string_dup(const void* str)
+static void *clog_hashmap_string_dup(const void *str)
 {
-    return clog_strdup((const char*)str);
+    return clog_strdup((const char *)str);
 }
 
 /**
  * free string
  * @param str string to be free
  */
-static void clog_hashmap_string_free(void* str)
+static void clog_hashmap_string_free(void *str)
 {
     clog_free(str);
 }
@@ -141,9 +141,9 @@ static void clog_hashmap_string_free(void* str)
  * @param str2 string2
  * @return true if str1 == str2, false otherwise
  */
-static bool clog_hashmap_string_cmp(const void* str1, const void* str2)
+static bool clog_hashmap_string_cmp(const void *str1, const void *str2)
 {
-    return strcmp((const char*)str1, (const char*)str2) == 0;
+    return strcmp((const char *)str1, (const char *)str2) == 0;
 }
 
 /**
@@ -151,9 +151,9 @@ static bool clog_hashmap_string_cmp(const void* str1, const void* str2)
  * @param str string
  * @return size of string
  */
-static size_t clog_hashmap_string_size(const void* str)
+static size_t clog_hashmap_string_size(const void *str)
 {
-    return strlen((const char*)str);
+    return strlen((const char *)str);
 }
 
 #if defined(__cplusplus) || defined(c_plusplus)

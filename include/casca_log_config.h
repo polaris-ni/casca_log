@@ -64,7 +64,7 @@ extern "C" {
 
 #ifndef CLOG_FILENAME
 #ifndef __FILE_NAME__
-static const char* clog_get_filename(const char* fullname, int len)
+static const char *clog_get_filename(const char *fullname, int len)
 {
     if (len <= 1) {
         return fullname;

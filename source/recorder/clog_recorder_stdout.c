@@ -24,7 +24,8 @@ typedef struct clog_recorder_stdout_param {
     char *colors[CLOG_LEVEL_NUM];
 } clog_recorder_stdout_param_t;
 
-static void clog_recorder_stdout_close(clog_recorder_t *self) {
+static void clog_recorder_stdout_close(clog_recorder_t *self)
+{
     clog_recorder_stdout_param_t *param = self->extra;
     CLOG_RET_VOID_IF_NULL(param);
     for (size_t i = 0; i < CLOG_LEVEL_NUM; ++i) {
@@ -33,7 +34,8 @@ static void clog_recorder_stdout_close(clog_recorder_t *self) {
     CLOG_SAFE_FREE(self->extra);
 }
 
-static bool clog_stdout_check_basic_color(uint32_t value, bool is_enhanced, bool is_background) {
+static bool clog_stdout_check_basic_color(uint32_t value, bool is_enhanced, bool is_background)
+{
     if (!is_background) {
         if (is_enhanced) {
             return (value >= 30 && value <= 37) || (value >= 90 && value <= 97);
@@ -46,7 +48,8 @@ static bool clog_stdout_check_basic_color(uint32_t value, bool is_enhanced, bool
     return (value >= 40 && value <= 47);
 }
 
-static clog_res_e clog_stdout_parse_basic_color(const clog_config_item_t *item, char **out, bool is_enhanced) {
+static clog_res_e clog_stdout_parse_basic_color(const clog_config_item_t *item, char **out, bool is_enhanced)
+{
     CLOG_RET_IF_X(item->type != CLOG_CONFIG_TYPE_ARRAY, CLOG_ERROR_FORMAT, "color format of %s is invalid", item->key);
     const clog_config_item_t *fg_item = item->value.array;
     char tmp[64] = {0};
@@ -82,7 +85,8 @@ static clog_res_e clog_stdout_parse_basic_color(const clog_config_item_t *item, 
     return CLOG_SUCCESS;
 }
 
-static clog_res_e clog_stdout_parse_256_color(const clog_config_item_t *item, char **out) {
+static clog_res_e clog_stdout_parse_256_color(const clog_config_item_t *item, char **out)
+{
     CLOG_RET_IF_X(item->type != CLOG_CONFIG_TYPE_ARRAY, CLOG_ERROR_FORMAT, "color format of %s is invalid", item->key);
     const clog_config_item_t *fg_item = item->value.array;
     char tmp[64] = {0};
@@ -119,7 +123,8 @@ static clog_res_e clog_stdout_parse_256_color(const clog_config_item_t *item, ch
 }
 
 static clog_res_e clog_stdout_parse_true_color_rgb(const char *level, const clog_config_item_t *array, uint8_t *r,
-                                                   uint8_t *g, uint8_t *b) {
+                                                   uint8_t *g, uint8_t *b)
+{
     const clog_config_item_t *color = array;
     CLOG_RET_IF_X(color->type != CLOG_CONFIG_TYPE_UINT || color->value.uint > UINT8_MAX, CLOG_ERROR_FORMAT,
                   "true color of %s invalid(type %d, value %u)", level, color->type, color->value.uint);
@@ -137,7 +142,8 @@ static clog_res_e clog_stdout_parse_true_color_rgb(const char *level, const clog
     return CLOG_SUCCESS;
 }
 
-static clog_res_e clog_stdout_parse_true_color(const clog_config_item_t *item, char **out) {
+static clog_res_e clog_stdout_parse_true_color(const clog_config_item_t *item, char **out)
+{
     CLOG_RET_IF_X(item->type != CLOG_CONFIG_TYPE_ARRAY, CLOG_ERROR_FORMAT, "color format of %s is invalid", item->key);
     const clog_config_item_t *fg_item = item->value.array;
     char tmp[64] = {0};
@@ -168,7 +174,8 @@ static clog_res_e clog_stdout_parse_true_color(const clog_config_item_t *item, c
 }
 
 static clog_res_e clog_stdout_parse_single_level(const clog_config_item_t *item, clog_stdout_color_mode_e mode,
-                                                 char **out) {
+                                                 char **out)
+{
     if (mode == CLOG_RECORDER_STDOUT_COLOR_BASIC) {
         return clog_stdout_parse_basic_color(item, out, false);
     }
@@ -184,7 +191,8 @@ static clog_res_e clog_stdout_parse_single_level(const clog_config_item_t *item,
     return CLOG_INVALID_PARAM;
 }
 
-static clog_res_e clog_stdout_parse_colors(const clog_config_group_t *group, clog_recorder_stdout_param_t *param) {
+static clog_res_e clog_stdout_parse_colors(const clog_config_group_t *group, clog_recorder_stdout_param_t *param)
+{
     uint32_t value = 0;
     clog_res_e ret = clog_config_find_item_in_group_uint(group, CLOG_STR_MODE, &value);
     CLOG_RET_IF_FAILED_X(ret, "get \"mode\" of " CLOG_STR_RECORDER_STDOUT " failed, ret = %d", ret);
@@ -202,7 +210,8 @@ static clog_res_e clog_stdout_parse_colors(const clog_config_group_t *group, clo
     return CLOG_SUCCESS;
 }
 
-static clog_res_e clog_recorder_stdout_open(clog_recorder_t *self, const clog_config_group_t *group) {
+static clog_res_e clog_recorder_stdout_open(clog_recorder_t *self, const clog_config_group_t *group)
+{
     clog_recorder_stdout_param_t *param = clog_malloc(sizeof(clog_recorder_stdout_param_t));
     CLOG_RET_IF_NULL_X(param, CLOG_NO_MEMORY, "malloc param failed");
     CLOG_IGNORE_RES(clog_memset(param, sizeof(clog_recorder_stdout_param_t), 0, sizeof(clog_recorder_stdout_param_t)));
@@ -220,7 +229,8 @@ static clog_res_e clog_recorder_stdout_open(clog_recorder_t *self, const clog_co
     return CLOG_SUCCESS;
 }
 
-static clog_res_e clog_recorder_stdout_write(clog_recorder_t *self, const clog_item_t *log) {
+static clog_res_e clog_recorder_stdout_write(clog_recorder_t *self, const clog_item_t *log)
+{
     const clog_recorder_stdout_param_t *param = self->extra;
     if ((param != NULL) && (param->colors[log->level - 1] != NULL)) {
         CLOG_IGNORE_RES(printf("%s%s\033[0m", param->colors[log->level - 1], log->content));
@@ -230,7 +240,8 @@ static clog_res_e clog_recorder_stdout_write(clog_recorder_t *self, const clog_i
     return CLOG_SUCCESS;
 }
 
-const clog_recorder_t *clog_recorder_stdout(void) {
+const clog_recorder_t *clog_recorder_stdout(void)
+{
     static const clog_recorder_t tmp = {
         .id = CLOG_RECORDER_ID_STDOUT,
         .open = clog_recorder_stdout_open,

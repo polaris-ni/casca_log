@@ -17,7 +17,7 @@ extern "C" {
  * @param enabled result, if "enabled" not found, #enabled will not be changed
  * @return return CLOG_SUCCESS if succeed or "enabled" not found, #clog_res_e otherwise
  */
-clog_res_e clog_config_item_get_enabled(const clog_config_group_t* group, bool* enabled);
+clog_res_e clog_config_item_get_enabled(const clog_config_group_t *group, bool *enabled);
 
 
 #if defined(__cplusplus) || defined(c_plusplus)

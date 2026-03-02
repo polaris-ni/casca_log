@@ -78,7 +78,8 @@ static clog_res_e clog_recoder_file_open_file(clog_recorder_file_param_t *param)
     ret = clog_dir_create(directory, 0770);
     CLOG_RET_IF_X(ret != CLOG_SUCCESS && ret != CLOG_ALREADY_EXISTED, ret, "clog_dir_create %s failed, ret = %u",
                   directory, ret);
-    param->log = clog_file_open(file, CLOG_FILE_WRITE | CLOG_FILE_CREATE | CLOG_FILE_EXIST | CLOG_FILE_SHARED, 0660);
+    param->log = clog_file_open(
+        file, CLOG_FILE_READ | CLOG_FILE_WRITE | CLOG_FILE_CREATE | CLOG_FILE_EXIST | CLOG_FILE_SHARED, 0660);
     CLOG_RET_IF_NULL_X(param->log, CLOG_FAIL, "open log file %s failed", file);
     switch (param->split_type) {
         case CLOG_RECORDER_FILE_SPLIT_NONE:
@@ -97,13 +98,17 @@ static clog_res_e clog_recoder_file_open_file(clog_recorder_file_param_t *param)
         case CLOG_RECORDER_FILE_SPLIT_NUMBER:
             CLOG_IGNORE_RES(clog_file_seek(param->log, CLOG_FILE_SEEK_SET, 0, NULL));
             param->current_item_num = 0;
-            uint8_t data = 0;
-            ret = clog_file_read(param->log, &data, sizeof(data), NULL);
-            while (ret == CLOG_SUCCESS) {
+            while (true) {
+                uint8_t data = 0;
+                size_t num = 0;
+                ret = clog_file_read(param->log, &data, sizeof(data), &num);
+                if (ret != CLOG_SUCCESS || num != sizeof(data)) {
+                    break;
+                }
                 if (data == '\n') {
                     param->current_item_num++;
+                    CLOG_ERR_ADD("detect new line");
                 }
-                ret = clog_file_read(param->log, &data, sizeof(data), NULL);
             }
             CLOG_IGNORE_RES(clog_file_seek(param->log, CLOG_FILE_SEEK_END, 0, NULL));
             return CLOG_SUCCESS;
@@ -165,6 +170,23 @@ static clog_res_e clog_recorder_file_init_meta_info(const clog_config_group_t *g
     return CLOG_SUCCESS;
 }
 
+static bool clog_recorder_file_need_flash(clog_recorder_file_param_t *param)
+{
+    switch (param->split_type) {
+        case CLOG_RECORDER_FILE_SPLIT_NONE:
+            return false;
+        case CLOG_RECORDER_FILE_SPLIT_SIZE:
+            return param->current_file_size >= param->max_file_size;
+        case CLOG_RECORDER_FILE_SPLIT_TIME:
+            return clog_timestamp_ms() - param->start_time >= param->max_interval;
+        case CLOG_RECORDER_FILE_SPLIT_NUMBER:
+            return param->current_item_num >= param->max_item_num;
+        default:
+            CLOG_ERR_ADD("split type %u is invalid", param->split_type);
+            return false;
+    }
+}
+
 static clog_res_e clog_recorder_file_init_param(const clog_config_group_t *group, clog_recorder_file_param_t *param)
 {
     clog_hashmap_t *default_placeholders = clog_interpolator_default_placeholders();
@@ -195,7 +217,9 @@ static clog_res_e clog_recorder_file_init_param(const clog_config_group_t *group
     res = clog_recoder_file_open_file(param);
     if (res != CLOG_SUCCESS) {
         CLOG_ERR_ADD("clog_recoder_file_open_file failed, ret = %u", res);
+        goto RESULT_HANDLER;
     }
+    res = CLOG_SUCCESS;
 
 RESULT_HANDLER:
     clog_interpolator_context_destroy(context);
@@ -226,7 +250,7 @@ static clog_res_e clog_recorder_file_init_split(const clog_config_group_t *group
             param->max_file_size = value;
             return CLOG_SUCCESS;
         case CLOG_RECORDER_FILE_SPLIT_TIME:
-            param->max_interval = value;
+            param->max_interval = value * 1000U;
             return CLOG_SUCCESS;
         case CLOG_RECORDER_FILE_SPLIT_NUMBER:
             param->max_item_num = value;
@@ -256,6 +280,11 @@ static clog_res_e clog_recorder_file_open(clog_recorder_t *self, const clog_conf
     CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_file_clear_param(param), "init file recorder param failed, ret = %u",
                                ret);
     self->extra = param;
+    if (clog_recorder_file_need_flash(param)) {
+        ret = self->flush(self);
+        CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_file_clear_param(param),
+                                   "clog file recorder flush on open failed, ret = %u", ret);
+    }
     return CLOG_SUCCESS;
 }
 
