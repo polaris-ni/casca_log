@@ -135,7 +135,7 @@ typedef struct clog_item {
     uint32_t recorder[CASCA_LOG_TARGET_RECORDER_MAX_NUM];
     char process[CASCA_LOG_PROCESS_NAME_MAX_SIZE];
     char module[CASCA_LOG_MODULE_NAME_MAX_SIZE];
-    char filename[CASCA_FILENAME_MAX_SIZE];
+    char filename[CASCA_LOG_FILENAME_MAX_SIZE];
     uint64_t tid;
     uint32_t line;
     uint32_t level;

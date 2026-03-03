@@ -29,8 +29,9 @@ static size_t clog_num_to_str(uint32_t value, size_t num, char *buf, const size_
         buf[0] = '0';
         return 1;
     }
-    static const unsigned int max_values[] = {1,       10,       100,       1000,       10000,     100000,
-                                              1000000, 10000000, 100000000, 1000000000, 1000000000};
+    static const unsigned int max_values[] = {
+        1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000, 1000000000,
+    };
     int32_t index = (int32_t)num;
     while (max_values[index] > value) {
         index--;
@@ -45,15 +46,15 @@ static size_t clog_num_to_str(uint32_t value, size_t num, char *buf, const size_
     return i;
 }
 
-#define CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(name, max, num, is_padding)    \
-    static int clog_placeholder_##name(void *param, char *buf, size_t size)         \
-    {                                                                               \
-        CLOG_RET_IF(size < (num), -CLOG_INVALID_PARAM);                             \
-        CLOG_ASSERT(param != NULL);                                                 \
-        CLOG_ASSERT(buf != NULL);                                                   \
-        clog_item_wrapper_t *wrapper = (clog_item_wrapper_t *)param;                \
-        CLOG_ASSERT(wrapper->log->name <= (max));                                   \
-        return clog_num_to_str(wrapper->log->name, (num), buf, size, (is_padding)); \
+#define CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(name, max, num, is_padding)                   \
+    static int clog_placeholder_##name(void *param, char *buf, size_t size)                        \
+    {                                                                                              \
+        CLOG_RET_IF(size < (num), -CLOG_INVALID_PARAM);                                            \
+        CLOG_ASSERT(param != NULL);                                                                \
+        CLOG_ASSERT(buf != NULL);                                                                  \
+        clog_item_wrapper_t *wrapper = (clog_item_wrapper_t *)param;                               \
+        CLOG_ASSERT(wrapper->log->name <= (max));                                                  \
+        return (int)clog_num_to_str((uint32_t)wrapper->log->name, (num), buf, size, (is_padding)); \
     }
 
 CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(year, 9999, 4, true)
@@ -64,7 +65,7 @@ CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(minute, 59, 2, true)
 CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(second, 59, 2, true)
 CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(millisecond, 999, 3, true)
 CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(line, 999999, 6, false)
-CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(tid, UINT32_MAX, 10, false)
+CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION(tid, 0xffffffff, 10, false)
 #undef CLOG_DECLARE_PLACEHOLDER_NUM_FORMAT_FUNCTION
 
 static int clog_placeholder_string_copy(const char *str, char *buf, const size_t size)

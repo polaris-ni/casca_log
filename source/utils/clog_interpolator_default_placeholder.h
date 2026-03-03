@@ -44,7 +44,7 @@ CLOG_DECLARE_INTERPOLATOR_DEFAULT_DATETIME_PLACEHOLDER(millisecond, "%03u", now.
 static int clog_interpolator_placeholder_cwd(void *param, char *buf, size_t size)
 {
     CLOG_UNUSED_VAR(param);
-    char path[CLOG_FILEPATH_MAX_SIZE] = {0};
+    char path[CASCA_LOG_FILEPATH_MAX_SIZE] = {0};
     clog_res_e ret = clog_cwd(path, sizeof(path));
     CLOG_RET_IF_X(ret != CLOG_SUCCESS, -ret, "clog_cwd failed, ret = %u", ret);
     ret = clog_strcpy(buf, size, path);

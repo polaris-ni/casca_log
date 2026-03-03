@@ -27,3 +27,20 @@ function(casca_log_configure_value_macro target macro_name description)
         endif ()
     endif ()
 endfunction()
+
+function(clog_enable_asan_for_target target)
+    if (BUILD_CASCA_LOG_TEST_ASAN)
+        if (CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+            target_compile_options(${target} PRIVATE
+                    -fsanitize=address
+                    -fno-omit-frame-pointer
+                    -g
+                    -O1
+            )
+            target_link_options(${target} PRIVATE -fsanitize=address)
+            message(STATUS "BUILD ${target}: AddressSanitizer is enabled on ${target}")
+        else ()
+            message(STATUS "BUILD ${target}: AddressSanitizer is not supported on ${target}")
+        endif ()
+    endif ()
+endfunction()
