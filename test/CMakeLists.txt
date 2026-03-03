@@ -1,3 +1,6 @@
+cmake_minimum_required(VERSION 3.14)
+project(casca_log_build)
+
 include(FetchContent)
 
 # GoogleTest requires at least C++17
@@ -28,13 +31,13 @@ casca_log_configure_value_macro(casca_log_test "CASCA_LOG_TARGET_RECORDER_MAX_NU
 casca_log_configure_value_macro(casca_log_test "CASCA_LOG_CACHE_LINE_SIZE" "cache line size" 64)
 casca_log_configure_value_macro(casca_log_test "CASCA_LOG_PROCESS_NAME_MAX_SIZE" "process name max size" 64)
 casca_log_configure_value_macro(casca_log_test "CASCA_LOG_MODULE_NAME_MAX_SIZE" "module name max size" 64)
-casca_log_configure_value_macro(casca_log_test "CASCA_FILENAME_MAX_SIZE" "filename max size" 64)
-casca_log_configure_value_macro(casca_log_test "CLOG_FILEPATH_MAX_SIZE" "filepath max size" 256)
+casca_log_configure_value_macro(casca_log_test "CASCA_LOG_FILENAME_MAX_SIZE" "filename max size" 64)
+casca_log_configure_value_macro(casca_log_test "CASCA_LOG_FILEPATH_MAX_SIZE" "filepath max size" 256)
 add_test(NAME CascaLogTest COMMAND casca_log_test)
 
 if (MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-    message(STATUS "_CRT_SECURE_NO_WARNINGS is defined to suppress CRT SECURE WARNINGS")
+    message(STATUS "BUILD casca_log_test: _CRT_SECURE_NO_WARNINGS is defined to suppress CRT SECURE WARNINGS")
 endif ()
 
 clog_enable_asan_for_target(casca_log_test)

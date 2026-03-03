@@ -32,7 +32,7 @@ typedef struct clog_recorder_file_param {
     clog_interpolator_t *dir_interpolator;
     clog_interpolator_t *file_interpolator;
     clog_file_t *log;
-    char metainfo_path[CLOG_FILEPATH_MAX_SIZE];
+    char metainfo_path[CASCA_LOG_FILEPATH_MAX_SIZE];
     clog_recorder_file_meta_info_t metainfo;
     clog_recorder_file_split_type_e split_type;
     union {
@@ -72,7 +72,7 @@ static clog_res_e clog_recorder_file_init_interpolator(const char *what, const c
 static clog_res_e clog_recoder_file_open_file(clog_recorder_file_param_t *param)
 {
     const char *file = param->metainfo.file;
-    char directory[CLOG_FILEPATH_MAX_SIZE] = {0};
+    char directory[CASCA_LOG_FILEPATH_MAX_SIZE] = {0};
     clog_res_e ret = clog_file_get_dir(file, directory, sizeof(directory));
     CLOG_RET_IF_FAILED_X(ret, "clog_file_get_dir %s failed, ret = %u", file, ret);
     ret = clog_dir_create(directory, 0770);
@@ -120,7 +120,7 @@ static clog_res_e clog_recoder_file_open_file(clog_recorder_file_param_t *param)
 
 static clog_res_e clog_file_recorder_get_log_filepath(clog_recorder_file_param_t *param, char *filepath, size_t size)
 {
-    char path[CLOG_FILEPATH_MAX_SIZE] = {0};
+    char path[CASCA_LOG_FILEPATH_MAX_SIZE] = {0};
     size_t num = 0;
     clog_res_e res = clog_interpolator_interpolate(param->dir_interpolator, NULL, path, sizeof(path), &num);
     CLOG_RET_IF_FAILED_X(res, "clog_interpolator_interpolate directory failed, ret = %u", res);
@@ -138,7 +138,7 @@ static clog_res_e clog_recorder_file_init_meta_info(const clog_config_group_t *g
     clog_interpolator_t *interpolator = NULL;
     clog_res_e res = clog_recorder_file_init_interpolator(CLOG_STR_METAINFO, group, context, &interpolator);
     CLOG_RET_IF_FAILED_X(res, "clog_recorder_file_init_interpolator failed, ret = %u", res);
-    char tmp[CLOG_FILEPATH_MAX_SIZE] = {0};
+    char tmp[CASCA_LOG_FILEPATH_MAX_SIZE] = {0};
     res = clog_interpolator_interpolate(interpolator, NULL, tmp, sizeof(tmp), NULL);
     CLOG_RET_IF_FAILED_X(res, "clog_recorder_file_init_interpolator failed, ret = %u", res);
     clog_interpolator_clear(&interpolator);
@@ -151,7 +151,7 @@ static clog_res_e clog_recorder_file_init_meta_info(const clog_config_group_t *g
         res = clog_file_recorder_get_log_filepath(param, param->metainfo.file, sizeof(param->metainfo.file));
         CLOG_RET_IF_FAILED_X(res, "clog_file_recorder_get_log_filepath %s failed, ret = %u", res);
         param->metainfo.index++;
-        char directory[CLOG_FILEPATH_MAX_SIZE] = {0};
+        char directory[CASCA_LOG_FILEPATH_MAX_SIZE] = {0};
         clog_res_e ret = clog_file_get_dir(param->metainfo_path, directory, sizeof(directory));
         CLOG_RET_IF_FAILED_X(ret, "clog_file_get_dir %s failed, ret = %u", param->metainfo_path, ret);
         ret = clog_dir_create(directory, 0770);

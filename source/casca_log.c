@@ -383,9 +383,11 @@ void clog_destroy(const clog_cleanup_f *funcs, const size_t num)
         g_context.channel.close(&g_context.channel);
         CLOG_IGNORE_RES(clog_memset(&g_context.channel, sizeof(clog_channel_t), 0, sizeof(clog_channel_t)));
     }
+#ifdef CASCA_LOG_MEM_POOL
     if (g_context.pool != NULL) {
         clog_buffer_pool_finalize(g_context.pool);
     }
+#endif
     g_context.config.root = NULL;
     g_context.config.level = CLOG_LEVEL_OFF;
     if (funcs != NULL && num != 0) {
@@ -430,7 +432,7 @@ static clog_res_e clog_log_internal(const uint32_t *recorders, size_t num, const
     const clog_res_e ret = clog_format_log(g_context.formatter.interpolator, wrapper, wrapper->log->content,
                                            sizeof(wrapper->log->content), &length);
     CLOG_RET_IF_FAILED_X(ret, "clog_format_log failed, ret = %u", ret);
-    wrapper->log->length = length;
+    wrapper->log->length = (uint16_t)length;
     /* postfilter */
     pass = clog_filter_log(clog_get_filters(CLOG_FILTER_POST), wrapper);
     CLOG_RET_IF_X(!pass, CLOG_NOT_PERMITTED, "clog_filter_log POST failed");
