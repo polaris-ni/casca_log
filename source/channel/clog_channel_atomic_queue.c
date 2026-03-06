@@ -60,3 +60,16 @@ void clog_atomic_queue_channel_provider(clog_channel_t *channel)
     channel->close = clog_atomic_queue_channel_close;
     channel->param = NULL;
 }
+
+clog_channel_t *clog_atomic_queue_channel_create()
+{
+    clog_channel_t *channel = clog_malloc(sizeof(clog_channel_t));
+    CLOG_RET_IF_NULL_X(channel, NULL, "malloc clog_channel_t failed");
+    channel->id = CLOG_CHANNEL_ID_ATOMIC_QUEUE;
+    channel->open = clog_atomic_queue_channel_open;
+    channel->write = clog_atomic_queue_channel_write;
+    channel->read = clog_atomic_queue_channel_read;
+    channel->close = clog_atomic_queue_channel_close;
+    channel->param = NULL;
+    return channel;
+}

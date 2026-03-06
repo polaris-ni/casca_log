@@ -51,13 +51,15 @@ clog_res_e clog_interpolator_context_register(clog_interpolator_context_t *conte
     return clog_hashmap_put(context->map, name, &handler);
 }
 
-void clog_interpolator_context_destroy(clog_interpolator_context_t *context)
+void clog_interpolator_context_destroy(clog_interpolator_context_t **context)
 {
     CLOG_RET_VOID_IF_NULL_X(context, "context is NULL");
-    if (context->is_map_allocated) {
-        clog_hashmap_destroy(&context->map);
+    CLOG_RET_VOID_IF_NULL_X(*context, "*context is NULL");
+    if ((*context)->is_map_allocated) {
+        clog_hashmap_destroy(&((*context)->map));
     }
-    clog_free(context);
+    clog_free(*context);
+    *context = NULL;
 }
 
 static bool clog_placeholder_is_name_valid(const char ch)

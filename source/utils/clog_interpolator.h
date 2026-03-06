@@ -45,10 +45,10 @@ clog_res_e clog_interpolator_context_register(clog_interpolator_context_t *conte
                                               clog_placeholder_handler_f handler);
 
 /**
- * destroy interpolator context
+ * destroy interpolator context, *context will be set to NULL
  * @param context #clog_interpolator_context_t
  */
-void clog_interpolator_context_destroy(clog_interpolator_context_t *context);
+void clog_interpolator_context_destroy(clog_interpolator_context_t **context);
 
 /**
  * parse interpolator string

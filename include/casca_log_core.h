@@ -11,6 +11,7 @@
 #include "clog_channel_base.h"
 #include "clog_dispatcher.h"
 #include "clog_filter.h"
+#include "clog_interpolator.h"
 #include "clog_recorder.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
@@ -66,9 +67,20 @@ clog_res_e clog_add_module(clog_context_t *context, const clog_module_t *module)
  * add modules for log context
  * @param context clog_context_t
  * @param module modules to be added
+ * @param num the number of modules
  * @return #clog_res_e
  */
 clog_res_e clog_add_modules(clog_context_t *context, const clog_module_t *module, size_t num);
+
+/**
+ * register customized log format placeholder handler for log context
+ * @param context clog_context_t
+ * @param name placeholder name
+ * @param handler placeholder handler
+ * @return #clog_res_e
+ */
+clog_res_e clog_register_log_format_placeholder_handler(clog_context_t *context, const char *name,
+                                                        clog_placeholder_handler_f handler);
 
 /**
  * setup log format for log context
@@ -97,24 +109,24 @@ clog_res_e clog_add_filter(clog_context_t *context, clog_filter_t *filter);
 
 /**
  * setup channel for log context
- * channel->param will be assigned to new allocated clog_channel_t
- * it will be freed when channel->close called, so never free it manually
+ * it will be freed when context is destroyed, so never free it manually if clog_set_channel success
+ * if you have set a channel, it will be replaced by new channel, old channel will be freed
  * @param context clog_context_t
  * @param channel channel to be used
  * @return #clog_res_e
  */
-clog_res_e clog_set_channel(clog_context_t *context, const clog_channel_t *channel);
+clog_res_e clog_set_channel(clog_context_t *context, clog_channel_t *channel);
 
 /**
  * setup dispatcher for log context, should be called after clog_set_channel
  * dispatcher->channel should be NULL, and it will be set to current configured channel automatically
- * dispatcher->extra will be assigned to new allocated clog_dispatcher_t
- * it will be freed when dispatcher->close called, so never free it manually
+ * it will be freed when context is destroyed, so never free it manually if clog_set_dispatcher success
+ * if you have set a dispatcher, it will be replaced by new dispatcher, old dispatcher will be freed
  * @param context clog_context_t
  * @param dispatcher dispatcher to be used
  * @return #clog_res_e
  */
-clog_res_e clog_set_dispatcher(clog_context_t *context, const clog_dispatcher_t *dispatcher);
+clog_res_e clog_set_dispatcher(clog_context_t *context, clog_dispatcher_t *dispatcher);
 
 /**
  * add recorder for log context

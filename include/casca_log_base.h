@@ -170,7 +170,7 @@ typedef struct clog_item_wrapper {
 
 typedef struct clog_module {
     char name[CASCA_LOG_MODULE_NAME_MAX_SIZE];
-    clog_level_e level;
+    uint32_t level;
     uint32_t num;
     uint32_t recorders[CASCA_LOG_TARGET_RECORDER_MAX_NUM];
 } clog_module_t;

@@ -14,6 +14,7 @@
 #include "clog_formatter.h"
 #include "clog_hashmap.h"
 #include "clog_interpolator.h"
+#include "clog_log_format_placeholder.h"
 #ifndef CASCA_LOG_LOCKLESS
 #include "clog_mutex.h"
 #endif
@@ -41,6 +42,8 @@ typedef struct clog_context {
     clog_hashmap_t *modules;
 
     struct {
+        clog_hashmap_t *placeholders;
+        clog_interpolator_context_t *interpolator_context;
         clog_interpolator_t *interpolator;
         const char *tags[CLOG_LEVEL_NUM];
     } formatter;
@@ -228,6 +231,32 @@ clog_res_e clog_add_modules(clog_context_t *context, const clog_module_t *module
     return CLOG_SUCCESS;
 }
 
+static clog_res_e clog_init_log_format_interpolator_context(clog_context_t *context)
+{
+    CLOG_RET_IF(context->formatter.interpolator_context != NULL, CLOG_SUCCESS);
+    if (context->formatter.placeholders == NULL) {
+        context->formatter.placeholders = clog_log_format_default_placeholder_map_create();
+        CLOG_RET_IF_NULL_X(context->formatter.placeholders, CLOG_FAIL, "clog_log_format_placeholder_map_create failed");
+    }
+    context->formatter.interpolator_context = clog_interpolator_context_create(context->formatter.placeholders);
+    CLOG_RET_IF_NULL_X(context->formatter.interpolator_context, CLOG_FAIL, "clog_interpolator_context_create failed");
+    return CLOG_SUCCESS;
+}
+
+clog_res_e clog_register_log_format_placeholder_handler(clog_context_t *context, const char *name,
+                                                        clog_placeholder_handler_f handler)
+{
+    CLOG_RET_IF_NULL_X(context, CLOG_INVALID_PARAM, "context is NULL");
+    CLOG_CONTEXT_SETUP_STATE_CHECK()
+    CLOG_RET_IF_NULL_X(name, CLOG_INVALID_PARAM, "placeholder name is NULL");
+    CLOG_RET_IF_NULL_X(handler, CLOG_INVALID_PARAM, "placeholder handler is NULL");
+    clog_res_e ret = clog_init_log_format_interpolator_context(context);
+    CLOG_RET_IF_FUNC_FAILED_X(clog_init_log_format_interpolator_context, ret);
+    ret = clog_interpolator_context_register(context->formatter.interpolator_context, name, handler);
+    CLOG_RET_IF_FUNC_FAILED_X(clog_interpolator_context_register, ret);
+    return CLOG_SUCCESS;
+}
+
 clog_res_e clog_set_log_format(clog_context_t *context, const char *format)
 {
     CLOG_RET_IF_NULL_X(context, CLOG_INVALID_PARAM, "context is NULL");
@@ -236,8 +265,10 @@ clog_res_e clog_set_log_format(clog_context_t *context, const char *format)
     if (context->formatter.interpolator != NULL) {
         clog_interpolator_clear(&context->formatter.interpolator);
     }
-    const clog_res_e ret = clog_formatter_parse(format, &context->formatter.interpolator);
-    CLOG_RET_IF_FUNC_FAILED_X(clog_formatter_parse, ret);
+    clog_res_e ret = clog_init_log_format_interpolator_context(context);
+    CLOG_RET_IF_FUNC_FAILED_X(clog_init_log_format_interpolator_context, ret);
+    ret = clog_interpolator_parse(context->formatter.interpolator_context, format, &context->formatter.interpolator);
+    CLOG_RET_IF_FUNC_FAILED_X(clog_interpolator_parse, ret);
     return CLOG_SUCCESS;
 }
 
@@ -292,7 +323,7 @@ clog_res_e clog_add_filter(clog_context_t *context, clog_filter_t *filter)
     return CLOG_SUCCESS;
 }
 
-clog_res_e clog_set_channel(clog_context_t *context, const clog_channel_t *channel)
+clog_res_e clog_set_channel(clog_context_t *context, clog_channel_t *channel)
 {
     CLOG_RET_IF_NULL_X(context, CLOG_INVALID_PARAM, "context is NULL");
     CLOG_CONTEXT_SETUP_STATE_CHECK()
@@ -302,19 +333,12 @@ clog_res_e clog_set_channel(clog_context_t *context, const clog_channel_t *chann
     CLOG_RET_IF_NULL_X(channel->read, CLOG_INVALID_PARAM, "channel->read is NULL");
     CLOG_RET_IF_NULL_X(channel->close, CLOG_INVALID_PARAM, "channel->close is NULL");
 
-    clog_channel_t *channel_copy = clog_malloc(sizeof(clog_channel_t));
-    CLOG_RET_IF_NULL_X(channel_copy, CLOG_NO_MEMORY, "clog_malloc clog_channel_t failed");
-    *channel_copy = *channel;
-
-    if (context->channel != NULL) {
-        context->channel->close(context->channel);
-        CLOG_SAFE_FREE(context->channel);
-    }
-    context->channel = channel_copy;
+    clog_channel_destroy(&context->channel);
+    context->channel = channel;
     return CLOG_SUCCESS;
 }
 
-clog_res_e clog_set_dispatcher(clog_context_t *context, const clog_dispatcher_t *dispatcher)
+clog_res_e clog_set_dispatcher(clog_context_t *context, clog_dispatcher_t *dispatcher)
 {
     CLOG_RET_IF_NULL_X(context, CLOG_INVALID_PARAM, "context is NULL");
     CLOG_CONTEXT_SETUP_STATE_CHECK()
@@ -323,17 +347,9 @@ clog_res_e clog_set_dispatcher(clog_context_t *context, const clog_dispatcher_t 
     CLOG_RET_IF_NULL_X(dispatcher->open, CLOG_INVALID_PARAM, "dispatcher->open is NULL");
     CLOG_RET_IF_NULL_X(dispatcher->notify, CLOG_INVALID_PARAM, "dispatcher->notify is NULL");
     CLOG_RET_IF_NULL_X(dispatcher->close, CLOG_INVALID_PARAM, "dispatcher->close is NULL");
-    clog_dispatcher_t *dispatcher_copy = clog_malloc(sizeof(clog_dispatcher_t));
-    CLOG_RET_IF_NULL_X(dispatcher_copy, CLOG_NO_MEMORY, "clog_malloc clog_dispatcher_t failed");
-    *dispatcher_copy = *dispatcher;
 
-    if (context->dispatcher != NULL) {
-        context->dispatcher->notify(context->dispatcher, CLOG_DISPATCHER_EVENT_END);
-        context->dispatcher->close(context->dispatcher);
-        CLOG_SAFE_FREE(context->dispatcher);
-    }
-
-    context->dispatcher = dispatcher_copy;
+    clog_dispatcher_destroy(&context->dispatcher);
+    context->dispatcher = dispatcher;
     return CLOG_SUCCESS;
 }
 
@@ -409,6 +425,8 @@ clog_res_e clog_context_setup(clog_context_t *context)
         }
     }
     clog_hashmap_iterator_destroy(&it);
+    clog_interpolator_context_destroy(&context->formatter.interpolator_context);
+    clog_hashmap_destroy(&context->formatter.placeholders);
     context->state = CLOG_STATE_RUNNING;
     return CLOG_SUCCESS;
 }
@@ -430,6 +448,12 @@ void clog_context_destroy(clog_context_t **context)
     }
     clog_hashmap_destroy(&tmp->recorders);
     clog_interpolator_clear(&tmp->formatter.interpolator);
+    if (tmp->formatter.interpolator_context != NULL) {
+        clog_interpolator_context_destroy(&tmp->formatter.interpolator_context);
+    }
+    if (tmp->formatter.placeholders != NULL) {
+        clog_hashmap_destroy(&tmp->formatter.placeholders);
+    }
     for (size_t i = 0; i < CLOG_ARRAY_SIZE(tmp->formatter.tags); ++i) {
         CLOG_SAFE_FREE(tmp->formatter.tags[i]);
     }

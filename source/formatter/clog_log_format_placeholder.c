@@ -132,32 +132,39 @@ clog_res_e clog_log_format_placeholder_register(const char *name, clog_placehold
     return clog_hashmap_put(map, name, handler);
 }
 
+clog_hashmap_t *clog_log_format_default_placeholder_map_create(void)
+{
+    clog_hashmap_t *map =
+        clog_hashmap_create(0, sizeof(clog_placeholder_handler_f), clog_hashmap_string_dup, clog_hashmap_string_free,
+                            NULL, NULL, clog_hashmap_string_cmp, clog_hashmap_string_size, 0);
+    CLOG_RET_IF_NULL_X(map, NULL, "clog_hashmap_create failed");
+    const char *default_placeholder_names[] = {
+        "_year",   "_month", "_day",  "_hour", "_minute",  "_second", "_millisecond", "_process",
+        "_module", "_tid",   "_file", "_line", "_content", "_level",  "_ln",
+    };
+    const clog_placeholder_handler_f default_placeholder_handlers[] = {
+        clog_placeholder_year,    clog_placeholder_month,  clog_placeholder_day,         clog_placeholder_hour,
+        clog_placeholder_minute,  clog_placeholder_second, clog_placeholder_millisecond, clog_placeholder_process,
+        clog_placeholder_module,  clog_placeholder_tid,    clog_placeholder_file,        clog_placeholder_line,
+        clog_placeholder_content, clog_placeholder_level,  clog_placeholder_ln,
+    };
+    CLOG_ASSERT(CLOG_ARRAY_SIZE(default_placeholder_names) == CLOG_ARRAY_SIZE(default_placeholder_handlers));
+    const size_t default_placeholder_num = CLOG_ARRAY_SIZE(default_placeholder_names);
+    for (size_t i = 0; i < default_placeholder_num; i++) {
+        const clog_res_e ret = clog_hashmap_put(map, default_placeholder_names[i], &default_placeholder_handlers[i]);
+        CLOG_CLEAN_RET_IF_X(ret != CLOG_SUCCESS, clog_hashmap_destroy(&map), NULL,
+                            "add default log format placeholder handler %s failed, ret = %u",
+                            default_placeholder_names[i], ret);
+    }
+    return map;
+}
+
 clog_hashmap_t *clog_log_format_placeholder_get_map(void)
 {
     if (g_placeholder_map != NULL) {
         return g_placeholder_map;
     }
-    g_placeholder_map =
-        clog_hashmap_create(0, sizeof(clog_placeholder_handler_f), clog_hashmap_string_dup, clog_hashmap_string_free,
-                            NULL, NULL, clog_hashmap_string_cmp, clog_hashmap_string_size, 0);
-    CLOG_RET_IF_NULL_X(g_placeholder_map, NULL, "clog_hashmap_create failed");
-    const char *default_placeholder_names[] = {"_year",   "_month",       "_day",     "_hour",   "_minute",
-                                               "_second", "_millisecond", "_process", "_module", "_tid",
-                                               "_file",   "_line",        "_content", "_level",  "_ln"};
-    const clog_placeholder_handler_f default_placeholder_handlers[] = {
-        clog_placeholder_year,    clog_placeholder_month,  clog_placeholder_day,         clog_placeholder_hour,
-        clog_placeholder_minute,  clog_placeholder_second, clog_placeholder_millisecond, clog_placeholder_process,
-        clog_placeholder_module,  clog_placeholder_tid,    clog_placeholder_file,        clog_placeholder_line,
-        clog_placeholder_content, clog_placeholder_level,  clog_placeholder_ln};
-    CLOG_ASSERT(CLOG_ARRAY_SIZE(default_placeholder_names) == CLOG_ARRAY_SIZE(default_placeholder_handlers));
-    const size_t default_placeholder_num = CLOG_ARRAY_SIZE(default_placeholder_names);
-    for (size_t i = 0; i < default_placeholder_num; i++) {
-        const clog_res_e ret =
-            clog_hashmap_put(g_placeholder_map, default_placeholder_names[i], &default_placeholder_handlers[i]);
-        CLOG_CLEAN_RET_IF_X(ret != CLOG_SUCCESS, clog_hashmap_destroy(&g_placeholder_map), NULL,
-                            "add default log format placeholder %s failed, ret = %u", default_placeholder_names[i],
-                            ret);
-    }
+    g_placeholder_map = clog_log_format_default_placeholder_map_create();
     return g_placeholder_map;
 }
 
