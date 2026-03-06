@@ -7,6 +7,7 @@
 
 #include "casca_log_base.h"
 #include "clog_config.h"
+#include "clog_hooks.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -33,6 +34,21 @@ struct clog_channel {
     clog_channel_close_f close;
     void *param;
 };
+
+/**
+ * destroy channel
+ * @param channel channel
+ */
+static void clog_channel_destroy(clog_channel_t **channel)
+{
+    if (channel != NULL) {
+        if (*channel != NULL) {
+            (*channel)->close(*channel);
+            clog_free(*channel);
+            *channel = NULL;
+        }
+    }
+}
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }

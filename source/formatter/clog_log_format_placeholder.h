@@ -22,6 +22,12 @@ extern "C" {
 clog_res_e clog_log_format_placeholder_register(const char *name, clog_placeholder_handler_f handler);
 
 /**
+ * create log format default placeholder map
+ * @return log format placeholder map
+ */
+clog_hashmap_t *clog_log_format_default_placeholder_map_create(void);
+
+/**
  * get log format placeholder map
  * @return log format placeholder map
  */

@@ -222,7 +222,7 @@ static clog_res_e clog_recorder_file_init_param(const clog_config_group_t *group
     res = CLOG_SUCCESS;
 
 RESULT_HANDLER:
-    clog_interpolator_context_destroy(context);
+    clog_interpolator_context_destroy(&context);
     clog_hashmap_destroy(&default_placeholders);
     return res;
 }

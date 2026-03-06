@@ -57,6 +57,17 @@ struct clog_dispatcher {
 
 typedef void (*clog_dispatcher_provider_f)(clog_dispatcher_t *dispatcher);
 
+static void clog_dispatcher_destroy(clog_dispatcher_t **dispatcher)
+{
+    if (dispatcher != NULL) {
+        if (*dispatcher != NULL) {
+            (*dispatcher)->close(*dispatcher);
+            clog_free(*dispatcher);
+            *dispatcher = NULL;
+        }
+    }
+}
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

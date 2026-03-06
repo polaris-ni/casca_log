@@ -18,6 +18,12 @@ extern "C" {
  */
 void clog_atomic_queue_channel_provider(clog_channel_t *channel);
 
+/**
+ * create atomic queue channel
+ * @return channel
+ */
+clog_channel_t *clog_atomic_queue_channel_create();
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

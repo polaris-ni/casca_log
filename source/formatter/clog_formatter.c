@@ -3,7 +3,6 @@
  * @date  2025/10/1
  */
 #include "clog_formatter.h"
-#include <stdio.h>
 #include "casca_log.h"
 #include "clog_config.h"
 #include "clog_error.h"
@@ -53,7 +52,7 @@ clog_res_e clog_formatter_setup(void)
     CLOG_RET_IF_NULL_X(context, CLOG_FAIL, "create interpolator context failed");
     clog_interpolator_t *interpolator = NULL;
     ret = clog_interpolator_parse(context, item->value.str, &interpolator);
-    clog_interpolator_context_destroy(context);
+    clog_interpolator_context_destroy(&context);
     CLOG_RET_IF_FAILED_X(ret, "parse log format[%s] failed, ret = %u", item->value.str, ret);
     clog_set_interpolator(interpolator);
     return CLOG_SUCCESS;
@@ -69,7 +68,7 @@ clog_res_e clog_formatter_parse(const char *format, clog_interpolator_t **interp
     CLOG_RET_IF_NULL_X(context, CLOG_FAIL, "create interpolator context failed");
     clog_interpolator_t *tmp = NULL;
     const clog_res_e ret = clog_interpolator_parse(context, format, &tmp);
-    clog_interpolator_context_destroy(context);
+    clog_interpolator_context_destroy(&context);
     CLOG_RET_IF_FAILED_X(ret, "parse log format[%s] failed, ret = %u", format, ret);
     *interpolator = tmp;
     return CLOG_SUCCESS;

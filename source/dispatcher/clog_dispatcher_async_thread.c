@@ -121,6 +121,7 @@ static void clog_dispatcher_async_thread_notify(clog_dispatcher_t *self, clog_di
 static void clog_dispatcher_async_thread_close(clog_dispatcher_t *self)
 {
     clog_dispatcher_async_thread_param_t *param = self->extra;
+    CLOG_RET_VOID_IF_NULL(param);
     const clog_async_thread_dispatcher_state_e state = clog_atomic_get(&param->state);
     if (state == CLOG_ASYNC_THREAD_DISPATCHER_RUNNING) {
         clog_atomic_set(&param->state, CLOG_ASYNC_THREAD_DISPATCHER_STOPPING);
@@ -143,4 +144,17 @@ void clog_dispatcher_async_thread(clog_dispatcher_t *dispatcher)
     dispatcher->close = clog_dispatcher_async_thread_close;
     dispatcher->channel = NULL;
     dispatcher->extra = NULL;
+}
+
+clog_dispatcher_t *clog_dispatcher_async_thread_create()
+{
+    clog_dispatcher_t *dispatcher = clog_malloc(sizeof(clog_dispatcher_t));
+    CLOG_RET_IF_NULL_X(dispatcher, NULL, "malloc clog_dispatcher_t failed");
+    dispatcher->id = CLOG_DISPATCHER_ID_ASYNC_THREAD;
+    dispatcher->open = clog_dispatcher_async_thread_open;
+    dispatcher->notify = clog_dispatcher_async_thread_notify;
+    dispatcher->close = clog_dispatcher_async_thread_close;
+    dispatcher->channel = NULL;
+    dispatcher->extra = NULL;
+    return dispatcher;
 }
