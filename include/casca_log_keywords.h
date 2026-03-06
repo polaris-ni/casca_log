@@ -33,8 +33,12 @@ extern "C" {
 #define CLOG_STR_DIRECTORY "directory"
 #define CLOG_STR_FILE "file"
 #define CLOG_STR_SPLIT "split"
+#define CLOG_STR_FORMAT "format"
+#define CLOG_STR_TAG "tag"
 
 /* groups */
+#define CLOG_STR_G_PROCESS "Process"
+#define CLOG_STR_FORMATTER "Formatter"
 #define CLOG_STR_FILTERS "Filters"
 #define CLOG_STR_BASIC_FILTER "ClogBasicFilter"
 #define CLOG_STR_KEYWORDS_FILTER "ClogKeywordsFilter"
