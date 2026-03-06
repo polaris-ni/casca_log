@@ -70,6 +70,14 @@ extern "C" {
         }                                     \
     } while (0)
 
+#define CLOG_RET_IF_FUNC_FAILED_X(func, ret)                \
+    do {                                                    \
+        if ((ret) != CLOG_SUCCESS) {                        \
+            CLOG_ERR_ADD(#func " failed, ret = %u", (ret)); \
+            return ret;                                     \
+        }                                                   \
+    } while (0)
+
 #define CLOG_RET_VOID_IF_FAILED_X(ret, msg, ...) \
     do {                                         \
         if ((ret) != CLOG_SUCCESS) {             \

@@ -22,6 +22,8 @@ struct clog_hashmap_entry {
 
 typedef struct clog_hashmap clog_hashmap_t;
 
+typedef struct clog_hashmap_iterator clog_hashmap_iterator_t;
+
 typedef bool (*clog_hashmap_cmp_f)(const void *key1, const void *key2);
 
 typedef void *(*clog_hashmap_dup_f)(const void *ptr);
@@ -115,6 +117,53 @@ void clog_hashmap_clear(clog_hashmap_t *map);
  * @param map #clog_hashmap_t, *map will be set to NULL
  */
 void clog_hashmap_destroy(clog_hashmap_t **map);
+
+/**
+ * create an iterator for hashmap
+ * @param map #clog_hashmap_t
+ * @return iterator, NULL if failed
+ */
+clog_hashmap_iterator_t *clog_hashmap_iterator_create(clog_hashmap_t *map);
+
+/**
+ * destroy iterator
+ * @param iter #clog_hashmap_iterator_t, *iter will be set to NULL
+ */
+void clog_hashmap_iterator_destroy(clog_hashmap_iterator_t **iter);
+
+/**
+ * move iterator to next element
+ * @param iter #clog_hashmap_iterator_t
+ * @return true if move success, false if no more elements
+ */
+bool clog_hashmap_iterator_next(clog_hashmap_iterator_t *iter);
+
+/**
+ * get current key from iterator
+ * @param iter #clog_hashmap_iterator_t
+ * @return current key, NULL if iterator is invalid or no more elements
+ */
+void *clog_hashmap_iterator_key(const clog_hashmap_iterator_t *iter);
+
+/**
+ * get current value from iterator
+ * @param iter #clog_hashmap_iterator_t
+ * @return current value, NULL if iterator is invalid or no more elements
+ */
+void *clog_hashmap_iterator_value(const clog_hashmap_iterator_t *iter);
+
+/**
+ * get current key-value entry from iterator
+ * @param iter #clog_hashmap_iterator_t
+ * @return current entry, NULL if iterator is invalid or no more elements
+ */
+clog_hashmap_entry_t *clog_hashmap_iterator_entry(const clog_hashmap_iterator_t *iter);
+
+/**
+ * reset iterator to beginning
+ * @param iter #clog_hashmap_iterator_t
+ */
+void clog_hashmap_iterator_reset(clog_hashmap_iterator_t *iter);
 
 /**
  * duplicate string

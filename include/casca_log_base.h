@@ -168,6 +168,13 @@ typedef struct clog_item_wrapper {
     clog_item_t *log;
 } clog_item_wrapper_t;
 
+typedef struct clog_module {
+    char name[CASCA_LOG_MODULE_NAME_MAX_SIZE];
+    clog_level_e level;
+    uint32_t num;
+    uint32_t recorders[CASCA_LOG_TARGET_RECORDER_MAX_NUM];
+} clog_module_t;
+
 clog_res_e clog_err_to_res(int err);
 
 #if defined(__cplusplus) || defined(c_plusplus)

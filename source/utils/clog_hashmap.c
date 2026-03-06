@@ -4,7 +4,7 @@
  */
 #include "clog_hashmap.h"
 #include <stdlib.h>
-#include <time.h>
+#include "clog_error.h"
 
 #ifdef CLOG_ARCH_64BIT
 typedef uint64_t clog_hashmap_hash_t;
@@ -28,6 +28,12 @@ struct clog_hashmap {
     clog_hashmap_dup_f value_dup; /* value duplicated func */
     clog_hashmap_free_f value_free; /* value free func */
     clog_hashmap_size_f size_of; /* calculate the size of key, if #size_of is NULL, #key_size will be used instead */
+};
+
+struct clog_hashmap_iterator {
+    clog_hashmap_t *map;
+    size_t bucket_index;
+    clog_hashmap_entry_t *current_entry;
 };
 
 static void *clog_hashmap_dup_key(const clog_hashmap_t *map, const void *key)
@@ -464,4 +470,97 @@ void clog_hashmap_destroy(clog_hashmap_t **map)
     clog_hashmap_free_buckets(*map, (*map)->buckets, (*map)->buckets_size);
     clog_free(*map);
     *map = NULL;
+}
+
+clog_hashmap_iterator_t *clog_hashmap_iterator_create(clog_hashmap_t *map)
+{
+    CLOG_RET_IF_NULL_X(map, NULL, "map is NULL");
+
+    clog_hashmap_iterator_t *iter = clog_malloc(sizeof(clog_hashmap_iterator_t));
+    CLOG_RET_IF_NULL_X(iter, NULL, "malloc clog_hashmap_iterator_t failed");
+
+    iter->map = map;
+    iter->bucket_index = 0;
+    iter->current_entry = NULL;
+
+    /* find the first non-empty bucket */
+    while (iter->bucket_index < map->buckets_size) {
+        if (map->buckets[iter->bucket_index].next != NULL) {
+            iter->current_entry = map->buckets[iter->bucket_index].next;
+            return iter;
+        }
+        iter->bucket_index++;
+    }
+
+    /* hashmap is empty */
+    return iter;
+}
+
+void clog_hashmap_iterator_destroy(clog_hashmap_iterator_t **iter)
+{
+    CLOG_RET_VOID_IF_NULL_X(iter, "iterator is NULL");
+    CLOG_RET_VOID_IF_NULL_X(*iter, "*iterator is NULL");
+
+    clog_free(*iter);
+    *iter = NULL;
+}
+
+bool clog_hashmap_iterator_next(clog_hashmap_iterator_t *iter)
+{
+    CLOG_RET_IF_NULL_X(iter, false, "iterator is NULL");
+
+    if (iter->current_entry != NULL) {
+        iter->current_entry = iter->current_entry->next;
+        if (iter->current_entry != NULL) {
+            return true;
+        }
+    }
+
+    iter->bucket_index++;
+    while (iter->bucket_index < iter->map->buckets_size) {
+        if (iter->map->buckets[iter->bucket_index].next != NULL) {
+            iter->current_entry = iter->map->buckets[iter->bucket_index].next;
+            return true;
+        }
+        iter->bucket_index++;
+    }
+
+    iter->current_entry = NULL;
+    return false;
+}
+
+void *clog_hashmap_iterator_key(const clog_hashmap_iterator_t *iter)
+{
+    CLOG_RET_IF_NULL_X(iter, NULL, "iterator is NULL");
+    CLOG_RET_IF_NULL(iter->current_entry, NULL);
+    return iter->current_entry->key;
+}
+
+void *clog_hashmap_iterator_value(const clog_hashmap_iterator_t *iter)
+{
+    CLOG_RET_IF_NULL_X(iter, NULL, "iterator is NULL");
+    CLOG_RET_IF_NULL(iter->current_entry, NULL);
+    return iter->current_entry->value;
+}
+
+clog_hashmap_entry_t *clog_hashmap_iterator_entry(const clog_hashmap_iterator_t *iter)
+{
+    CLOG_RET_IF_NULL_X(iter, NULL, "iterator is NULL");
+    return iter->current_entry;
+}
+
+void clog_hashmap_iterator_reset(clog_hashmap_iterator_t *iter)
+{
+    CLOG_RET_VOID_IF_NULL(iter);
+
+    iter->bucket_index = 0;
+    iter->current_entry = NULL;
+
+    while (iter->bucket_index < iter->map->buckets_size) {
+        if (iter->map->buckets[iter->bucket_index].next != NULL) {
+            iter->current_entry = iter->map->buckets[iter->bucket_index].next;
+            return;
+        }
+        iter->bucket_index++;
+    }
 }

@@ -59,6 +59,22 @@ clog_res_e clog_formatter_setup(void)
     return CLOG_SUCCESS;
 }
 
+clog_res_e clog_formatter_parse(const char *format, clog_interpolator_t **interpolator)
+{
+    CLOG_RET_IF_NULL_X(format, CLOG_INVALID_PARAM, "format is NULL");
+    CLOG_RET_IF_NULL_X(interpolator, CLOG_INVALID_PARAM, "interpolator is NULL");
+    clog_hashmap_t *placeholder_map = clog_log_format_placeholder_get_map();
+    CLOG_RET_IF_NULL_X(placeholder_map, CLOG_FAIL, "log format placeholder map is NULL");
+    clog_interpolator_context_t *context = clog_interpolator_context_create(placeholder_map);
+    CLOG_RET_IF_NULL_X(context, CLOG_FAIL, "create interpolator context failed");
+    clog_interpolator_t *tmp = NULL;
+    const clog_res_e ret = clog_interpolator_parse(context, format, &tmp);
+    clog_interpolator_context_destroy(context);
+    CLOG_RET_IF_FAILED_X(ret, "parse log format[%s] failed, ret = %u", format, ret);
+    *interpolator = tmp;
+    return CLOG_SUCCESS;
+}
+
 clog_res_e clog_format_log(const clog_interpolator_t *interpolator, const clog_item_wrapper_t *wrapper, char *content,
                            size_t size, size_t *num)
 {
