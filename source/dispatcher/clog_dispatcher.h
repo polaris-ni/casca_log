@@ -5,7 +5,7 @@
 #ifndef CASCA_LOG_CLOG_DISPATCHER_H
 #define CASCA_LOG_CLOG_DISPATCHER_H
 
-#include "clog_channel_base.h"
+#include "clog_channel.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -27,10 +27,9 @@ typedef enum clog_dispatcher_event {
 /**
  * open dispatcher, extra param should be initialized at this function
  * @param self clog_dispatcher_t itself
- * @param group the parsed #clog_config_group_t from the Dispatchers.ClogXxx
  * @return clog_res_e
  */
-typedef clog_res_e (*clog_dispatcher_open_f)(clog_dispatcher_t *self, const clog_config_group_t *group);
+typedef clog_res_e (*clog_dispatcher_open_f)(clog_dispatcher_t *self);
 
 /**
  * notify dispatcher that a new log item has been put into channel
@@ -48,14 +47,13 @@ typedef void (*clog_dispatcher_close_f)(clog_dispatcher_t *self);
 
 struct clog_dispatcher {
     uint32_t id;
+    clog_context_t *context;
     clog_channel_t *channel;
     clog_dispatcher_open_f open;
     clog_dispatcher_notify_f notify;
     clog_dispatcher_close_f close;
     void *extra;
 };
-
-typedef void (*clog_dispatcher_provider_f)(clog_dispatcher_t *dispatcher);
 
 static void clog_dispatcher_destroy(clog_dispatcher_t **dispatcher)
 {

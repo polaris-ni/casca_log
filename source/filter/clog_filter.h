@@ -36,26 +36,6 @@ struct clog_filter {
 };
 
 /**
- * register customized filter
- * @param name filter name, it will be copied
- * @param type #clog_filter_type_e
- * @param filter #clog_filter_f
- * @return #clog_res_e
- */
-clog_res_e clog_filter_register(const char *name, clog_filter_type_e type, clog_filter_f filter);
-
-/**
- * filter setup
- * @return clog_res_e
- */
-clog_res_e clog_filter_setup(void);
-
-/**
- * cleanup filter resource
- */
-void clog_filter_cleanup(void);
-
-/**
  * free filter chain
  * @param filter filter chain
  */

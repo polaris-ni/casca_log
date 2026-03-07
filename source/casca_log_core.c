@@ -6,15 +6,17 @@
 #include "casca_log_core.h"
 #include "casca_log_keywords.h"
 #include "clog_atomic_types.h"
-#include "clog_channel_base.h"
+#include "clog_channel.h"
 #include "clog_config.h"
 #include "clog_config_ext.h"
+#include "clog_datetime.h"
 #include "clog_error.h"
 #include "clog_filter.h"
 #include "clog_formatter.h"
 #include "clog_hashmap.h"
 #include "clog_interpolator.h"
 #include "clog_log_format_placeholder.h"
+#include "clog_thread.h"
 #ifndef CASCA_LOG_LOCKLESS
 #include "clog_mutex.h"
 #endif
@@ -28,6 +30,10 @@
 #define CLOG_CONTEXT_SETUP_STATE_CHECK()                        \
     clog_state_e _tmp_state = clog_atomic_get(&context->state); \
     CLOG_RET_IF_X(_tmp_state != CLOG_STATE_CREATED, CLOG_ABNORMAL_STATE, "clog state %u error", _tmp_state);
+
+#define CLOG_CONTEXT_LOG_STATE_CHECK()                          \
+    clog_state_e _tmp_state = clog_atomic_get(&context->state); \
+    CLOG_RET_IF_X(_tmp_state != CLOG_STATE_RUNNING, CLOG_ABNORMAL_STATE, "clog state %u error", _tmp_state);
 
 typedef struct clog_context {
     clog_atomic_type_t state;
@@ -206,8 +212,12 @@ clog_res_e clog_add_module(clog_context_t *context, const clog_module_t *module)
         CLOG_RET_IF_NULL_X(map, CLOG_NO_MEMORY, "clog_hashmap_create modules failed");
         context->modules = map;
     }
-    const clog_res_e ret = clog_hashmap_put(context->modules, module->name, module);
-    CLOG_RET_IF_FAILED_X(ret, "clog_hashmap_put module %s failed, ret = %u", module->name, ret);
+    clog_module_t target = *module;
+    if (module->level == CLOG_LEVEL_UNSPECIFIED) {
+        target.level = context->mask;
+    }
+    const clog_res_e ret = clog_hashmap_put(context->modules, module->name, &target);
+    CLOG_RET_IF_FAILED_X(ret, "clog_hashmap_put module %s failed, ret = %u", target.name, ret);
     return CLOG_SUCCESS;
 }
 
@@ -349,22 +359,14 @@ clog_res_e clog_set_dispatcher(clog_context_t *context, clog_dispatcher_t *dispa
     CLOG_RET_IF_NULL_X(dispatcher->close, CLOG_INVALID_PARAM, "dispatcher->close is NULL");
 
     clog_dispatcher_destroy(&context->dispatcher);
+    dispatcher->context = context;
     context->dispatcher = dispatcher;
     return CLOG_SUCCESS;
 }
 
 static void *clog_recoder_dup(const void *ptr)
 {
-    clog_recorder_t *tmp = clog_malloc(sizeof(clog_recorder_t));
-    CLOG_RET_IF_NULL(tmp, NULL);
-    const clog_recorder_t *src = ptr;
-    tmp->id = src->id;
-    tmp->open = src->open;
-    tmp->write = src->write;
-    tmp->flush = src->flush;
-    tmp->close = src->close;
-    tmp->extra = src->extra;
-    return tmp;
+    return (void *)ptr;
 }
 
 static void clog_recoder_free(void *ptr)
@@ -404,10 +406,10 @@ clog_res_e clog_context_setup(clog_context_t *context)
     CLOG_RET_IF_NULL_X(context->channel, CLOG_NOT_COMPLETED, "channel not set");
     CLOG_RET_IF_NULL_X(context->dispatcher, CLOG_NOT_COMPLETED, "dispatcher not set");
 
-    clog_res_e ret = context->channel->open(context->channel, NULL);
+    clog_res_e ret = context->channel->open(context->channel);
     CLOG_RET_IF_FUNC_FAILED_X(context->channel->open, ret);
     context->dispatcher->channel = context->channel;
-    ret = context->dispatcher->open(context->dispatcher, NULL);
+    ret = context->dispatcher->open(context->dispatcher);
     CLOG_RET_IF_FUNC_FAILED_X(context->dispatcher->open, ret);
     context->dispatcher->notify(context->dispatcher, CLOG_DISPATCHER_EVENT_START);
 
@@ -417,7 +419,7 @@ clog_res_e clog_context_setup(clog_context_t *context)
     while (clog_hashmap_iterator_key(it) != NULL) {
         clog_recorder_t *recorder = clog_hashmap_iterator_value(it);
         CLOG_CLEAN_RET_IF_NULL_X(recorder, clog_hashmap_iterator_destroy(&it), CLOG_FAIL, "iterator value is NULL");
-        ret = recorder->open(recorder, NULL);
+        ret = recorder->open(recorder);
         CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_hashmap_iterator_destroy(&it), "recorder %u open failed, ret = %u",
                                    recorder->id, ret);
         if (!clog_hashmap_iterator_next(it)) {
@@ -431,22 +433,79 @@ clog_res_e clog_context_setup(clog_context_t *context)
     return CLOG_SUCCESS;
 }
 
+clog_item_t *clog_acquire_log_item(const clog_context_t *context)
+{
+#ifdef CASCA_LOG_MEM_POOL
+    CLOG_RET_IF_NULL_X(context, NULL, "context is NULL");
+    const clog_state_e state = clog_atomic_get(&context->state);
+    CLOG_RET_IF_X(state != CLOG_STATE_RUNNING, NULL, "context state %u error", state);
+    if (context->pool != NULL) {
+        return clog_buffer_pool_acquire(context->pool);
+    }
+    return clog_malloc(sizeof(clog_item_wrapper_t));
+#else
+    return clog_malloc(sizeof(clog_item_wrapper_t));
+#endif
+}
+
+void clog_release_log_item(const clog_context_t *context, clog_item_t *item)
+{
+#ifdef CASCA_LOG_MEM_POOL
+    CLOG_RET_VOID_IF_NULL(item);
+    CLOG_RET_VOID_IF_NULL_X(context, "context is NULL");
+    const clog_state_e state = clog_atomic_get(&context->state);
+    CLOG_RET_VOID_IF_X(state != CLOG_STATE_RUNNING && state != CLOG_STATE_STOPPING, "context state %u error", state);
+    if (context->pool != NULL) {
+        clog_buffer_pool_release(context->pool, item);
+    } else {
+        clog_free(item);
+    }
+#else
+    clog_free(item);
+#endif
+}
+
+clog_res_e clog_recoder_write(const clog_context_t *context, uint32_t id, const clog_item_t *item)
+{
+    CLOG_RET_IF_NULL_X(context, CLOG_INVALID_PARAM, "context is NULL");
+    CLOG_CONTEXT_LOG_STATE_CHECK();
+    CLOG_RET_IF_NULL_X(item, CLOG_INVALID_PARAM, "item is NULL");
+    clog_recorder_t *recorder = clog_hashmap_get(context->recorders, &id);
+    CLOG_RET_IF_NULL(recorder, CLOG_TARGET_NOT_FOUND);
+    clog_res_e ret = recorder->write(recorder, item);
+    CLOG_RET_IF(ret == CLOG_SUCCESS, ret);
+    CLOG_RET_IF_X(ret != CLOG_REQUEST_FLUSH, ret, "recorder %u write log item failed, ret = %u", id, ret);
+    ret = recorder->flush(recorder);
+    if (ret != CLOG_SUCCESS) {
+        CLOG_ERR_ADD("recorder %u flush failed, ret = %u", id, ret);
+    }
+    return CLOG_SUCCESS;
+}
+
 void clog_context_destroy(clog_context_t **context)
 {
     CLOG_RET_VOID_IF_NULL_X(context, "context is NULL");
     CLOG_RET_VOID_IF_NULL_X(*context, "*context is NULL");
     clog_context_t *tmp = *context;
-    clog_atomic_set(&tmp->state, CLOG_STATE_DESTROYED);
+    clog_atomic_set(&tmp->state, CLOG_STATE_STOPPING);
     /* dispatcher use channel and recorders, so close it first */
     if (tmp->dispatcher != NULL) {
         tmp->dispatcher->close(tmp->dispatcher);
         CLOG_SAFE_FREE(tmp->dispatcher);
     }
     if (tmp->channel != NULL) {
+        const clog_item_t *item = NULL;
+        clog_res_e res = tmp->channel->read(tmp->channel, &item);
+        while (res == CLOG_SUCCESS && item != NULL) {
+            clog_release_log_item(tmp, (clog_item_t *)item);
+            item = NULL;
+            res = tmp->channel->read(tmp->channel, &item);
+        }
         tmp->channel->close(tmp->channel);
         CLOG_SAFE_FREE(tmp->channel);
     }
     clog_hashmap_destroy(&tmp->recorders);
+    clog_atomic_set(&tmp->state, CLOG_STATE_DESTROYED);
     clog_interpolator_clear(&tmp->formatter.interpolator);
     if (tmp->formatter.interpolator_context != NULL) {
         clog_interpolator_context_destroy(&tmp->formatter.interpolator_context);
@@ -468,4 +527,117 @@ void clog_context_destroy(clog_context_t **context)
 #endif
     clog_free(tmp);
     *context = NULL;
+}
+
+static bool clog_module_check(const clog_module_t *info, clog_level_e level, uint32_t recorder)
+{
+    CLOG_RET_IF(((1 << (level - 1)) & info->level) == 0, false);
+    for (size_t i = 0; i < info->num; ++i) {
+        if (info->recorders[i] == recorder) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void clog_item_init_datetime(clog_item_t *item)
+{
+    clog_datetime_t time = {0};
+    clog_datetime_now(&time);
+    item->year = time.year;
+    item->month = time.month;
+    item->day = time.day;
+    item->hour = time.hour;
+    item->minute = time.minute;
+    item->second = time.second;
+    item->millisecond = time.millisecond;
+    item->timestamp = clog_timestamp_of_datetime(&time, CLOG_TIMEZONE_OF(+, 8, 0));
+}
+
+static clog_res_e clog_init_item_wrapper(const clog_context_t *context, const char *module, const char *file,
+                                         const char *function, const int line, const clog_level_e level,
+                                         const char *fmt, clog_item_wrapper_t *wrapper)
+{
+    clog_item_t *item = clog_acquire_log_item(context);
+    CLOG_RET_IF_NULL_X(item, CLOG_NO_MEMORY, "clog_acquire_log_item failed");
+    wrapper->process = context->process;
+    wrapper->module = module;
+    wrapper->filename = file;
+    wrapper->function = function;
+    wrapper->tag = context->formatter.tags[level - 1];
+    wrapper->fmt = fmt;
+    wrapper->log = item;
+    clog_item_init_datetime(wrapper->log);
+    wrapper->log->tid = clog_thread_self();
+    wrapper->log->line = line;
+    wrapper->log->level = level;
+    return CLOG_SUCCESS;
+}
+
+static clog_res_e clog_log_internal(const clog_context_t *context, const uint32_t *recorders, size_t num,
+                                    const clog_item_wrapper_t *wrapper)
+{
+    /* prefilter */
+    bool pass = clog_filter_log(context->filters.pre.next, wrapper);
+    CLOG_RET_IF_X(!pass, CLOG_NOT_PERMITTED, "clog_filter_log PRE failed");
+    /* formatter */
+    size_t length = 0;
+    const clog_res_e ret = clog_format_log(context->formatter.interpolator, wrapper, wrapper->log->content,
+                                           sizeof(wrapper->log->content), &length);
+    CLOG_RET_IF_FAILED_X(ret, "clog_format_log failed, ret = %u", ret);
+    wrapper->log->length = (uint16_t)length;
+    /* postfilter */
+    pass = clog_filter_log(context->filters.post.next, wrapper);
+    CLOG_RET_IF_X(!pass, CLOG_NOT_PERMITTED, "clog_filter_log POST failed");
+    for (size_t i = 0; i < num && i < CLOG_ARRAY_SIZE(wrapper->log->recorder); ++i) {
+        wrapper->log->recorder[i] = recorders[i];
+    }
+    /* add to channel */
+    const clog_res_e res = context->channel->write(context->channel, wrapper->log);
+    if (res == CLOG_SUCCESS) {
+        /* notify dispatcher to handle log */
+        context->dispatcher->notify(context->dispatcher, CLOG_DISPATCHER_EVENT_DATA);
+    }
+    return res;
+}
+
+clog_res_e clog_record_log(const clog_context_t *context, const char *module, uint32_t recorder, const char *file,
+                           const char *function, int line, clog_level_e level, const char *fmt, ...)
+{
+    CLOG_RET_IF_NULL_X(context, CLOG_INVALID_PARAM, "context is NULL");
+    clog_err_clear();
+    CLOG_CONTEXT_LOG_STATE_CHECK();
+    const clog_module_t *info = clog_hashmap_get(context->modules, module);
+    CLOG_RET_IF_NULL_X(info, CLOG_TARGET_NOT_FOUND, "module info %s not found", module == NULL ? "NULL" : module);
+    CLOG_RET_IF(!clog_module_check(info, level, recorder), CLOG_NOT_PERMITTED);
+    clog_item_wrapper_t wrapper;
+    clog_res_e ret = clog_init_item_wrapper(context, module, file, function, line, level, fmt, &wrapper);
+    CLOG_RET_IF_FUNC_FAILED_X(clog_init_item_wrapper, ret);
+    va_start(wrapper.args, fmt);
+    ret = clog_log_internal(context, &recorder, 1, &wrapper);
+    va_end(wrapper.args);
+    CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_release_log_item(context, wrapper.log), "clog_log_internal failed, ret = %u",
+                               ret);
+    return ret;
+}
+
+clog_res_e clog_module_log(const clog_context_t *context, const char *module, const char *file, const char *function,
+                           int line, clog_level_e level, const char *fmt, ...)
+{
+    CLOG_RET_IF_NULL_X(context, CLOG_INVALID_PARAM, "context is NULL");
+    clog_err_clear();
+    CLOG_CONTEXT_LOG_STATE_CHECK();
+    const clog_module_t *info = clog_hashmap_get(context->modules, module);
+    CLOG_RET_IF_NULL_X(info, CLOG_TARGET_NOT_FOUND, "module info %s not found", module);
+    CLOG_RET_IF(((1 << (level - 1)) & info->level) == 0, CLOG_NOT_PERMITTED);
+    CLOG_RET_IF(info->num == 0, CLOG_TARGET_NOT_FOUND);
+    clog_item_wrapper_t wrapper;
+    const clog_res_e res = clog_init_item_wrapper(context, module, file, function, line, level, fmt, &wrapper);
+    CLOG_RET_IF_FAILED_X(res, "clog_init_item_wrapper failed, res = %u", res);
+    va_start(wrapper.args, fmt);
+    const clog_res_e ret = clog_log_internal(context, info->recorders, info->num, &wrapper);
+    va_end(wrapper.args);
+    CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_release_log_item(context, wrapper.log), "clog_log_internal failed, ret = %u",
+                               ret);
+    return ret;
 }

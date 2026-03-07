@@ -1,14 +1,4 @@
 # casca_log_config_template
-
-[Formatter]
-format = "{_year}-{_month}-{_day} {_hour}:{_minute}:{_second}.{_millisecond} {_level} [{_process}.{_module}:{_tid} {_file}:{_line}] {_content}{_ln}"
-[Formatter.Level.Tag]
-trace = "T"
-debug = "D"
-info = "I"
-warn = "W"
-error = "E"
-fetal = "F"
 [Process.casca_log_test]
 # CLOG_LEVEL_OFF = 0, /* log is not allowed to write */
 # CLOG_LEVEL_TRACE = 1, /* 1 << 0 */
@@ -25,79 +15,6 @@ recorder = [1, 2]
 # level inherited from process
 enabled = false # main is not allowed to output log, if not set, default value is true
 
-[Filters]
-# internal filter is start will "Clog", customized filter should not start with "Clog", if the name of your customized
-# filter starts with "Clog", this won't cause an error, but it might lead to conflicts in future updates.
-[Filters.ClogKeywordsFilter]
-enabled = true
-priority = 1
-type = 1 # 0 - prefilter, 1 - postfilter
-keywords = ["password", "ip"]
-
-[Channels]
-use = 1
-[Channels.CLogAtomicQueue]
-id = 1
-enabled = true
-
-[Dispatchers]
-[Dispatchers.ClogDirectDispatcher]
-id = 1
-enabled = true
-[Dispatchers.ClogAsyncThreadDispatcher]
-id = 2
-enabled = false
-
-[Recorders]
-[Recorders.ClogRecorderStdout]
-id = 1
-enabled = true
-[Recorders.ClogRecorderStdout.Colors]
-enabled = true
-# color modes:
-#   0 - disabled color
-#   1 - basic color
-#   2 - enhanced basic color, with high intensity color support
-#   3 - 256 colors
-#   4 - true color
-mode = 4
-# colors: [foreground, background], color will be disabled if foreground or background color of a log level is not set
-#       e.g.    trace = [[32], []], background color of trace is disabled
-#               trace = [[], [32]], foreground color of trace is disabled
-#               trace = [[], []] or "trace" not specified, foreground and background color of trace are all disabled
-#   colors format:
-#       # mode 1 & mode 2: [color_value], just one value to set basic color， the value of colors are as follows:
-#               color           forground_value background_value    support
-#               black           30              40                  mode 1 & 2
-#               red             31              41                  mode 1 & 2
-#               green           32              42                  mode 1 & 2
-#               yellow          33              43                  mode 1 & 2
-#               blue            34              44                  mode 1 & 2
-#               magenta         35              45                  mode 1 & 2
-#               cyan            36              46                  mode 1 & 2
-#               white           37              47                  mode 1 & 2
-#               bright black    90              100                 mode 2 only
-#               bright red      91              101                 mode 2 only
-#               bright green    92              102                 mode 2 only
-#               bright yellow   93              103                 mode 2 only
-#               bright blue     94              104                 mode 2 only
-#               bright magenta  95              105                 mode 2 only
-#               bright cyan     96              106                 mode 2 only
-#               bright white    97              107                 mode 2 only
-#           e.g. If you want to set the foreground color of TRACE level logs to green and the background color to
-#                   bright white, your configuration should be written as follows: trace=[[32], [107]]
-#       # mode 3: [color_value], use precise 256 color values, please refer to Wikipedia
-#       # mode 4: [r, g, b], use three values(R, G, B primary colors) to combine the final color
-#           e.g. if you want apply R 10 G 10 B 10 as foreground color and R 200 G 200 B 200 as background color, your
-#                   configuration should be written as follows: trace=[[10, 10, 10], [200, 200, 200]]
-
-trace = [[128, 128, 128], []]
-debug = [[160, 160, 192], []]
-info = [[255, 255, 255], []]
-warn = [[255, 255, 0], []]
-error = [[255, 0, 0], []]
-fetal = [[255, 255, 255], [139, 0, 0]]
-
 [Recorders.ClogRecorderFile]
 id = 2
 enabled = true
@@ -110,8 +27,3 @@ file = "log_{_log_index}_{_year}{_month}{_day}_{_hour}{_minute}{_second}.log"
 #         2 - spilt by time, value(unit: Second) is the time interval between two log files
 #         3 - spilt by num of log items, value(unit: Number) is the max num of log items
 split = [1, 1048576] # 1MB
-
-[Performance.BufferPool]
-auto = true # auto expand buffer pool, default value is true
-capacity = 32 # buffer pool init capacity
-threshold = 75 # buffer pool shrink threshold(percent), it should be (0, 100]

@@ -125,8 +125,18 @@ typedef enum clog_level {
     CLOG_LEVEL_FETAL = 6, /* value: 32(1 << 5) */
 } clog_level_e;
 
+typedef enum clog_state {
+    CLOG_STATE_CREATED, /* clog context just created */
+    CLOG_STATE_RUNNING, /* clog context have set up, now it is running */
+    CLOG_STATE_STOPPING, /* clog context is stopping */
+    CLOG_STATE_DESTROYED, /* clog context have destroyed */
+} clog_state_e;
+
 #define CLOG_LEVEL_NUM 6
 #define CLOG_LEVEL_ALL 63 /* 1 | 2 | 4 | 8 | 16 | 32 */
+#define CLOG_LEVEL_UNSPECIFIED UINT32_MAX /* level mask not specified */
+
+typedef struct clog_context clog_context_t;
 
 #ifdef CLOG_COMPILER_MSVC
 #pragma pack(push, 1)
@@ -163,6 +173,7 @@ typedef struct clog_item_wrapper {
     const char *module;
     const char *filename;
     const char *function;
+    const char *tag;
     const char *fmt;
     va_list args;
     clog_item_t *log;

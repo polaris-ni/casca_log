@@ -5,11 +5,8 @@
 #include "clog_log_format_placeholder.h"
 #include <stdbool.h>
 #include <stdio.h>
-#include "casca_log.h"
 #include "clog_error.h"
 #include "clog_hooks.h"
-
-static clog_hashmap_t *g_placeholder_map = NULL;
 
 /* << default placeholder implementation start */
 
@@ -83,8 +80,8 @@ static int clog_placeholder_string_copy(const char *str, char *buf, const size_t
 
 static int clog_placeholder_process(void *param, char *buf, size_t size)
 {
-    CLOG_UNUSED_VAR(param);
-    return clog_placeholder_string_copy(clog_get_process(), buf, size);
+    const clog_item_wrapper_t *wrapper = (clog_item_wrapper_t *)param;
+    return clog_placeholder_string_copy(wrapper->process, buf, size);
 }
 
 static int clog_placeholder_module(void *param, char *buf, size_t size)
@@ -118,18 +115,7 @@ static int clog_placeholder_ln(void *param, char *buf, size_t size)
 static int clog_placeholder_level(void *param, char *buf, size_t size)
 {
     const clog_item_wrapper_t *wrapper = (clog_item_wrapper_t *)param;
-    return clog_placeholder_string_copy(clog_get_level_tag(wrapper->log->level), buf, size);
-}
-
-clog_res_e clog_log_format_placeholder_register(const char *name, clog_placeholder_handler_f handler)
-{
-    CLOG_RET_IF_NULL(name, CLOG_INVALID_PARAM);
-    CLOG_RET_IF_NULL(handler, CLOG_INVALID_PARAM);
-    /* customize placeholder should not start with '_' */
-    CLOG_RET_IF_X(name[0] == '_', CLOG_INVALID_PARAM, "placeholder name [%s] not start with [a-z, A-Z, 0-9]", name);
-    clog_hashmap_t *map = clog_log_format_placeholder_get_map();
-    CLOG_RET_IF_NULL_X(map, CLOG_INVALID_PARAM, "log format placeholder map is NULL");
-    return clog_hashmap_put(map, name, handler);
+    return clog_placeholder_string_copy(wrapper->tag, buf, size);
 }
 
 clog_hashmap_t *clog_log_format_default_placeholder_map_create(void)
@@ -157,20 +143,4 @@ clog_hashmap_t *clog_log_format_default_placeholder_map_create(void)
                             default_placeholder_names[i], ret);
     }
     return map;
-}
-
-clog_hashmap_t *clog_log_format_placeholder_get_map(void)
-{
-    if (g_placeholder_map != NULL) {
-        return g_placeholder_map;
-    }
-    g_placeholder_map = clog_log_format_default_placeholder_map_create();
-    return g_placeholder_map;
-}
-
-void clog_log_format_placeholder_clear(void)
-{
-    if (g_placeholder_map != NULL) {
-        clog_hashmap_destroy(&g_placeholder_map);
-    }
 }

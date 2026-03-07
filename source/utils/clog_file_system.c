@@ -466,7 +466,7 @@ static clog_res_e clog_dir_create_direct_win(const char *path)
         if (!CreateDirectoryA(path, NULL)) {
             if (GetLastError() != ERROR_ALREADY_EXISTS) {
                 CLOG_ERR_ADD("CreateDirectoryA %s failed, err = 0x%llX", path, (uint64_t)GetLastError());
-                return CLOG_FAIL;
+                return ret;
             }
             ret = CLOG_ALREADY_EXISTED;
         } else {
