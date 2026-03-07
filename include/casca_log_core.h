@@ -8,7 +8,7 @@
 
 #include <stdbool.h>
 #include "casca_log_base.h"
-#include "clog_channel_base.h"
+#include "clog_channel.h"
 #include "clog_dispatcher.h"
 #include "clog_filter.h"
 #include "clog_interpolator.h"
@@ -17,10 +17,6 @@
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
-
-typedef enum clog_state { CLOG_STATE_CREATED, CLOG_STATE_RUNNING, CLOG_STATE_DESTROYED } clog_state_e;
-
-typedef struct clog_context clog_context_t;
 
 /**
  * create log context for process
@@ -146,6 +142,29 @@ clog_res_e clog_add_recorder(clog_context_t *context, const clog_recorder_t *rec
 clog_res_e clog_context_setup(clog_context_t *context);
 
 /**
+ * acquire a log item
+ * @param context clog_context_t
+ * @return clog_item_t
+ */
+clog_item_t *clog_acquire_log_item(const clog_context_t *context);
+
+/**
+ * release a log item
+ * @param context clog_context_t
+ * @param item log item to be released
+ */
+void clog_release_log_item(const clog_context_t *context, clog_item_t *item);
+
+/**
+ * write a log item to recorder
+ * @param context clog_context_t
+ * @param id recorder id
+ * @param item log item to be written
+ * @return #clog_res_e
+ */
+clog_res_e clog_recoder_write(const clog_context_t *context, uint32_t id, const clog_item_t *item);
+
+/**
  * destroy log context
  * @param context *context will be set to NULL after *context is destroyed
  */
@@ -164,7 +183,7 @@ void clog_context_destroy(clog_context_t **context);
  * @param ... var args
  * @return #clog_res_e
  */
-clog_res_e clog_record_log(clog_context_t *context, const char *module, uint32_t recorder, const char *file,
+clog_res_e clog_record_log(const clog_context_t *context, const char *module, uint32_t recorder, const char *file,
                            const char *function, int line, clog_level_e level, const char *fmt, ...);
 
 /**
@@ -179,7 +198,7 @@ clog_res_e clog_record_log(clog_context_t *context, const char *module, uint32_t
  * @param ... var args
  * @return #clog_res_e
  */
-clog_res_e clog_module_log(clog_context_t *context, const char *module, const char *file, const char *function,
+clog_res_e clog_module_log(const clog_context_t *context, const char *module, const char *file, const char *function,
                            int line, clog_level_e level, const char *fmt, ...);
 
 #if defined(__cplusplus) || defined(c_plusplus)

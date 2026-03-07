@@ -11,8 +11,10 @@
 extern "C" {
 #endif
 
-void clog_dispatcher_async_thread(clog_dispatcher_t *dispatcher);
-
+/**
+ * create async thread dispatcher
+ * @return #clog_dispatcher_t
+ */
 clog_dispatcher_t *clog_dispatcher_async_thread_create();
 
 #if defined(__cplusplus) || defined(c_plusplus)

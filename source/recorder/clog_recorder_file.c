@@ -4,22 +4,12 @@
  */
 
 #include "clog_recorder_file.h"
-#include "casca_log_keywords.h"
 #include "clog_error.h"
 #include "clog_file_system.h"
 #include "clog_interpolator.h"
 #include "clog_interpolator_default_placeholder.h"
-#include "clog_recorder_manager.h"
 
 #define CLOG_RECORDER_FILE_META_INFO_VERSION 1U
-
-typedef enum clog_recorder_file_split_type {
-    CLOG_RECORDER_FILE_SPLIT_NONE, /* no spilt */
-    CLOG_RECORDER_FILE_SPLIT_SIZE, /* spilt by size, value(unit: Byte) is the max size of a log file */
-    CLOG_RECORDER_FILE_SPLIT_TIME, /* spilt by time, value(unit: Second) is the time interval between two log files */
-    CLOG_RECORDER_FILE_SPLIT_NUMBER, /* spilt by num of log items, value(unit: Number) is the max num of log items */
-    CLOG_RECORDER_FILE_SPLIT_MAX,
-} clog_recorder_file_split_type_e;
 
 CLOG_PACKED_STRUCT(clog_recorder_file_meta_info, {
     uint32_t version; /* meta metainfo version */
@@ -57,16 +47,6 @@ static int clog_recorder_file_placeholder_log_index(void *param, char *buf, size
     const int ret = snprintf(buf, size, "%04u", ((clog_recorder_file_param_t *)param)->metainfo.index);
     CLOG_RET_IF_X(ret <= 0, -CLOG_FAIL, "snprintf failed, ret = %d", ret);
     return ret;
-}
-
-static clog_res_e clog_recorder_file_init_interpolator(const char *what, const clog_config_group_t *group,
-                                                       const clog_interpolator_context_t *context,
-                                                       clog_interpolator_t **interpolator)
-{
-    const char *value = NULL;
-    const clog_res_e ret = clog_config_find_item_in_group_string(group, what, &value);
-    CLOG_RET_IF_FAILED_X(ret, "find property %s failed, ret = %u", what, ret);
-    return clog_interpolator_parse(context, value, interpolator);
 }
 
 static clog_res_e clog_recoder_file_open_file(clog_recorder_file_param_t *param)
@@ -131,13 +111,13 @@ static clog_res_e clog_file_recorder_get_log_filepath(clog_recorder_file_param_t
     return CLOG_SUCCESS;
 }
 
-static clog_res_e clog_recorder_file_init_meta_info(const clog_config_group_t *group,
+static clog_res_e clog_recorder_file_init_meta_info(const clog_recorder_file_attr_t *attr,
                                                     const clog_interpolator_context_t *context,
                                                     clog_recorder_file_param_t *param)
 {
     clog_interpolator_t *interpolator = NULL;
-    clog_res_e res = clog_recorder_file_init_interpolator(CLOG_STR_METAINFO, group, context, &interpolator);
-    CLOG_RET_IF_FAILED_X(res, "clog_recorder_file_init_interpolator failed, ret = %u", res);
+    clog_res_e res = clog_interpolator_parse(context, attr->metainfo_path, &interpolator);
+    CLOG_RET_IF_FAILED_X(res, "clog_interpolator_parse %s failed, ret = %u", attr->metainfo_path, res);
     char tmp[CASCA_LOG_FILEPATH_MAX_SIZE] = {0};
     res = clog_interpolator_interpolate(interpolator, NULL, tmp, sizeof(tmp), NULL);
     CLOG_RET_IF_FAILED_X(res, "clog_recorder_file_init_interpolator failed, ret = %u", res);
@@ -170,7 +150,7 @@ static clog_res_e clog_recorder_file_init_meta_info(const clog_config_group_t *g
     return CLOG_SUCCESS;
 }
 
-static bool clog_recorder_file_need_flash(clog_recorder_file_param_t *param)
+static bool clog_recorder_file_need_flash(const clog_recorder_file_param_t *param)
 {
     switch (param->split_type) {
         case CLOG_RECORDER_FILE_SPLIT_NONE:
@@ -187,103 +167,13 @@ static bool clog_recorder_file_need_flash(clog_recorder_file_param_t *param)
     }
 }
 
-static clog_res_e clog_recorder_file_init_param(const clog_config_group_t *group, clog_recorder_file_param_t *param)
+static clog_res_e clog_recorder_file_open(clog_recorder_t *self)
 {
-    clog_hashmap_t *default_placeholders = clog_interpolator_default_placeholders();
-    CLOG_RET_IF_NULL_X(default_placeholders, CLOG_FAIL, "clog_interpolator_default_placeholders failed");
-    clog_interpolator_context_t *context = clog_interpolator_context_create(default_placeholders);
-    CLOG_RET_IF_NULL_X(context, CLOG_FAIL, "clog_interpolator_context_create failed");
-    clog_res_e res =
-        clog_interpolator_context_register(context, "_log_index", clog_recorder_file_placeholder_log_index);
-    if (res != CLOG_SUCCESS) {
-        CLOG_ERR_ADD("register log index placeholder failed, ret = %u", res);
-        goto RESULT_HANDLER;
-    }
-    res = clog_recorder_file_init_interpolator(CLOG_STR_DIRECTORY, group, context, &param->dir_interpolator);
-    if (res != CLOG_SUCCESS) {
-        CLOG_ERR_ADD("clog_recorder_file_init_interpolator directory failed, ret = %u", res);
-        goto RESULT_HANDLER;
-    }
-    res = clog_recorder_file_init_interpolator(CLOG_STR_FILE, group, context, &param->file_interpolator);
-    if (res != CLOG_SUCCESS) {
-        CLOG_ERR_ADD("clog_recorder_file_init_interpolator file failed, ret = %u", res);
-        goto RESULT_HANDLER;
-    }
-    res = clog_recorder_file_init_meta_info(group, context, param);
-    if (res != CLOG_SUCCESS) {
-        CLOG_ERR_ADD("clog_recorder_file_init_meta_info failed, ret = %u", res);
-        goto RESULT_HANDLER;
-    }
-    res = clog_recoder_file_open_file(param);
-    if (res != CLOG_SUCCESS) {
-        CLOG_ERR_ADD("clog_recoder_file_open_file failed, ret = %u", res);
-        goto RESULT_HANDLER;
-    }
-    res = CLOG_SUCCESS;
-
-RESULT_HANDLER:
-    clog_interpolator_context_destroy(&context);
-    clog_hashmap_destroy(&default_placeholders);
-    return res;
-}
-
-static clog_res_e clog_recorder_file_init_split(const clog_config_group_t *group, clog_recorder_file_param_t *param)
-{
-    const clog_config_item_t *arr = NULL;
-    const clog_res_e ret = clog_config_find_item_in_group_array(group, CLOG_STR_SPLIT, &arr);
-    CLOG_RET_IF_FAILED_X(ret, "find property " CLOG_STR_SPLIT "failed, ret = %u", ret);
-    CLOG_RET_IF_X(arr->type != CLOG_CONFIG_TYPE_UINT, CLOG_INVALID_PARAM, "first param type(%u) of split is not uint",
-                  arr->type);
-    param->split_type = arr->value.uint;
-    CLOG_RET_IF_X(param->split_type >= CLOG_RECORDER_FILE_SPLIT_MAX, CLOG_SUCCESS, "split type %u is invalid",
-                  param->split_type);
-    CLOG_RET_IF(param->split_type == CLOG_RECORDER_FILE_SPLIT_NONE, CLOG_SUCCESS);
-    arr = arr->next;
-    CLOG_RET_IF_NULL_X(arr, CLOG_INVALID_PARAM, "second param of split is absent");
-    CLOG_RET_IF_X(arr->type != CLOG_CONFIG_TYPE_UINT, CLOG_INVALID_PARAM, "second param type(%u) of split is not uint",
-                  arr->type);
-    const uint32_t value = arr->value.uint;
-    switch (param->split_type) {
-        case CLOG_RECORDER_FILE_SPLIT_NONE:
-            return CLOG_SUCCESS;
-        case CLOG_RECORDER_FILE_SPLIT_SIZE:
-            param->max_file_size = value;
-            return CLOG_SUCCESS;
-        case CLOG_RECORDER_FILE_SPLIT_TIME:
-            param->max_interval = value * 1000U;
-            return CLOG_SUCCESS;
-        case CLOG_RECORDER_FILE_SPLIT_NUMBER:
-            param->max_item_num = value;
-            return CLOG_SUCCESS;
-        default:
-            CLOG_ERR_ADD("split type %u is invalid", param->split_type);
-            return CLOG_INVALID_PARAM;
-    }
-}
-
-static void clog_recorder_file_clear_param(clog_recorder_file_param_t *param)
-{
-    clog_interpolator_clear(&param->dir_interpolator);
-    clog_interpolator_clear(&param->file_interpolator);
-    clog_file_close(&param->log);
-    clog_free(param);
-}
-
-static clog_res_e clog_recorder_file_open(clog_recorder_t *self, const clog_config_group_t *group)
-{
-    clog_recorder_file_param_t *param = clog_malloc(sizeof(clog_recorder_file_param_t));
-    CLOG_RET_IF_NULL_X(param, CLOG_NO_MEMORY, "malloc clog_recorder_file_param_t failed");
-    CLOG_IGNORE_RES(clog_memset(param, sizeof(clog_recorder_file_param_t), 0, sizeof(clog_recorder_file_param_t)));
-    clog_res_e ret = clog_recorder_file_init_split(group, param);
-    CLOG_RET_IF_FAILED_X(ret, "find property " CLOG_STR_SPLIT "failed, ret = %u", ret);
-    ret = clog_recorder_file_init_param(group, param);
-    CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_file_clear_param(param), "init file recorder param failed, ret = %u",
-                               ret);
-    self->extra = param;
+    CLOG_RET_IF_NULL_X(self->extra, CLOG_ABNORMAL_STATE, "param not initialized");
+    clog_recorder_file_param_t *param = self->extra;
     if (clog_recorder_file_need_flash(param)) {
-        ret = self->flush(self);
-        CLOG_CLEAN_RET_IF_FAILED_X(ret, clog_recorder_file_clear_param(param),
-                                   "clog file recorder flush on open failed, ret = %u", ret);
+        const clog_res_e ret = self->flush(self);
+        CLOG_RET_IF_FUNC_FAILED_X(self->flush, ret);
     }
     return CLOG_SUCCESS;
 }
@@ -339,6 +229,14 @@ static clog_res_e clog_recorder_file_flush(clog_recorder_t *self)
     return CLOG_SUCCESS;
 }
 
+static void clog_recorder_file_clear_param(clog_recorder_file_param_t *param)
+{
+    clog_interpolator_clear(&param->dir_interpolator);
+    clog_interpolator_clear(&param->file_interpolator);
+    clog_file_close(&param->log);
+    clog_free(param);
+}
+
 static void clog_recorder_file_close(clog_recorder_t *self)
 {
     CLOG_RET_VOID_IF_NULL(self->extra);
@@ -346,14 +244,96 @@ static void clog_recorder_file_close(clog_recorder_t *self)
     self->extra = NULL;
 }
 
-const clog_recorder_t *clog_recorder_file(void)
+static void clog_recorder_file_init_split(const clog_recorder_file_attr_t *attr, clog_recorder_file_param_t *param)
 {
-    static const clog_recorder_t recorder = {
-        .id = CLOG_RECORDER_ID_FILE,
-        .open = clog_recorder_file_open,
-        .write = clog_recorder_file_write,
-        .flush = clog_recorder_file_flush,
-        .close = clog_recorder_file_close,
-    };
-    return &recorder;
+    const size_t value = attr->split.limit;
+    switch (attr->split.type) {
+        case CLOG_RECORDER_FILE_SPLIT_NONE:
+            return;
+        case CLOG_RECORDER_FILE_SPLIT_SIZE:
+            param->max_file_size = value;
+            return;
+        case CLOG_RECORDER_FILE_SPLIT_TIME:
+            param->max_interval = value * 1000U;
+            return;
+        case CLOG_RECORDER_FILE_SPLIT_NUMBER:
+            param->max_item_num = value;
+            return;
+        default:
+            CLOG_ERR_ADD("split type %u is invalid", param->split_type);
+    }
+}
+
+static clog_res_e clog_recorder_file_init_param(const clog_recorder_file_attr_t *attr,
+                                                clog_recorder_file_param_t *param)
+{
+    clog_hashmap_t *default_placeholders = clog_interpolator_default_placeholders();
+    CLOG_RET_IF_NULL_X(default_placeholders, CLOG_FAIL, "clog_interpolator_default_placeholders failed");
+    clog_interpolator_context_t *context = clog_interpolator_context_create(default_placeholders);
+    CLOG_RET_IF_NULL_X(context, CLOG_FAIL, "clog_interpolator_context_create failed");
+    clog_res_e res =
+        clog_interpolator_context_register(context, "_log_index", clog_recorder_file_placeholder_log_index);
+    if (res != CLOG_SUCCESS) {
+        CLOG_ERR_ADD("register log index placeholder failed, ret = %u", res);
+        goto RESULT_HANDLER;
+    }
+    res = clog_interpolator_parse(context, attr->log_dir, &param->dir_interpolator);
+    if (res != CLOG_SUCCESS) {
+        CLOG_ERR_ADD("clog_recorder_file_init_interpolator directory failed, ret = %u", res);
+        goto RESULT_HANDLER;
+    }
+    res = clog_interpolator_parse(context, attr->log_name, &param->file_interpolator);
+    if (res != CLOG_SUCCESS) {
+        CLOG_ERR_ADD("clog_recorder_file_init_interpolator file failed, ret = %u", res);
+        goto RESULT_HANDLER;
+    }
+    res = clog_recorder_file_init_meta_info(attr, context, param);
+    if (res != CLOG_SUCCESS) {
+        CLOG_ERR_ADD("clog_recorder_file_init_meta_info failed, ret = %u", res);
+        goto RESULT_HANDLER;
+    }
+    res = clog_recoder_file_open_file(param);
+    if (res != CLOG_SUCCESS) {
+        CLOG_ERR_ADD("clog_recoder_file_open_file failed, ret = %u", res);
+        goto RESULT_HANDLER;
+    }
+    res = CLOG_SUCCESS;
+
+RESULT_HANDLER:
+    clog_interpolator_context_destroy(&context);
+    clog_hashmap_destroy(&default_placeholders);
+    return res;
+}
+
+static clog_recorder_file_param_t *clog_recorder_file_param_init(const clog_recorder_file_attr_t *attr)
+{
+    clog_recorder_file_param_t *param = clog_malloc(sizeof(clog_recorder_file_param_t));
+    CLOG_RET_IF_NULL_X(param, NULL, "malloc clog_recorder_file_param_t failed");
+    CLOG_IGNORE_RES(clog_memset(param, sizeof(clog_recorder_file_param_t), 0, sizeof(clog_recorder_file_param_t)));
+    clog_recorder_file_init_split(attr, param);
+    const clog_res_e ret = clog_recorder_file_init_param(attr, param);
+    CLOG_CLEAN_RET_IF_X(ret != CLOG_SUCCESS, clog_recorder_file_clear_param(param), NULL,
+                        "init file recorder param failed, ret = %u", ret);
+    return param;
+}
+
+clog_recorder_t *clog_recorder_file_create(const clog_recorder_file_attr_t *attr)
+{
+    CLOG_RET_IF_NULL_X(attr, NULL, "attr is null");
+    CLOG_RET_IF_NULL_X(attr->metainfo_path, NULL, "attr metainfo_path is null");
+    CLOG_RET_IF_NULL_X(attr->log_dir, NULL, "attr log_dir is null");
+    CLOG_RET_IF_NULL_X(attr->log_name, NULL, "attr log_name is null");
+    CLOG_RET_IF_X(attr->split.type >= CLOG_RECORDER_FILE_SPLIT_MAX, NULL, "attr split type %u is invalid",
+                  attr->split.type);
+
+    clog_recorder_t *recorder = clog_malloc(sizeof(clog_recorder_t));
+    CLOG_RET_IF_NULL_X(recorder, NULL, "malloc clog_recorder_t failed");
+    recorder->id = CLOG_RECORDER_ID_FILE;
+    recorder->open = clog_recorder_file_open;
+    recorder->write = clog_recorder_file_write;
+    recorder->flush = clog_recorder_file_flush;
+    recorder->close = clog_recorder_file_close;
+    recorder->extra = clog_recorder_file_param_init(attr);
+    CLOG_RET_IF_NULL_X(recorder->extra, NULL, "init recorder file param failed");
+    return recorder;
 }

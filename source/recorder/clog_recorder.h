@@ -6,13 +6,14 @@
 #define CASCA_LOG_CLOG_RECORDER_H
 
 #include "casca_log_base.h"
-#include "clog_config.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
 #endif
 
 #define CLOG_RECORDER_ID_INVALID 0u /* invalid recorder id */
+#define CLOG_RECORDER_ID_STDOUT 1u /* stdout recorder */
+#define CLOG_RECORDER_ID_FILE 2u /* file recorder */
 #define CLOG_RECORDER_ID_RESERVED 1000u /* 0 ~ 1000 is reserved for internal recorder, > 1000 for customized id */
 
 typedef struct clog_recorder clog_recorder_t;
@@ -28,10 +29,9 @@ typedef clog_res_e (*clog_recorder_provider_f)(uint32_t id, clog_recorder_t *rec
 /**
  * open recorder
  * @param self itself
- * @param group the parsed #clog_config_group_t from the Recorders.ClogXxx
  * @return #clog_res_e
  */
-typedef clog_res_e (*clog_recorder_open_f)(clog_recorder_t *self, const clog_config_group_t *group);
+typedef clog_res_e (*clog_recorder_open_f)(clog_recorder_t *self);
 
 /**
  * write log to recorder
@@ -64,7 +64,7 @@ struct clog_recorder {
     void *extra;
 };
 
-static clog_res_e clog_recorder_empty_open(clog_recorder_t *self, const clog_config_group_t *group)
+static clog_res_e clog_recorder_empty_open(clog_recorder_t *self)
 {
     CLOG_UNUSED_VAR(self);
     return CLOG_SUCCESS;

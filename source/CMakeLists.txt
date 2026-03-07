@@ -10,7 +10,6 @@ add_subdirectory(recorder)
 add_subdirectory(channel)
 
 set(CASCA_LOG_SOURCES
-        casca_log.c
         casca_log_core.c
         ${CASCA_LOG_HOOKS_SOURCES}
         ${CASCA_LOG_UTILS_SOURCES}
