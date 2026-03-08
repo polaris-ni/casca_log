@@ -322,10 +322,7 @@ clog_res_e clog_add_filter(clog_context_t *context, clog_filter_t *filter)
                   "filter.type %u is invalid", filter->type);
     CLOG_RET_IF_NULL_X(filter->filter, CLOG_INVALID_PARAM, "filter.filter is NULL");
     CLOG_RET_IF_X(filter->next != NULL, CLOG_INVALID_PARAM, "filter.next should be NULL");
-    clog_filter_t *filter_copy = clog_malloc(sizeof(clog_filter_t));
-    CLOG_RET_IF_NULL_X(filter_copy, CLOG_NO_MEMORY, "clog_malloc clog_filter_t failed");
-    *filter_copy = *filter;
-    if (filter_copy->type == CLOG_FILTER_PRE) {
+    if (filter->type == CLOG_FILTER_PRE) {
         clog_add_filter_to_chain(&context->filters.pre, filter);
     } else {
         clog_add_filter_to_chain(&context->filters.post, filter);

@@ -7,6 +7,7 @@
 
 #include <stdbool.h>
 #include "casca_log_base.h"
+#include "clog_hooks.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -23,15 +24,16 @@ typedef enum clog_filter_res {
     CLOG_FILTER_REJECT, /* reject and the log will be abandoned */
 } clog_filter_res_e;
 
-typedef clog_filter_res_e (*clog_filter_f)(const clog_item_wrapper_t *item);
-
 typedef struct clog_filter clog_filter_t;
 
+typedef clog_filter_res_e (*clog_filter_f)(const clog_filter_t *filter, const clog_item_wrapper_t *item);
+
 struct clog_filter {
-    const char *name; /* filter name, it should be the same as the filter defined in config file */
     uint32_t priority; /* filter priority, if same, the order defined in the configuration file will be applied */
     clog_filter_type_e type; /* pre-filter or post-filter */
     clog_filter_f filter; /* filter function */
+    clog_deallocator_f free; /* deallocator for param */
+    void *param;
     const clog_filter_t *next;
 };
 
