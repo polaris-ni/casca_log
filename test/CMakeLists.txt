@@ -22,7 +22,7 @@ set(CASCA_LOG_TEST_SOURCES ${CASCA_LOG_TEST_SOURCES} PARENT_SCOPE)
 
 add_executable(casca_log_test ${CASCA_LOG_TEST_SOURCES})
 target_link_libraries(casca_log_test GTest::gtest_main casca_log)
-include(../source/CascaLogCmakeUtils.cmake)
+include(../source/CascaLogCMakeUtils.cmake)
 casca_log_configure_switch_macro(casca_log_test "CASCA_LOG_DEBUG" "debug mode" OFF)
 casca_log_configure_switch_macro(casca_log_test "CASCA_LOG_MEM_POOL" "use memory pool optimization" ON)
 casca_log_configure_value_macro(casca_log_test "CASCA_LOG_ERR_BUF_SIZE" "single err buffer size" 256)

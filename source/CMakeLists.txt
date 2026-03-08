@@ -42,7 +42,7 @@ target_include_directories(casca_log
         ${CASCA_LOG_CHANNEL_INCLUDE_DIR}
 )
 
-include(CascaLogCmakeUtils.cmake)
+include(CascaLogCMakeUtils.cmake)
 casca_log_configure_switch_macro(casca_log "CASCA_LOG_DEBUG" "debug mode" OFF)
 casca_log_configure_switch_macro(casca_log "CASCA_LOG_MEM_POOL" "use memory pool optimization" ON)
 casca_log_configure_value_macro(casca_log "CASCA_LOG_ERR_BUF_SIZE" "single err buffer size" 256)
@@ -53,6 +53,7 @@ casca_log_configure_value_macro(casca_log "CASCA_LOG_PROCESS_NAME_MAX_SIZE" "pro
 casca_log_configure_value_macro(casca_log "CASCA_LOG_MODULE_NAME_MAX_SIZE" "module name max size" 64)
 casca_log_configure_value_macro(casca_log "CASCA_LOG_FILENAME_MAX_SIZE" "filename max size" 64)
 casca_log_configure_value_macro(casca_log "CASCA_LOG_FILEPATH_MAX_SIZE" "filepath max size" 256)
+casca_log_configure_switch_macro(casca_log "CASCA_LOG_LOCKLESS" "log run on one thread, no need to use lock" OFF)
 
 if (CMAKE_C_COMPILER_ID)
     if (CMAKE_C_COMPILER_VERSION)

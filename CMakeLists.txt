@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(casca_log_build C)
 
-include(source/CascaLogCmakeUtils.cmake)
+include(source/CascaLogCMakeUtils.cmake)
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     option(BUILD_CASCA_LOG_TEST_SUITE "CONFIG casca_log_build: enable GoogleTest" ON)
     option(BUILD_CASCA_LOG_TEST_ASAN "CONFIG casca_log_build: enable AddressSanitizer" ON)
