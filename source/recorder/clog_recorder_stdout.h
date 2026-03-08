@@ -16,6 +16,7 @@ extern "C" {
 #define CLOG_COLOR_GET_R(value) ((uint8_t)((((value) & 0xFFFFFF) >> 16) & 0xFF))
 #define CLOG_COLOR_GET_G(value) ((uint8_t)((((value) & 0xFFFF) >> 8) & 0xFF))
 #define CLOG_COLOR_GET_B(value) ((uint8_t)((value) & 0xFF))
+#define CLOG_COLOR_UNSPECIFIED 0xFF000000U
 
 typedef enum clog_stdout_color_mode {
     CLOG_RECORDER_STDOUT_COLOR_OFF = 0, /* disabled color */
@@ -50,14 +51,8 @@ typedef enum clog_stdout_color_mode {
  *       # mode 4: [r, g, b], use three values(R, G, B primary colors) to combine the final color value
  */
 typedef struct clog_recorder_stdout_color_value {
-    struct {
-        uint32_t value;
-        bool enabled;
-    } foreground;
-    struct {
-        uint32_t value;
-        bool enabled;
-    } background;
+    uint32_t foreground_color;
+    uint32_t background_color;
 } clog_recorder_stdout_color_value_t;
 
 typedef struct clog_recorder_stdout_attr {

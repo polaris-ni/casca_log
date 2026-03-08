@@ -29,7 +29,7 @@ static bool clog_stdout_check_basic_color(uint32_t value, bool is_enhanced, bool
 
 static clog_res_e clog_recorder_stdout_open(clog_recorder_t *self)
 {
-    CLOG_RET_IF_X(self->extra == NULL, CLOG_INVALID_PARAM, "clog_recorder_stdout_param_t not set");
+    CLOG_UNUSED_VAR(self);
     return CLOG_SUCCESS;
 }
 
@@ -59,18 +59,18 @@ static clog_res_e clog_stdout_parse_color_basic(const clog_recorder_stdout_color
 {
     char tmp[64] = {0};
     size_t offset = 0;
-    if (value->foreground.enabled) {
-        CLOG_RET_IF_X(!clog_stdout_check_basic_color(value->foreground.value, is_enhanced, false), CLOG_INVALID_PARAM,
-                      "basic color foreground value %u is invalid", value->foreground.value);
-        const int ret = snprintf(tmp + offset, sizeof(tmp) - offset, "\033[%um", value->foreground.value);
-        CLOG_RET_IF_X(ret <= 0, CLOG_FAIL, "snprintf color %u failed, ret = %d", value->foreground.value, ret);
+    if (value->foreground_color != CLOG_COLOR_UNSPECIFIED) {
+        CLOG_RET_IF_X(!clog_stdout_check_basic_color(value->foreground_color, is_enhanced, false), CLOG_INVALID_PARAM,
+                      "basic color foreground value %u is invalid", value->foreground_color);
+        const int ret = snprintf(tmp + offset, sizeof(tmp) - offset, "\033[%um", value->foreground_color);
+        CLOG_RET_IF_X(ret <= 0, CLOG_FAIL, "snprintf color %u failed, ret = %d", value->foreground_color, ret);
         offset += ret;
     }
-    if (value->background.enabled) {
-        CLOG_RET_IF_X(!clog_stdout_check_basic_color(value->background.value, is_enhanced, true), CLOG_INVALID_PARAM,
-                      "basic color background value %u is invalid", value->background.value);
-        const int ret = snprintf(tmp + offset, sizeof(tmp) - offset, "\033[%um", value->background.value);
-        CLOG_RET_IF_X(ret <= 0, CLOG_FAIL, "snprintf color %u failed, ret = %d", value->background.value, ret);
+    if (value->background_color != CLOG_COLOR_UNSPECIFIED) {
+        CLOG_RET_IF_X(!clog_stdout_check_basic_color(value->background_color, is_enhanced, true), CLOG_INVALID_PARAM,
+                      "basic color background value %u is invalid", value->background_color);
+        const int ret = snprintf(tmp + offset, sizeof(tmp) - offset, "\033[%um", value->background_color);
+        CLOG_RET_IF_X(ret <= 0, CLOG_FAIL, "snprintf color %u failed, ret = %d", value->background_color, ret);
     }
     *color = clog_strdup(tmp);
     CLOG_RET_IF_NULL_X(*color, CLOG_NO_MEMORY, "clog_strdup %s failed", tmp);
@@ -81,14 +81,14 @@ static clog_res_e clog_stdout_parse_color_256(const clog_recorder_stdout_color_v
 {
     char tmp[64] = {0};
     size_t offset = 0;
-    if (value->foreground.enabled) {
-        const int ret = snprintf(tmp + offset, sizeof(tmp) - offset, "\033[38;5;%um", value->foreground.value);
-        CLOG_RET_IF_X(ret <= 0, CLOG_FAIL, "snprintf color %u failed, ret = %d", value->foreground.value, ret);
+    if (value->foreground_color != CLOG_COLOR_UNSPECIFIED) {
+        const int ret = snprintf(tmp + offset, sizeof(tmp) - offset, "\033[38;5;%um", value->foreground_color);
+        CLOG_RET_IF_X(ret <= 0, CLOG_FAIL, "snprintf color %u failed, ret = %d", value->foreground_color, ret);
         offset += ret;
     }
-    if (value->background.enabled) {
-        const int ret = snprintf(tmp + offset, sizeof(tmp) - offset, "\033[48;5;%um", value->background.value);
-        CLOG_RET_IF_X(ret <= 0, CLOG_FAIL, "snprintf color %u failed, ret = %d", value->background.value, ret);
+    if (value->background_color != CLOG_COLOR_UNSPECIFIED) {
+        const int ret = snprintf(tmp + offset, sizeof(tmp) - offset, "\033[48;5;%um", value->background_color);
+        CLOG_RET_IF_X(ret <= 0, CLOG_FAIL, "snprintf color %u failed, ret = %d", value->background_color, ret);
     }
 
     *color = clog_strdup(tmp);
@@ -100,18 +100,18 @@ static clog_res_e clog_stdout_parse_color_true(const clog_recorder_stdout_color_
 {
     char tmp[64] = {0};
     size_t offset = 0;
-    if (value->foreground.enabled) {
+    if (value->foreground_color != CLOG_COLOR_UNSPECIFIED) {
         const int num = snprintf(tmp + offset, sizeof(tmp) - offset, "\033[38;2;%d;%d;%dm",
-                                 CLOG_COLOR_GET_R(value->foreground.value), CLOG_COLOR_GET_G(value->foreground.value),
-                                 CLOG_COLOR_GET_B(value->foreground.value));
-        CLOG_RET_IF_X(num <= 0, CLOG_FAIL, "snprintf fg color 0x%06X failed, ret = %d", value->foreground.value, num);
+                                 CLOG_COLOR_GET_R(value->foreground_color), CLOG_COLOR_GET_G(value->foreground_color),
+                                 CLOG_COLOR_GET_B(value->foreground_color));
+        CLOG_RET_IF_X(num <= 0, CLOG_FAIL, "snprintf fg color 0x%06X failed, ret = %d", value->foreground_color, num);
         offset += num;
     }
-    if (value->background.enabled) {
+    if (value->background_color != CLOG_COLOR_UNSPECIFIED) {
         const int num = snprintf(tmp + offset, sizeof(tmp) - offset, "\033[48;2;%d;%d;%dm",
-                                 CLOG_COLOR_GET_R(value->background.value), CLOG_COLOR_GET_G(value->background.value),
-                                 CLOG_COLOR_GET_B(value->background.value));
-        CLOG_RET_IF_X(num <= 0, CLOG_FAIL, "snprintf bg color 0x%06X failed, ret = %d", value->background.value, num);
+                                 CLOG_COLOR_GET_R(value->background_color), CLOG_COLOR_GET_G(value->background_color),
+                                 CLOG_COLOR_GET_B(value->background_color));
+        CLOG_RET_IF_X(num <= 0, CLOG_FAIL, "snprintf bg color 0x%06X failed, ret = %d", value->background_color, num);
     }
     *color = clog_strdup(tmp);
     CLOG_RET_IF_NULL_X(*color, CLOG_NO_MEMORY, "clog_strdup %s failed", *color);

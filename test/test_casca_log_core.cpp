@@ -38,12 +38,7 @@ TEST_F(CLogCoreTest, BasicLogTest)
     clog_set_mask(context, CLOG_LEVEL_ALL);
     ret = clog_set_buffer_pool(context, true, 128, 75);
     ASSERT_EQ(ret, CLOG_SUCCESS);
-    clog_module_t module = {};
-    CLOG_IGNORE_RES(clog_strcpy(module.name, sizeof(module.name), "test"));
-    module.level = CLOG_LEVEL_ALL;
-    module.num = 2;
-    module.recorders[0] = CLOG_RECORDER_ID_STDOUT;
-    module.recorders[1] = CLOG_RECORDER_ID_FILE;
+    clog_module_t module = {"test", CLOG_LEVEL_ALL, 2, {CLOG_RECORDER_ID_STDOUT, CLOG_RECORDER_ID_FILE}};
     ret = clog_add_module(context, &module);
     ASSERT_EQ(ret, CLOG_SUCCESS);
     ret = clog_add_filter(context, clog_filter_keywords_create(1, "password"));
@@ -59,35 +54,25 @@ TEST_F(CLogCoreTest, BasicLogTest)
     clog_dispatcher_t *dispatcher = clog_dispatcher_async_thread_create();
     ret = clog_set_dispatcher(context, dispatcher);
     ASSERT_EQ(ret, CLOG_SUCCESS);
-    clog_recorder_stdout_attr_t stdout_attr;
-    stdout_attr.mode = CLOG_RECORDER_STDOUT_COLOR_TRUE;
-    stdout_attr.colors[CLOG_LEVEL_TRACE - 1].background.enabled = false;
-    stdout_attr.colors[CLOG_LEVEL_TRACE - 1].foreground.enabled = true;
-    stdout_attr.colors[CLOG_LEVEL_TRACE - 1].foreground.value = CLOG_COLOR_OF(128, 128, 128);
-    stdout_attr.colors[CLOG_LEVEL_DEBUG - 1].background.enabled = false;
-    stdout_attr.colors[CLOG_LEVEL_DEBUG - 1].foreground.enabled = true;
-    stdout_attr.colors[CLOG_LEVEL_DEBUG - 1].foreground.value = CLOG_COLOR_OF(160, 160, 192);
-    stdout_attr.colors[CLOG_LEVEL_INFO - 1].background.enabled = false;
-    stdout_attr.colors[CLOG_LEVEL_INFO - 1].foreground.enabled = true;
-    stdout_attr.colors[CLOG_LEVEL_INFO - 1].foreground.value = CLOG_COLOR_OF(255, 255, 255);
-    stdout_attr.colors[CLOG_LEVEL_WARN - 1].background.enabled = false;
-    stdout_attr.colors[CLOG_LEVEL_WARN - 1].foreground.enabled = true;
-    stdout_attr.colors[CLOG_LEVEL_WARN - 1].foreground.value = CLOG_COLOR_OF(255, 255, 0);
-    stdout_attr.colors[CLOG_LEVEL_ERROR - 1].background.enabled = false;
-    stdout_attr.colors[CLOG_LEVEL_ERROR - 1].foreground.enabled = true;
-    stdout_attr.colors[CLOG_LEVEL_ERROR - 1].foreground.value = CLOG_COLOR_OF(255, 255, 0);
-    stdout_attr.colors[CLOG_LEVEL_FETAL - 1].foreground.enabled = true;
-    stdout_attr.colors[CLOG_LEVEL_FETAL - 1].foreground.value = CLOG_COLOR_OF(255, 255, 255);
-    stdout_attr.colors[CLOG_LEVEL_FETAL - 1].background.enabled = true;
-    stdout_attr.colors[CLOG_LEVEL_FETAL - 1].background.value = CLOG_COLOR_OF(139, 0, 0);
+    clog_recorder_stdout_attr_t stdout_attr = {
+        CLOG_RECORDER_STDOUT_COLOR_TRUE,
+        {
+            {CLOG_COLOR_OF(187, 187, 187), CLOG_COLOR_UNSPECIFIED},
+            {CLOG_COLOR_OF(0, 112, 187), CLOG_COLOR_UNSPECIFIED},
+            {CLOG_COLOR_OF(72, 187, 49), CLOG_COLOR_UNSPECIFIED},
+            {CLOG_COLOR_OF(243, 156, 17), CLOG_COLOR_UNSPECIFIED},
+            {CLOG_COLOR_OF(255, 0, 0), CLOG_COLOR_UNSPECIFIED},
+            {CLOG_COLOR_OF(255, 255, 255), CLOG_COLOR_OF(139, 0, 0)},
+        },
+    };
     ret = clog_add_recorder(context, clog_recorder_stdout_create(&stdout_attr));
     ASSERT_EQ(ret, CLOG_SUCCESS);
-    clog_recorder_file_attr_t file_attr;
-    file_attr.metainfo_path = "{_cwd}{_path_separator}logs{_path_separator}metainfo";
-    file_attr.log_dir = "{_cwd}{_path_separator}logs{_path_separator}{_year}{_month}{_day}{_path_separator}";
-    file_attr.log_name = "log_{_log_index}_{_year}{_month}{_day}_{_hour}{_minute}{_second}.log";
-    file_attr.split.type = CLOG_RECORDER_FILE_SPLIT_SIZE;
-    file_attr.split.limit = 1048576;
+    clog_recorder_file_attr_t file_attr = {
+        "{_cwd}{_path_separator}logs{_path_separator}metainfo",
+        "{_cwd}{_path_separator}logs{_path_separator}{_year}{_month}{_day}{_path_separator}",
+        "log_{_log_index}_{_year}{_month}{_day}_{_hour}{_minute}{_second}.log",
+        {CLOG_RECORDER_FILE_SPLIT_SIZE, 1048576},
+    };
     ret = clog_add_recorder(context, clog_recorder_file_create(&file_attr));
     ASSERT_EQ(ret, CLOG_SUCCESS);
     ret = clog_context_setup(context);
