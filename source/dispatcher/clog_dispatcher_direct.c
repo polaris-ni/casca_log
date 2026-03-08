@@ -25,7 +25,21 @@ static void clog_dispatcher_direct_notify(clog_dispatcher_t *self, clog_dispatch
             if (item->recorder[i] == CLOG_RECORDER_ID_INVALID) {
                 break;
             }
-            CLOG_IGNORE_RES(clog_recoder_write(self->context, item->recorder[i], item));
+            clog_recorder_t *recorder = clog_get_recoder(self->context, item->recorder[i]);
+            if (recorder != NULL) {
+                clog_res_e ret = recorder->write(recorder, item);
+                if (ret == CLOG_SUCCESS) {
+                    continue;
+                }
+                if (ret != CLOG_REQUEST_FLUSH) {
+                    CLOG_ERR_ADD("recorder %u write log item failed, ret = %u", item->recorder[i], ret);
+                    continue;
+                }
+                ret = recorder->flush(recorder);
+                if (ret != CLOG_SUCCESS) {
+                    CLOG_ERR_ADD("recorder %u flush failed, ret = %u", item->recorder[i], ret);
+                }
+            }
         }
         clog_release_log_item(self->context, (clog_item_t *)item);
         item = NULL;
