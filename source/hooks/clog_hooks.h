@@ -57,7 +57,7 @@ void clog_register_memory_hook_func(clog_allocator_f allocator, clog_deallocator
 #define clog_malloc(size) clog_hook_malloc(CLOG_HOOK_TRACE_ID_INVALID, CLOG_FILENAME, __func__, __LINE__, (size))
 #define clog_free(size) clog_hook_free(CLOG_HOOK_TRACE_ID_INVALID, CLOG_FILENAME, __func__, __LINE__, (size))
 
-static inline void *clog_sys_malloc(size_t size)
+static void *clog_sys_malloc(size_t size)
 {
     return clog_malloc(size);
 }
@@ -66,7 +66,7 @@ static inline void *clog_sys_malloc(size_t size)
  * memory deallocate
  * @param ptr memory pointer, nonnull
  */
-static inline void clog_sys_free(void *ptr)
+static void clog_sys_free(void *ptr)
 {
     clog_free(ptr);
 }

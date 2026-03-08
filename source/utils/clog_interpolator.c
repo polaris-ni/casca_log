@@ -42,7 +42,7 @@ clog_interpolator_context_t *clog_interpolator_context_create(clog_hashmap_t *ma
     return context;
 }
 
-clog_res_e clog_interpolator_context_register(clog_interpolator_context_t *context, const char *name,
+clog_res_e clog_interpolator_context_register(const clog_interpolator_context_t *context, const char *name,
                                               clog_placeholder_handler_f handler)
 {
     CLOG_RET_IF_NULL_X(context, CLOG_INVALID_PARAM, "context is NULL");
@@ -56,7 +56,7 @@ void clog_interpolator_context_destroy(clog_interpolator_context_t **context)
     CLOG_RET_VOID_IF_NULL_X(context, "context is NULL");
     CLOG_RET_VOID_IF_NULL_X(*context, "*context is NULL");
     if ((*context)->is_map_allocated) {
-        clog_hashmap_destroy(&((*context)->map));
+        clog_hashmap_destroy(&(*context)->map);
     }
     clog_free(*context);
     *context = NULL;

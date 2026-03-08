@@ -104,7 +104,7 @@ static void clog_atomic_queue_gc(clog_atomic_queue_handle_t handle, bool is_enqu
     }
 }
 
-clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_handle_t handle, uintptr_t data)
+clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_handle_t handle, uintptr_t ptr)
 {
     CLOG_RET_IF_NULL_X(handle, CLOG_INVALID_PARAM, "handle is NULL");
     clog_atomic_queue_gc(handle, true);
@@ -113,7 +113,7 @@ clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_handle_t handle, uintptr_
 
     clog_queue_node_t *node = clog_malloc(sizeof(clog_queue_node_t));
     CLOG_RET_IF_NULL(node, CLOG_NO_MEMORY);
-    node->data = data;
+    node->data = ptr;
     atomic_store(&node->next, 0);
 
     clog_ebr_enter(handle->local);
@@ -129,7 +129,7 @@ clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_handle_t handle, uintptr_
         if (tail == atomic_load(&queue->tail)) {
             CLOG_CLEAN_RET_IF_X(atomic_load(&queue->state) != CLOG_ATOMIC_QUEUE_RUNNING, clog_free(node),
                                 CLOG_ABNORMAL_STATE, "queue is not running");
-            uintptr_t new_tail = (uintptr_t)node;
+            const uintptr_t new_tail = (uintptr_t)node;
             if (atomic_compare_exchange_strong(&tail_node->next, &next, new_tail)) {
                 atomic_compare_exchange_strong(&queue->tail, &tail, new_tail);
                 clog_ebr_exit(handle->local);

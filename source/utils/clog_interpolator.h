@@ -41,7 +41,7 @@ clog_interpolator_context_t *clog_interpolator_context_create(clog_hashmap_t *ma
  * @param handler placeholder handler
  * @return #clog_res_e
  */
-clog_res_e clog_interpolator_context_register(clog_interpolator_context_t *context, const char *name,
+clog_res_e clog_interpolator_context_register(const clog_interpolator_context_t *context, const char *name,
                                               clog_placeholder_handler_f handler);
 
 /**

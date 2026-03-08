@@ -93,6 +93,5 @@ TEST_F(CLogCoreTest, BasicLogTest)
     ASSERT_EQ(ret, CLOG_NOT_PERMITTED);
     ret = CLOG_MODULE_LOG(context, module.name, CLOG_LEVEL_INFO, "hello, %s!", "world");
     ASSERT_EQ(ret, CLOG_SUCCESS);
-    clog_thread_sleep(1000);
     clog_context_destroy(&context);
 }

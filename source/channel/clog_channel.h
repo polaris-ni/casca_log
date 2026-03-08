@@ -6,7 +6,6 @@
 #define CASCA_LOG_CLOG_CHANNEL_BASE_H
 
 #include "casca_log_base.h"
-#include "clog_config.h"
 #include "clog_hooks.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)

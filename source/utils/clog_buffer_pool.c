@@ -83,10 +83,10 @@ clog_res_e clog_buffer_pool_initialize(clog_buffer_pool_t **pool, size_t item_si
     CLOG_RET_IF_NULL_X(tmp, CLOG_NO_MEMORY, "buffer pool is NULL");
     clog_atomic_set(&tmp->head, 0);
     clog_atomic_set(&tmp->state, CLOG_BUFFER_POOL_STATE_RUNNING);
-    clog_atomic_set(&tmp->free_count, (clog_atomic_basic_t)init_capacity);
-    clog_atomic_set(&tmp->capacity, (clog_atomic_basic_t)init_capacity);
+    clog_atomic_set(&tmp->free_count, init_capacity);
+    clog_atomic_set(&tmp->capacity, init_capacity);
     tmp->item_size = item_size;
-    tmp->init_capacity = (size_t)init_capacity;
+    tmp->init_capacity = init_capacity;
     tmp->auto_manager = auto_manager;
     tmp->threshold = threshold;
     clog_buffer_t *buffer = clog_buffer_pool_malloc_pool_batch(init_capacity, tmp->item_size);
@@ -172,7 +172,7 @@ clog_buffer_pool_t *clog_buffer_pool_release(clog_buffer_pool_t *pool, void *ent
         capacity = clog_atomic_get(&pool->capacity);
         const clog_atomic_basic_t free_count = clog_atomic_get(&pool->free_count);
         const clog_atomic_basic_t rate = 100 - free_count * 100 / capacity;
-        if ((rate > pool->threshold) || (capacity == pool->init_capacity)) {
+        if (rate > pool->threshold || capacity == pool->init_capacity) {
             clog_atomic_basic_t old_head;
             const clog_atomic_basic_t new_head = (clog_atomic_basic_t)buffer;
             do {
@@ -220,7 +220,7 @@ int32_t clog_buffer_pool_get_state(const clog_buffer_pool_t *pool)
 {
     CLOG_RET_IF_NULL_X(pool, CLOG_BUFFER_POOL_STATE_DISABLED, "buffer pool is NULL");
     const clog_atomic_basic_t tmp = clog_atomic_get(&pool->state);
-    if ((tmp >= CLOG_BUFFER_POOL_STATE_DISABLED) && (tmp <= CLOG_BUFFER_POOL_STATE_FINALIZING)) {
+    if (tmp <= CLOG_BUFFER_POOL_STATE_FINALIZING) {
         return (int32_t)tmp;
     }
     return CLOG_BUFFER_POOL_STATE_DISABLED;

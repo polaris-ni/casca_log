@@ -525,7 +525,7 @@ void clog_context_destroy(clog_context_t **context)
 
 static bool clog_module_check(const clog_module_t *info, clog_level_e level, uint32_t recorder)
 {
-    CLOG_RET_IF(((1 << (level - 1)) & info->level) == 0, false);
+    CLOG_RET_IF((1 << (level - 1) & info->level) == 0, false);
     for (size_t i = 0; i < info->num; ++i) {
         if (info->recorders[i] == recorder) {
             return true;
@@ -636,7 +636,7 @@ static clog_res_e clog_module_log_internal(const clog_context_t *context, const 
 {
     const clog_module_t *info = clog_hashmap_get(context->modules, module);
     CLOG_RET_IF_NULL_X(info, CLOG_TARGET_NOT_FOUND, "module info %s not found", module);
-    CLOG_RET_IF(((1 << (level - 1)) & info->level) == 0, CLOG_NOT_PERMITTED);
+    CLOG_RET_IF((1 << (level - 1) & info->level) == 0, CLOG_NOT_PERMITTED);
     CLOG_RET_IF(info->num == 0, CLOG_TARGET_NOT_FOUND);
     const clog_res_e res = clog_init_item_wrapper(context, module, file, function, line, level, fmt, wrapper);
     CLOG_RET_IF_FAILED_X(res, "clog_init_item_wrapper failed, res = %u", res);

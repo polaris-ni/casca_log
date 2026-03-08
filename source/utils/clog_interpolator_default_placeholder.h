@@ -55,6 +55,7 @@ static int clog_interpolator_placeholder_cwd(void *param, char *buf, size_t size
 static int clog_interpolator_placeholder_path_separator(void *param, char *buf, size_t size)
 {
     CLOG_UNUSED_VAR(param);
+    CLOG_UNUSED_VAR(size);
 #ifdef CLOG_PLATFORM_WINDOWS
     buf[0] = '\\';
 #else

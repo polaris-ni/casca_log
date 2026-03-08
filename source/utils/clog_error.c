@@ -18,7 +18,7 @@ static clog_atomic_type_t g_err_count;
 
 void clog_err_setup(unsigned short num, unsigned short size)
 {
-    CLOG_RET_VOID_IF((num == 0) || (size == 0));
+    CLOG_RET_VOID_IF(num == 0 || size == 0);
     g_err_msg = clog_malloc(num * sizeof(char *));
     CLOG_RET_VOID_IF_NULL(g_err_msg);
     for (unsigned short i = 0; i < num; ++i) {
