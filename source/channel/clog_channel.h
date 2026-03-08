@@ -14,6 +14,7 @@ extern "C" {
 
 #define CLOG_CHANNEL_ID_INVALID 0
 #define CLOG_CHANNEL_ID_ATOMIC_QUEUE 1
+#define CLOG_CHANNEL_ID_UNSAFE_QUEUE 2
 #define CLOG_CHANNEL_ID_RESERVED 0xFFFFU
 
 typedef struct clog_channel clog_channel_t;
@@ -26,6 +27,7 @@ typedef clog_res_e (*clog_channel_read_f)(clog_channel_t *self, const clog_item_
 typedef void (*clog_channel_close_f)(clog_channel_t *self);
 
 struct clog_channel {
+    clog_context_t *context;
     clog_channel_id_t id;
     clog_channel_open_f open;
     clog_channel_write_f write;

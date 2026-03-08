@@ -52,6 +52,7 @@ static void clog_recorder_stdout_close(clog_recorder_t *self)
         CLOG_SAFE_FREE(param->colors[i]);
     }
     CLOG_SAFE_FREE(self->extra);
+    CLOG_IGNORE_RES(fflush(stdout));
 }
 
 static clog_res_e clog_stdout_parse_color_basic(const clog_recorder_stdout_color_value_t *value, char **color,
