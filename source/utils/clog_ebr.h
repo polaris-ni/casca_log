@@ -107,7 +107,7 @@ void clog_ebr_poll(clog_ebr_global_t *global);
  * memory that has passed the grace period will be released
  * @param local thread local EBR
  */
-void clog_ebr_local_poll(clog_ebr_thread_local_t *local);
+void clog_ebr_local_poll(const clog_ebr_thread_local_t *local);
 
 /**
  * destroy a global EBR state, must be called when all threads have performed #clog_ebr_unregister.

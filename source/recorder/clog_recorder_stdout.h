@@ -5,7 +5,6 @@
 #ifndef CASCA_LOG_CLOG_RECORDER_STDOUT_H
 #define CASCA_LOG_CLOG_RECORDER_STDOUT_H
 
-#include <stdbool.h>
 #include "clog_recorder.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)

@@ -19,12 +19,12 @@ static bool clog_stdout_check_basic_color(uint32_t value, bool is_enhanced, bool
         if (is_enhanced) {
             return (value >= 30 && value <= 37) || (value >= 90 && value <= 97);
         }
-        return (value >= 30 && value <= 37);
+        return value >= 30 && value <= 37;
     }
     if (is_enhanced) {
         return (value >= 40 && value <= 47) || (value >= 100 && value <= 107);
     }
-    return (value >= 40 && value <= 47);
+    return value >= 40 && value <= 47;
 }
 
 static clog_res_e clog_recorder_stdout_open(clog_recorder_t *self)
@@ -158,7 +158,7 @@ static clog_recorder_stdout_param_t *clog_recorder_stdout_attr_parse(const clog_
 
 clog_recorder_t *clog_recorder_stdout_create(const clog_recorder_stdout_attr_t *attr)
 {
-    CLOG_RET_IF_X((attr != NULL) && (attr->mode >= CLOG_RECORDER_STDOUT_COLOR_MAX), NULL, "color mode %u error",
+    CLOG_RET_IF_X((attr != NULL) && attr->mode >= CLOG_RECORDER_STDOUT_COLOR_MAX, NULL, "color mode %u error",
                   attr->mode);
     clog_recorder_t *recorder = clog_malloc(sizeof(clog_recorder_t));
     CLOG_RET_IF_NULL_X(recorder, NULL, "malloc clog_recorder_t failed");

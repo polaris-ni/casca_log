@@ -59,9 +59,9 @@ uint64_t clog_timestamp_ms()
 #endif
 }
 
-static inline int clog_datetime_is_leap_year(int year)
+static int clog_datetime_is_leap_year(int year)
 {
-    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+    return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
 }
 
 static int clog_datetime_days_in_month(int year, int month)
@@ -86,7 +86,7 @@ uint64_t clog_timestamp_of_datetime(const clog_datetime_t *datetime, int tz_hour
         total_days += clog_datetime_days_in_month(datetime->year, m);
     }
 
-    total_days += (datetime->day - 1);
+    total_days += datetime->day - 1;
 
     uint64_t timestamp_ms = total_days * 86400000LL;
     timestamp_ms += datetime->hour * 3600000LL;

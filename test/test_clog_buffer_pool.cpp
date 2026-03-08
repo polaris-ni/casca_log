@@ -292,8 +292,8 @@ TEST_F(CLogBufferPoolTest, MultiThreadUniqueEntryCheck)
             ASSERT_NE(entry, nullptr);
             {
                 std::lock_guard lock(map_mutex);
-                const auto result = entry_thread_map.insert({entry, std::this_thread::get_id()});
-                if (!result.second) {
+                const auto [fst, snd] = entry_thread_map.insert({entry, std::this_thread::get_id()});
+                if (!snd) {
                     duplicate_detected.store(true);
                     FAIL() << "Duplicate entry detected: " << entry << " already held by thread "
                            << entry_thread_map[entry] << " and requested by thread " << std::this_thread::get_id();

@@ -54,7 +54,7 @@ TEST_F(CLogRwLockTest, MultipleReadersConcurrent)
 
     for (int i = 0; i < num_readers; ++i) {
         readers.emplace_back(
-            [&]()
+            [&]
             {
                 ASSERT_EQ(clog_rwlock_rd_lock(lock), CLOG_SUCCESS);
                 reader_count.fetch_add(1, std::memory_order_relaxed);
@@ -79,7 +79,7 @@ TEST_F(CLogRwLockTest, WriterExclusion)
     std::atomic<bool> writer2_entered{false};
 
     std::thread writer1(
-        [&]()
+        [&]
         {
             ASSERT_EQ(clog_rwlock_wr_lock(lock), CLOG_SUCCESS);
             writer1_holding = true;
@@ -89,7 +89,7 @@ TEST_F(CLogRwLockTest, WriterExclusion)
         });
 
     std::thread writer2(
-        [&]()
+        [&]
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             ASSERT_EQ(clog_rwlock_wr_lock(lock), CLOG_SUCCESS);
@@ -112,7 +112,7 @@ TEST_F(CLogRwLockTest, ReaderWriterExclusion)
     std::atomic<bool> writer_entered{false};
 
     std::thread reader(
-        [&]()
+        [&]
         {
             ASSERT_EQ(clog_rwlock_rd_lock(lock), CLOG_SUCCESS);
             reader_holding = true;
@@ -122,7 +122,7 @@ TEST_F(CLogRwLockTest, ReaderWriterExclusion)
         });
 
     std::thread writer(
-        [&]()
+        [&]
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             ASSERT_EQ(clog_rwlock_wr_lock(lock), CLOG_SUCCESS);

@@ -66,7 +66,7 @@ protected:
         std::ifstream file(path, std::ios::in | std::ios::binary);
         std::string content;
         if (file.is_open()) {
-            content.assign((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+            content.assign(std::istreambuf_iterator(file), std::istreambuf_iterator<char>());
             file.close();
         }
         return content;
@@ -180,7 +180,7 @@ TEST_F(CLogFileSystemComprehensiveTest, ReadFileVariousScenarios)
     clog_file_t *file = clog_file_open(path.c_str(), CLOG_FILE_READ, 0644);
     ASSERT_NE(file, nullptr);
 
-    char buffer[256] = {0};
+    char buffer[256] = {};
     size_t read_size = 0;
     const clog_res_e result = clog_file_read(file, buffer, test_data.length(), &read_size);
     EXPECT_EQ(result, CLOG_SUCCESS);
@@ -201,7 +201,7 @@ TEST_F(CLogFileSystemComprehensiveTest, ReadFileSmallBuffer)
     clog_file_t *file = clog_file_open(path.c_str(), CLOG_FILE_READ, 0644);
     ASSERT_NE(file, nullptr);
 
-    char small_buffer[20] = {0};
+    char small_buffer[20] = {};
     size_t read_size = 0;
     const clog_res_e result = clog_file_read(file, small_buffer, sizeof(small_buffer) - 1, &read_size);
     EXPECT_EQ(result, CLOG_SUCCESS);
@@ -234,7 +234,7 @@ TEST_F(CLogFileSystemComprehensiveTest, ReadFileEdgeCases)
 
 TEST_F(CLogFileSystemComprehensiveTest, GetCurrentWorkingDirectory)
 {
-    char cwd_buffer[1024] = {0};
+    char cwd_buffer[1024] = {};
     clog_res_e result = clog_cwd(cwd_buffer, sizeof(cwd_buffer));
     EXPECT_EQ(result, CLOG_SUCCESS);
     EXPECT_GT(strlen(cwd_buffer), 0);

@@ -20,7 +20,7 @@ typedef struct clog_atomic_mpsc_queue {
 
 clog_atomic_mpsc_queue_t *clog_atomic_mpsc_queue_create(void)
 {
-    clog_atomic_mpsc_queue_t *queue = (clog_atomic_mpsc_queue_t *)clog_malloc(sizeof(clog_atomic_mpsc_queue_t));
+    clog_atomic_mpsc_queue_t *queue = clog_malloc(sizeof(clog_atomic_mpsc_queue_t));
     CLOG_RET_IF_NULL_X(queue, NULL, "malloc clog_atomic_mpsc_queue_t failed");
     clog_atomic_mpsc_queue_node_t *node = clog_malloc(sizeof(clog_atomic_mpsc_queue_node_t));
     CLOG_CLEAN_RET_IF_NULL_X(node, clog_free(queue), NULL, "malloc dummy node failed");

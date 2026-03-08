@@ -181,7 +181,7 @@ clog_res_e clog_file_write(const clog_file_t *file, const void *buf, size_t size
     CLOG_RET_IF_X(!CLOG_FILE_CHECK_FLAG(file->flags, CLOG_FILE_WRITE), CLOG_NOT_SUPPORTED, "file not opened for write");
 #ifdef CLOG_PLATFORM_WINDOWS
     CLOG_RET_IF_X(file->handle == INVALID_HANDLE_VALUE, CLOG_INVALID_PARAM, "file handle is invalid");
-    if (!WriteFile(file->handle, buf, (DWORD)size, NULL, NULL)) {
+    if (!WriteFile(file->handle, buf, size, NULL, NULL)) {
         CLOG_ERR_ADD("WriteFile failed, err = 0x%llX", (uint64_t)GetLastError());
         return CLOG_FAIL;
     }
@@ -208,7 +208,7 @@ clog_res_e clog_file_read(const clog_file_t *file, void *buf, size_t size, size_
 #ifdef CLOG_PLATFORM_WINDOWS
     CLOG_RET_IF_X(file->handle == INVALID_HANDLE_VALUE, CLOG_INVALID_PARAM, "file handle is invalid");
     DWORD read_size = 0;
-    if (!ReadFile(file->handle, buf, (DWORD)size, &read_size, NULL)) {
+    if (!ReadFile(file->handle, buf, size, &read_size, NULL)) {
         CLOG_ERR_ADD("ReadFile failed, size = %zu, err = 0x%llX", size, (uint64_t)GetLastError());
         return CLOG_FAIL;
     }
@@ -274,7 +274,7 @@ clog_res_e clog_cwd(char *path, size_t size)
     CLOG_RET_IF_NULL_X(path, CLOG_INVALID_PARAM, "path is NULL");
     CLOG_RET_IF_X(size == 0, CLOG_INVALID_PARAM, "path size is 0");
 #ifdef CLOG_PLATFORM_WINDOWS
-    const DWORD ret = GetCurrentDirectory((DWORD)size, path);
+    const DWORD ret = GetCurrentDirectory(size, path);
     if (ret == 0 || ret >= size) {
         CLOG_ERR_ADD("GetCurrentDirectoryW failed, ret = %u, size = %zu, err = 0x%llX", ret, size,
                      (uint64_t)GetLastError());
@@ -374,7 +374,7 @@ clog_res_e clog_normalize(const char *path, char *buf, size_t size)
     CLOG_RET_IF_X(size < 2, CLOG_INVALID_PARAM, "path size is %zu", size);
 #ifdef CLOG_PLATFORM_WINDOWS
     SetLastError(0);
-    const DWORD ret = GetFullPathNameA(path, (DWORD)size, buf, NULL);
+    const DWORD ret = GetFullPathNameA(path, size, buf, NULL);
     if (ret == 0 || ret >= size || GetLastError() != 0) {
         CLOG_ERR_ADD("GetFullPathNameA failed, ret = %u, err = 0x%llX", ret, (uint64_t)GetLastError());
         return CLOG_FAIL;

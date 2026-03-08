@@ -170,7 +170,7 @@ static bool clog_recorder_file_need_flash(const clog_recorder_file_param_t *para
 static clog_res_e clog_recorder_file_open(clog_recorder_t *self)
 {
     CLOG_RET_IF_NULL_X(self->extra, CLOG_ABNORMAL_STATE, "param not initialized");
-    clog_recorder_file_param_t *param = self->extra;
+    const clog_recorder_file_param_t *param = self->extra;
     if (clog_recorder_file_need_flash(param)) {
         const clog_res_e ret = self->flush(self);
         CLOG_RET_IF_FUNC_FAILED_X(self->flush, ret);

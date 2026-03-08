@@ -89,7 +89,7 @@ TEST_F(CLogErrorTest, PrintToBuffer)
     clog_err_put(__FILE__, __LINE__, "First error");
     clog_err_put(__FILE__, __LINE__, "Second error");
 
-    char buffer[512] = {0};
+    char buffer[512] = {};
     clog_err_print(buffer, sizeof(buffer), "\n");
 
     EXPECT_STRNE(buffer, "");

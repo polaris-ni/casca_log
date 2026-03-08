@@ -79,15 +79,16 @@ TEST_F(CLogAtomicMpscQueueTest, MultiProducerSingleConsumer)
             }
         });
 
+    producers.reserve(NUM_PRODUCERS);
     for (size_t i = 0; i < NUM_PRODUCERS; ++i) {
         producers.emplace_back(
-            [&, i]()
+            [&, i]
             {
                 std::mt19937 rng(static_cast<unsigned>(i + std::time(nullptr)));
                 std::uniform_int_distribution<uintptr_t> dist(1, 1000000);
 
                 for (size_t j = 0; j < NUM_ITEMS_PER_PRODUCER; ++j) {
-                    uintptr_t value = dist(rng);
+                    const uintptr_t value = dist(rng);
                     holder.Produce(i, value);
 
                     clog_res_e result = clog_atomic_mpsc_queue_in(queue, value);
@@ -140,7 +141,7 @@ TEST_F(CLogAtomicMpscQueueTest, HighConcurrencyStressTest)
             [&, i]
             {
                 for (size_t j = 0; j < NUM_ITEMS_PER_PRODUCER; ++j) {
-                    const uintptr_t value = (i * NUM_ITEMS_PER_PRODUCER) + j;
+                    const uintptr_t value = i * NUM_ITEMS_PER_PRODUCER + j;
                     clog_res_e result = clog_atomic_mpsc_queue_in(queue, value);
                     EXPECT_EQ(CLOG_SUCCESS, result);
                     holder.Produce(i, value);

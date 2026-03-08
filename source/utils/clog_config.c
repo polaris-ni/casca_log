@@ -3,7 +3,9 @@
  * @date  2025/9/12
  */
 #include "clog_config.h"
+#ifndef errno
 #include <errno.h>
+#endif
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -16,7 +18,7 @@ static const char *clog_config_remove_leading_spaces(const char *start, const ch
 {
     const char *tmp = start;
     while (tmp < end) {
-        if ((*tmp != ' ') && (*tmp != '\t')) {
+        if (*tmp != ' ' && *tmp != '\t') {
             return tmp;
         }
         tmp++;
@@ -365,7 +367,7 @@ static const char *clog_config_parse_number(const char *start, const char *end, 
     }
     if (*tmp == '0') {
         tmp++;
-        if ((tmp == end) || (*tmp == ' ') || (*tmp == '#') || (*tmp == '\t')) { /* "+0", "0", "-0" */
+        if (tmp == end || *tmp == ' ' || *tmp == '#' || *tmp == '\t') { /* "+0", "0", "-0" */
             if (item->type == CLOG_CONFIG_TYPE_INT) {
                 item->value.sint = 0;
             } else {
@@ -390,7 +392,7 @@ static const char *clog_config_parse_number(const char *start, const char *end, 
     }
     CLOG_RET_IF(*tmp == '.', NULL); /* no number before '.', e.g. ".123", "-.0" */
     const char *number_end = NULL;
-    while ((*tmp != ' ') && (*tmp != '\t') && (*tmp != '#') && tmp < end) {
+    while (*tmp != ' ' && *tmp != '\t' && *tmp != '#' && tmp < end) {
         if (*tmp == '.') {
             return clog_config_parse_double(start, end, item); /* parse with '+'/'-' */
         }

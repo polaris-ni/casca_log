@@ -41,7 +41,7 @@ clog_res_e clog_ebr_create(clog_ebr_global_t **global, clog_deallocator_f free)
 {
     CLOG_RET_IF_NULL(global, CLOG_INVALID_PARAM);
     CLOG_RET_IF_NULL(free, CLOG_INVALID_PARAM);
-    clog_ebr_global_t *tmp = (clog_ebr_global_t *)clog_malloc(sizeof(clog_ebr_global_t));
+    clog_ebr_global_t *tmp = clog_malloc(sizeof(clog_ebr_global_t));
     CLOG_RET_IF_NULL(tmp, CLOG_NO_MEMORY);
     atomic_init(&tmp->state, CLOG_EBR_GLOBAL_STATE_ACTIVE_NORMAL);
     atomic_init(&tmp->epoch, 0U);
@@ -183,7 +183,7 @@ void clog_ebr_defer_release_global(clog_ebr_global_t *global, void *ptr)
 {
     CLOG_RET_VOID_IF_NULL(global);
     CLOG_RET_VOID_IF_NULL(ptr);
-    clog_ebr_memory_node_t *entry = (clog_ebr_memory_node_t *)clog_malloc(sizeof(clog_ebr_memory_node_t));
+    clog_ebr_memory_node_t *entry = clog_malloc(sizeof(clog_ebr_memory_node_t));
     CLOG_CLEAN_RET_VOID_IF_NULL(entry, global->free(ptr));
     entry->ptr = ptr;
 
@@ -246,7 +246,7 @@ void clog_ebr_poll(clog_ebr_global_t *global)
     CLOG_IGNORE_RES(clog_mutex_unlock(&global->mutex));
 }
 
-void clog_ebr_local_poll(clog_ebr_thread_local_t *local)
+void clog_ebr_local_poll(const clog_ebr_thread_local_t *local)
 {
     CLOG_RET_VOID_IF_NULL(local);
     clog_ebr_poll(local->global);
