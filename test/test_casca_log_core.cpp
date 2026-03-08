@@ -7,6 +7,7 @@
 #include "casca_log_core.h"
 #include "clog_channel_atomic_queue.h"
 #include "clog_dispatcher_async_thread.h"
+#include "clog_filter_keywords.h"
 #include "clog_recorder_file.h"
 #include "clog_recorder_stdout.h"
 #include "clog_thread.h"
@@ -44,6 +45,8 @@ TEST_F(CLogCoreTest, BasicLogTest)
     module.recorders[0] = CLOG_RECORDER_ID_STDOUT;
     module.recorders[1] = CLOG_RECORDER_ID_FILE;
     ret = clog_add_module(context, &module);
+    ASSERT_EQ(ret, CLOG_SUCCESS);
+    ret = clog_add_filter(context, clog_filter_keywords_create(1, "password"));
     ASSERT_EQ(ret, CLOG_SUCCESS);
     ret = clog_set_log_format(context,
                               "{_year}-{_month}-{_day} {_hour}:{_minute}:{_second}.{_millisecond} {_level} "
@@ -101,6 +104,8 @@ TEST_F(CLogCoreTest, BasicLogTest)
     ASSERT_EQ(ret, CLOG_SUCCESS);
     ret = clog_module_log(context, module.name, CLOG_FILENAME, __func__, __LINE__, CLOG_LEVEL_FETAL, "test fetal log");
     ASSERT_EQ(ret, CLOG_SUCCESS);
+    ret = clog_module_log(context, module.name, CLOG_FILENAME, __func__, __LINE__, CLOG_LEVEL_INFO, "filter password");
+    ASSERT_EQ(ret, CLOG_NOT_PERMITTED);
     clog_thread_sleep(1000);
     clog_context_destroy(&context);
 }
