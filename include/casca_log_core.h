@@ -75,8 +75,8 @@ clog_res_e clog_add_modules(clog_context_t *context, const clog_module_t *module
  * @param handler placeholder handler
  * @return #clog_res_e
  */
-clog_res_e clog_register_log_format_placeholder_handler(clog_context_t *context, const char *name,
-                                                        clog_placeholder_handler_f handler);
+clog_res_e clog_register_log_format_placeholder(clog_context_t *context, const char *name,
+                                                clog_placeholder_handler_f handler);
 
 /**
  * setup log format for log context
@@ -156,13 +156,12 @@ clog_item_t *clog_acquire_log_item(const clog_context_t *context);
 void clog_release_log_item(const clog_context_t *context, clog_item_t *item);
 
 /**
- * write a log item to recorder
+ * get recorder
  * @param context clog_context_t
  * @param id recorder id
- * @param item log item to be written
- * @return #clog_res_e
+ * @return #clog_recorder_t
  */
-clog_res_e clog_recoder_write(const clog_context_t *context, uint32_t id, const clog_item_t *item);
+clog_recorder_t *clog_get_recoder(const clog_context_t *context, uint32_t id);
 
 /**
  * destroy log context
@@ -200,6 +199,9 @@ clog_res_e clog_record_log(const clog_context_t *context, const char *module, ui
  */
 clog_res_e clog_module_log(const clog_context_t *context, const char *module, const char *file, const char *function,
                            int line, clog_level_e level, const char *fmt, ...);
+
+#define CLOG_MODULE_LOG(context, module, level, fmt, ...) \
+    clog_module_log(context, module, CLOG_FILENAME, __func__, __LINE__, level, fmt, ##__VA_ARGS__)
 
 #if defined(__cplusplus) || defined(c_plusplus)
 }
