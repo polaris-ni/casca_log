@@ -338,6 +338,7 @@ clog_res_e clog_set_channel(clog_context_t *context, clog_channel_t *channel)
     CLOG_RET_IF_NULL_X(channel->close, CLOG_INVALID_PARAM, "channel->close is NULL");
 
     clog_channel_destroy(&context->channel);
+    channel->context = context;
     context->channel = channel;
     return CLOG_SUCCESS;
 }

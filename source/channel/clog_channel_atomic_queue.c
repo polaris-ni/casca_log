@@ -3,6 +3,7 @@
  * @date  2025/12/4
  */
 #include "clog_channel_atomic_queue.h"
+#include "casca_log_core.h"
 #include "clog_atomic_mpsc_queue.h"
 #include "clog_error.h"
 #include "clog_hooks.h"
@@ -42,6 +43,14 @@ static void clog_atomic_queue_channel_close(clog_channel_t *channel)
 {
     clog_atomic_queue_channel_param_t *param = channel->param;
     if (param != NULL) {
+        clog_res_e res = CLOG_SUCCESS;
+        while (res == CLOG_SUCCESS) {
+            uintptr_t tmp = 0;
+            res = clog_atomic_mpsc_queue_out(param->queue, &tmp);
+            if (res == CLOG_SUCCESS) {
+                clog_release_log_item(channel->context, (clog_item_t *)tmp);
+            }
+        }
         clog_atomic_mpsc_queue_destroy(param->queue);
         clog_free(param);
     }
@@ -52,6 +61,7 @@ clog_channel_t *clog_atomic_queue_channel_create()
 {
     clog_channel_t *channel = clog_malloc(sizeof(clog_channel_t));
     CLOG_RET_IF_NULL_X(channel, NULL, "malloc clog_channel_t failed");
+    channel->context = NULL;
     channel->id = CLOG_CHANNEL_ID_ATOMIC_QUEUE;
     channel->open = clog_atomic_queue_channel_open;
     channel->write = clog_atomic_queue_channel_write;
