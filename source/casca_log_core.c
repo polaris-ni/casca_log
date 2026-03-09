@@ -464,7 +464,7 @@ clog_recorder_t *clog_get_recoder(const clog_context_t *context, uint32_t id)
 {
     CLOG_RET_IF_NULL_X(context, NULL, "context is NULL");
     const clog_state_e state = clog_atomic_get(&context->state);
-    CLOG_RET_IF_X(state != CLOG_STATE_RUNNING, NULL, "clog state %u error", state);
+    CLOG_RET_IF_X(state != CLOG_STATE_RUNNING && state != CLOG_STATE_STOPPING, NULL, "clog state %u error", state);
     clog_recorder_t *recorder = clog_hashmap_get(context->recorders, &id);
     CLOG_RET_IF_NULL_X(recorder, NULL, "recorder %u not found", id);
     return recorder;
@@ -482,6 +482,7 @@ void clog_context_destroy(clog_context_t **context)
 #endif
     /* dispatcher use channel and recorders, so close it first */
     if (tmp->dispatcher != NULL) {
+        tmp->dispatcher->notify(tmp->dispatcher, CLOG_DISPATCHER_EVENT_END);
         tmp->dispatcher->close(tmp->dispatcher);
         CLOG_SAFE_FREE(tmp->dispatcher);
     }
