@@ -17,6 +17,7 @@ typedef struct clog_dispatcher_async_thread_param {
     clog_thread_t thread;
     atomic_uintptr_t state;
     clog_sem_t *sem;
+    clog_recorder_t *cache[CASCA_LOG_TARGET_RECORDER_MAX_NUM];
 } clog_dispatcher_async_thread_param_t;
 
 typedef enum clog_async_thread_dispatcher_state {
@@ -26,16 +27,20 @@ typedef enum clog_async_thread_dispatcher_state {
     CLOG_ASYNC_THREAD_DISPATCHER_CLOSED,
 } clog_async_thread_dispatcher_state_e;
 
-static void clog_async_thread_dispatcher_process_log(const clog_dispatcher_t *dispatcher, clog_channel_t *channel)
+static void clog_async_thread_dispatcher_process_log(const clog_dispatcher_t *dispatcher,
+                                                     clog_dispatcher_async_thread_param_t *param)
 {
     const clog_item_t *item = NULL;
-    clog_res_e res = channel->read(channel, &item);
+    clog_res_e res = dispatcher->channel->read(dispatcher->channel, &item);
     while (res == CLOG_SUCCESS && item != NULL) {
         for (size_t i = 0; i < CLOG_ARRAY_SIZE(item->recorder); ++i) {
             if (item->recorder[i] == CLOG_RECORDER_ID_INVALID) {
                 break;
             }
-            clog_recorder_t *recorder = clog_get_recoder(dispatcher->context, item->recorder[i]);
+            if (param->cache[i] == NULL || param->cache[i]->id != item->recorder[i]) {
+                param->cache[i] = clog_get_recoder(dispatcher->context, item->recorder[i]);
+            }
+            clog_recorder_t *recorder = param->cache[i];
             if (recorder != NULL) {
                 clog_res_e ret = recorder->write(recorder, item);
                 if (ret == CLOG_SUCCESS) {
@@ -53,7 +58,7 @@ static void clog_async_thread_dispatcher_process_log(const clog_dispatcher_t *di
         }
         clog_release_log_item(dispatcher->context, (clog_item_t *)item);
         item = NULL;
-        res = channel->read(channel, &item);
+        res = dispatcher->channel->read(dispatcher->channel, &item);
     }
     if (item != NULL) {
         clog_release_log_item(dispatcher->context, (clog_item_t *)item);
@@ -77,14 +82,14 @@ static void clog_async_thread_handler(void *args, size_t size)
         }
         const clog_async_thread_dispatcher_state_e state = clog_atomic_get(&param->state);
         if (state == CLOG_ASYNC_THREAD_DISPATCHER_STOPPING) {
-            clog_async_thread_dispatcher_process_log(dispatcher, channel);
+            clog_async_thread_dispatcher_process_log(dispatcher, param);
             clog_atomic_set(&param->state, CLOG_ASYNC_THREAD_DISPATCHER_CLOSED);
             return;
         }
         if (state != CLOG_ASYNC_THREAD_DISPATCHER_RUNNING) {
             return;
         }
-        clog_async_thread_dispatcher_process_log(dispatcher, channel);
+        clog_async_thread_dispatcher_process_log(dispatcher, param);
     }
 }
 
@@ -109,6 +114,7 @@ static clog_res_e clog_dispatcher_async_thread_open(clog_dispatcher_t *self)
         clog_free(param);
         self->extra = NULL;
     } else {
+        CLOG_IGNORE_RES(clog_memset(param->cache, sizeof(param->cache), 0, sizeof(param->cache)));
         clog_thread_detach(param->thread);
     }
     return res;
@@ -141,7 +147,7 @@ static void clog_dispatcher_async_thread_close(clog_dispatcher_t *self)
     clog_dispatcher_async_thread_param_t *param = self->extra;
     CLOG_RET_VOID_IF_NULL(param);
     const clog_async_thread_dispatcher_state_e state = clog_atomic_get(&param->state);
-    if (state == CLOG_ASYNC_THREAD_DISPATCHER_RUNNING) {
+    if (state != CLOG_ASYNC_THREAD_DISPATCHER_STOPPING) {
         clog_atomic_set(&param->state, CLOG_ASYNC_THREAD_DISPATCHER_STOPPING);
         CLOG_IGNORE_RES(clog_sem_post(param->sem));
     }
