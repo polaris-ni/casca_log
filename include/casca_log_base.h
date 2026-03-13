@@ -142,6 +142,8 @@ typedef struct clog_context clog_context_t;
 #pragma pack(push, 1)
 #endif
 typedef struct clog_item {
+    uint32_t magic;
+    uint32_t version;
     uint32_t recorder[CASCA_LOG_TARGET_RECORDER_MAX_NUM];
     char process[CASCA_LOG_PROCESS_NAME_MAX_SIZE];
     char module[CASCA_LOG_MODULE_NAME_MAX_SIZE];

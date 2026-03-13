@@ -53,6 +53,23 @@ static const char *clog_get_filename(const char *fullname, int len)
 #endif
 #endif
 
+#define CASCA_LOG_VERSION_MAJOR 0u
+#define CASCA_LOG_VERSION_MINOR 0u
+#define CASCA_LOG_VERSION_REVISION 1u
+#define CASCA_LOG_VERSION_COMPAT 1u
+#define CASCA_LOG_VERSION_OF(major, minor, revision, compat) \
+    (((major) << 24) | ((minor) << 16) | ((revision) << 8) | (compat))
+
+#define CASCA_LOG_VERSION_0_0_1_1                                                                      \
+    CASCA_LOG_VERSION_OF(CASCA_LOG_VERSION_MAJOR, CASCA_LOG_VERSION_MINOR, CASCA_LOG_VERSION_REVISION, \
+                         CASCA_LOG_VERSION_COMPAT)
+
+#define CASCA_LOG_CHECK_COMPATIBILITY(version1, version2) (((version1) & 0xFF) == ((version2) & 0xFF))
+
+#define CASCA_LOG_VERSION CASCA_LOG_VERSION_0_0_1_1
+
+#define CASCA_LOG_MAGIC 0xABABABABu
+
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif
