@@ -6,6 +6,7 @@
 #define CASCA_LOG_CLOG_RECORDER_H
 
 #include "casca_log_base.h"
+#include "clog_hooks.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -63,6 +64,21 @@ struct clog_recorder {
     clog_recorder_close_f close;
     void *extra;
 };
+
+/**
+ * destroy recorder
+ * @param recorder recorder, it will be set to NULL after free
+ */
+static void clog_recorder_destroy(clog_recorder_t **recorder)
+{
+    if (recorder != NULL) {
+        if (*recorder != NULL) {
+            (*recorder)->close(*recorder);
+            clog_free(*recorder);
+            *recorder = NULL;
+        }
+    }
+}
 
 static clog_res_e clog_recorder_empty_open(clog_recorder_t *self)
 {
