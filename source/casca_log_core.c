@@ -367,8 +367,7 @@ static void *clog_recoder_dup(const void *ptr)
 static void clog_recoder_free(void *ptr)
 {
     clog_recorder_t *tmp = ptr;
-    tmp->close(tmp);
-    clog_free(tmp);
+    clog_recorder_destroy(&tmp);
 }
 
 clog_res_e clog_add_recorder(clog_context_t *context, const clog_recorder_t *recorder)
