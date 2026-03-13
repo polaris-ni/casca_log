@@ -562,6 +562,8 @@ static clog_res_e clog_init_item_wrapper(const clog_context_t *context, const ch
     wrapper->tag = context->formatter.tags[level - 1];
     wrapper->fmt = fmt;
     wrapper->log = item;
+    wrapper->log->magic = CASCA_LOG_MAGIC;
+    wrapper->log->version = CASCA_LOG_VERSION;
     clog_item_init_datetime(wrapper->log);
     wrapper->log->tid = clog_thread_self();
     wrapper->log->line = line;
