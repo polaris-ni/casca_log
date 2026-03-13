@@ -586,8 +586,12 @@ static clog_res_e clog_log_internal(const clog_context_t *context, const uint32_
     /* postfilter */
     pass = clog_filter_log(context->filters.post.next, wrapper);
     CLOG_RET_IF_X(!pass, CLOG_NOT_PERMITTED, "clog_filter_log POST failed");
-    for (size_t i = 0; i < num && i < CLOG_ARRAY_SIZE(wrapper->log->recorder); ++i) {
-        wrapper->log->recorder[i] = recorders[i];
+    for (size_t i = 0; i < CLOG_ARRAY_SIZE(wrapper->log->recorder); ++i) {
+        if (i < num) {
+            wrapper->log->recorder[i] = recorders[i];
+        } else {
+            wrapper->log->recorder[i] = CLOG_RECORDER_ID_INVALID;
+        }
     }
     /* add to channel */
     const clog_res_e res = context->channel->write(context->channel, wrapper->log);

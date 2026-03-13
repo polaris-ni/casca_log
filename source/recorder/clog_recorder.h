@@ -15,17 +15,10 @@ extern "C" {
 #define CLOG_RECORDER_ID_INVALID 0u /* invalid recorder id */
 #define CLOG_RECORDER_ID_STDOUT 1u /* stdout recorder */
 #define CLOG_RECORDER_ID_FILE 2u /* file recorder */
+#define CLOG_RECORDER_ID_SYSLOG 3u /* syslog recorder,  */
 #define CLOG_RECORDER_ID_RESERVED 1000u /* 0 ~ 1000 is reserved for internal recorder, > 1000 for customized id */
 
 typedef struct clog_recorder clog_recorder_t;
-
-/**
- * customized recorder provider function
- * @param id recorder id
- * @param recorder customized recorder
- * @return #clog_res_e
- */
-typedef clog_res_e (*clog_recorder_provider_f)(uint32_t id, clog_recorder_t *recorder);
 
 /**
  * open recorder

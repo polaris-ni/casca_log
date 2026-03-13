@@ -12,6 +12,7 @@
 #include "clog_filter_keywords.h"
 #include "clog_recorder_file.h"
 #include "clog_recorder_stdout.h"
+#include "clog_recorder_syslog.h"
 #include "clog_thread.h"
 #include "test_util.h"
 
@@ -48,7 +49,12 @@ TEST_F(CLogCoreTest, AtomicQueueLogTest)
     clog_set_mask(context, CLOG_LEVEL_ALL);
     ret = clog_set_buffer_pool(context, true, 128, 75);
     ASSERT_EQ(ret, CLOG_SUCCESS);
-    clog_module_t module = {"test", CLOG_LEVEL_ALL, 2, {CLOG_RECORDER_ID_STDOUT, CLOG_RECORDER_ID_FILE}};
+    clog_module_t module = {
+        "test",
+        CLOG_LEVEL_ALL,
+        3,
+        {CLOG_RECORDER_ID_STDOUT, CLOG_RECORDER_ID_FILE, CLOG_RECORDER_ID_SYSLOG},
+    };
     ret = clog_add_module(context, &module);
     ASSERT_EQ(ret, CLOG_SUCCESS);
     ret = clog_add_filter(context, clog_filter_keywords_create(1, "password"));
@@ -85,6 +91,10 @@ TEST_F(CLogCoreTest, AtomicQueueLogTest)
     };
     ret = clog_add_recorder(context, clog_recorder_file_create(&file_attr));
     ASSERT_EQ(ret, CLOG_SUCCESS);
+#ifdef CLOG_PLATFORM_LINUX
+    ret = clog_add_recorder(context, clog_recorder_syslog_create(process, LOG_PID | LOG_ODELAY, LOG_USER));
+    ASSERT_EQ(ret, CLOG_SUCCESS);
+#endif
     ret = clog_context_setup(context);
     ASSERT_EQ(ret, CLOG_SUCCESS);
     ret = CLOG_MODULE_LOG(context, module.name, CLOG_LEVEL_TRACE, "test trace log");
