@@ -22,3 +22,5 @@ if (MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
     message(STATUS "BUILD casca_log_demo: _CRT_SECURE_NO_WARNINGS is defined to suppress CRT SECURE WARNINGS")
 endif ()
+
+clog_enable_asan_for_target(casca_log_demo)
