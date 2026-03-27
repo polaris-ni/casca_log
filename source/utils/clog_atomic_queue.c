@@ -11,6 +11,7 @@
 
 #define CLOG_ATOMIC_QUEUE_RUNNING 0
 #define CLOG_ATOMIC_QUEUE_FINALIZING 1
+#define CLOG_ATOMIC_QUEUE_GC_THRESHOLD 128
 
 typedef struct clog_queue_node {
     atomic_uintptr_t next;
@@ -83,21 +84,23 @@ clog_atomic_queue_handle_t clog_atomic_queue_attach(clog_atomic_queue_t *queue, 
 
 static void clog_atomic_queue_gc(clog_atomic_queue_handle_t handle, bool is_enqueue)
 {
-    if (atomic_load(&handle->queue->release_num) <= 128) {
+    /* Only trigger GC when release_num exceeds threshold */
+    if (atomic_load_explicit(&handle->queue->release_num, memory_order_relaxed) < CLOG_ATOMIC_QUEUE_GC_THRESHOLD) {
         return;
     }
+
     if (handle->bias == CLOG_ATOMIC_QUEUE_BIASED_ANY) {
         clog_ebr_local_poll(handle->local);
-        atomic_store(&handle->queue->release_num, 0);
+        atomic_store_explicit(&handle->queue->release_num, 0, memory_order_relaxed);
     } else if (handle->bias == CLOG_ATOMIC_QUEUE_BIASED_ENQUEUE) {
         if (is_enqueue) {
             clog_ebr_local_poll(handle->local);
-            atomic_store(&handle->queue->release_num, 0);
+            atomic_store_explicit(&handle->queue->release_num, 0, memory_order_relaxed);
         }
     } else if (handle->bias == CLOG_ATOMIC_QUEUE_BIASED_DEQUEUE) {
         if (!is_enqueue) {
             clog_ebr_local_poll(handle->local);
-            atomic_store(&handle->queue->release_num, 0);
+            atomic_store_explicit(&handle->queue->release_num, 0, memory_order_relaxed);
         }
     } else {
         /* not perform gc on this thread */
@@ -188,7 +191,8 @@ clog_res_e clog_atomic_queue_dequeue(clog_atomic_queue_handle_t handle, uintptr_
     const clog_res_e ret = clog_atomic_queue_dequeue_internal(queue, data, true);
     clog_ebr_exit(handle->local);
     if (ret == CLOG_SUCCESS) {
-        atomic_fetch_and(&handle->queue->release_num, 1);
+        /* Increment release counter to track deferred releases */
+        atomic_fetch_add_explicit(&handle->queue->release_num, 1, memory_order_relaxed);
     }
     return ret;
 }
