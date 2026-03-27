@@ -99,8 +99,16 @@ static int clog_placeholder_file(void *param, char *buf, size_t size)
 static int clog_placeholder_content(void *param, char *buf, size_t size)
 {
     const clog_item_wrapper_t *wrapper = (clog_item_wrapper_t *)param;
+    /* use vsnprintf to safely format the content with buffer overflow protection */
     const int ret = vsnprintf(buf, size, wrapper->fmt, ((clog_item_wrapper_t *)wrapper)->args);
-    CLOG_RET_IF(ret < 0, 0);
+
+    CLOG_RET_IF_X(ret < 0, 0, "vsnprintf failed, ret = 0");
+
+    /* handle truncation - ensure null-termination and return actual written length */
+    if (ret >= (int)size) {
+        /* output was truncated, return actual bytes written (excluding null terminator) */
+        return (int)(size > 0 ? size - 1 : 0);
+    }
     return ret;
 }
 
