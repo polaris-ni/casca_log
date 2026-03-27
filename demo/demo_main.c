@@ -76,7 +76,7 @@ int main(void)
 
     const char *log_messages[] = {
         "This is a trace log message.",   "This is a debug log message.",  "This is an info log message.",
-        "This is a warning log message.", "This is an error log message.", "This is a fatal log message.",
+        "This is a warning log message.", "This is an error log message.", "This is a fetal log message.",
     };
 
     M_LOG_T(context, "test", log_messages[0]);
