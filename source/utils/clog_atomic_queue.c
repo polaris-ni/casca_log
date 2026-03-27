@@ -112,32 +112,48 @@ clog_res_e clog_atomic_queue_enqueue(clog_atomic_queue_handle_t handle, uintptr_
     CLOG_RET_IF_NULL_X(handle, CLOG_INVALID_PARAM, "handle is NULL");
     clog_atomic_queue_gc(handle, true);
     clog_atomic_queue_t *queue = handle->queue;
-    CLOG_RET_IF_X(atomic_load(&queue->state) != CLOG_ATOMIC_QUEUE_RUNNING, CLOG_ABNORMAL_STATE, "queue is not running");
+    CLOG_RET_IF_X(atomic_load_explicit(&queue->state, memory_order_relaxed) != CLOG_ATOMIC_QUEUE_RUNNING,
+                  CLOG_ABNORMAL_STATE, "queue is not running");
 
     clog_queue_node_t *node = clog_malloc(sizeof(clog_queue_node_t));
     CLOG_RET_IF_NULL(node, CLOG_NO_MEMORY);
     node->data = ptr;
-    atomic_store(&node->next, 0);
+    atomic_store_explicit(&node->next, 0, memory_order_relaxed);
 
     clog_ebr_enter(handle->local);
     atomic_uintptr_t tail;
     while (1) {
-        tail = atomic_load(&queue->tail);
+        /* load tail with relaxed semantics - we only need to read its value */
+        tail = atomic_load_explicit(&queue->tail, memory_order_relaxed);
         clog_queue_node_t *tail_node = (clog_queue_node_t *)tail;
-        atomic_uintptr_t next = atomic_load(&tail_node->next);
+
+        /* load next pointer with acquire to see if another thread has already linked a node */
+        const uintptr_t next = atomic_load_explicit(&tail_node->next, memory_order_acquire);
+
         if (next != 0) {
-            atomic_compare_exchange_strong(&queue->tail, &tail, next); /* do not care whether it is successful */
+            /* tail is falling behind, try to advance it */
+            atomic_compare_exchange_weak_explicit(&queue->tail, &tail, next, memory_order_release,
+                                                  memory_order_relaxed);
             continue;
         }
-        if (tail == atomic_load(&queue->tail)) {
-            CLOG_CLEAN_RET_IF_X(atomic_load(&queue->state) != CLOG_ATOMIC_QUEUE_RUNNING, clog_free(node),
-                                CLOG_ABNORMAL_STATE, "queue is not running");
-            const uintptr_t new_tail = (uintptr_t)node;
-            if (atomic_compare_exchange_strong(&tail_node->next, &next, new_tail)) {
-                atomic_compare_exchange_strong(&queue->tail, &tail, new_tail);
-                clog_ebr_exit(handle->local);
-                return CLOG_SUCCESS;
-            }
+
+        /* re-check tail hasn't changed */
+        if (tail != atomic_load_explicit(&queue->tail, memory_order_relaxed)) {
+            continue;
+        }
+
+        CLOG_CLEAN_RET_IF_X(atomic_load_explicit(&queue->state, memory_order_relaxed) != CLOG_ATOMIC_QUEUE_RUNNING,
+                            clog_free(node), CLOG_ABNORMAL_STATE, "queue is not running");
+
+        const uintptr_t new_tail = (uintptr_t)node;
+        /* try to link the new node at the end of the list */
+        if (atomic_compare_exchange_weak_explicit(&tail_node->next, &next, new_tail, memory_order_release,
+                                                  memory_order_relaxed)) {
+            /* successfully linked, now try to update tail (best effort) */
+            atomic_compare_exchange_weak_explicit(&queue->tail, &tail, new_tail, memory_order_release,
+                                                  memory_order_relaxed);
+            clog_ebr_exit(handle->local);
+            return CLOG_SUCCESS;
         }
     }
 }
@@ -146,32 +162,50 @@ static clog_res_e clog_atomic_queue_dequeue_internal(clog_atomic_queue_t *queue,
 {
     uintptr_t tail;
     while (1) {
-        uintptr_t head = atomic_load(&queue->head);
-        tail = atomic_load(&queue->tail);
-        const uintptr_t next = atomic_load(&((clog_queue_node_t *)head)->next);
+        /* load head with acquire semantics to ensure visibility of node data */
+        const uintptr_t head = atomic_load_explicit(&queue->head, memory_order_acquire);
+        tail = atomic_load_explicit(&queue->tail, memory_order_relaxed);
+
+        /* load next pointer with acquire to establish happens-before relationship */
+        const uintptr_t next = atomic_load_explicit(&((clog_queue_node_t *)head)->next, memory_order_acquire);
+
         if (need_check) {
-            CLOG_RET_IF_X(atomic_load(&queue->state) != CLOG_ATOMIC_QUEUE_RUNNING, CLOG_ABNORMAL_STATE,
-                          "queue is not running");
+            CLOG_RET_IF_X(atomic_load_explicit(&queue->state, memory_order_relaxed) != CLOG_ATOMIC_QUEUE_RUNNING,
+                          CLOG_ABNORMAL_STATE, "queue is not running");
         }
+
+        /* queue is empty */
         if (head == tail && next == 0) {
             return CLOG_TARGET_NOT_FOUND;
         }
+
+        /* tail is falling behind, try to advance it */
         if (head == tail && next != 0) {
-            atomic_compare_exchange_strong(&queue->tail, &tail, next);
-            continue;
-        }
-        if (tail != atomic_load(&queue->tail)) {
+            atomic_compare_exchange_weak_explicit(&queue->tail, &tail, next, memory_order_release,
+                                                  memory_order_relaxed);
             continue;
         }
 
+        /* re-check tail hasn't changed since we loaded it */
+        if (tail != atomic_load_explicit(&queue->tail, memory_order_relaxed)) {
+            continue;
+        }
+
+        /* try to advance head */
         if (next != 0) {
-            if (!atomic_compare_exchange_strong(&queue->head, &head, next)) {
+            if (!atomic_compare_exchange_weak_explicit(&queue->head, &head, next, memory_order_release,
+                                                       memory_order_relaxed)) {
                 continue;
             }
-            clog_queue_node_t *head_node = (clog_queue_node_t *)head;
+
+            /* successfully dequeued */
             clog_queue_node_t *next_node = (clog_queue_node_t *)next;
             *data = next_node->data;
+            /* clear the data to prevent use-after-free (defensive programming) */
             next_node->data = 0;
+
+            /* defer the release of the old head node using EBR */
+            clog_queue_node_t *head_node = (clog_queue_node_t *)head;
             clog_ebr_defer_release_global(queue->global, head_node);
             break;
         }
